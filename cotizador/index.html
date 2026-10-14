@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cotizador de Importación</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Cotizador">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  /* Versión independiente: funciona sin internet y sin Claude.
+     Abre este archivo con doble clic en cualquier navegador. */
+  :root {
+    --bg: #0d1117; --bg-card: #161b22; --bg-card-2: #1c2129; --border: #2a313c;
+    --text-main: #e6edf3; --text-muted: #8b949e; --accent: #22d3ee; --accent-2: #34d399;
+    --accent-soft: rgba(34, 211, 238, 0.12); --radius: 16px; --radius-sm: 10px;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at top left, #131920, var(--bg) 60%) fixed, var(--bg);
+    color: var(--text-main);
+    font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .page { max-width: 960px; margin: 0 auto; padding: 32px 16px 60px; }
+  header { text-align: center; margin-bottom: 32px; }
+  header h1 {
+    font-size: clamp(1.5rem, 4vw, 2.1rem); margin: 0 0 6px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700;
+  }
+  header p { color: var(--text-muted); margin: 0; font-size: 0.95rem; }
+  .layout { display: grid; grid-template-columns: 1fr; gap: 24px; }
+  @media (min-width: 800px) { .layout { grid-template-columns: 1.05fr 0.95fr; align-items: start; } }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .card h2 { margin: 0 0 20px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+  .field { margin-bottom: 20px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; }
+  .field label span.hint { font-size: 0.75rem; opacity: 0.7; }
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-wrap .prefix { position: absolute; left: 14px; color: var(--text-muted); font-weight: 600; pointer-events: none; }
+  input[type="number"] {
+    width: 100%; background: var(--bg-card-2); border: 1px solid var(--border); color: var(--text-main);
+    font-size: 1rem; padding: 12px 14px 12px 34px; border-radius: var(--radius-sm); outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease; -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .slider-row { display: flex; align-items: center; gap: 14px; }
+  input[type="range"] {
+    flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--accent); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); cursor: pointer; }
+  .margin-value {
+    min-width: 62px; text-align: center; font-weight: 700; font-size: 1.1rem; color: var(--accent);
+    background: var(--accent-soft); padding: 6px 10px; border-radius: var(--radius-sm); font-variant-numeric: tabular-nums;
+  }
+  .breakdown { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+  .breakdown-row {
+    display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;
+    background: var(--bg-card-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  }
+  .breakdown-row .label { color: var(--text-muted); font-size: 0.88rem; }
+  .breakdown-row .value { font-weight: 600; font-size: 1rem; font-variant-numeric: tabular-nums; }
+  .final-price {
+    text-align: center; padding: 28px 20px; border-radius: var(--radius);
+    background: linear-gradient(160deg, rgba(34,211,238,0.12), rgba(52,211,153,0.08)); border: 1px solid var(--accent);
+  }
+  .final-price .label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .final-price .value {
+    font-size: clamp(2.1rem, 8vw, 2.9rem); font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; line-height: 1.1; font-variant-numeric: tabular-nums;
+  }
+  .final-price .profit-note { margin-top: 10px; font-size: 0.85rem; color: var(--accent-2); }
+  .foot { margin-top: 24px; text-align: center; color: var(--text-muted); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Cotizador de Importación</h1>
+    <p>Ropa deportiva · Costos, tipo de cambio y margen de ganancia en tiempo real</p>
+  </header>
+
+  <div class="layout">
+    <section class="card">
+      <h2>📦 Datos de la prenda</h2>
+      <div class="field">
+        <label for="costoProducto">Costo del producto <span class="hint">USD</span></label>
+        <div class="input-wrap"><span class="prefix">$</span>
+          <input type="number" id="costoProducto" value="0" min="0" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="field">
+        <label for="costoLogistica">Precio de logística <span class="hint">MXN / envío</span></label>
+        <div class="input-wrap"><span class="prefix">$</span>
+          <input type="number" id="costoLogistica" value="0" min="0" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="field">
+        <label for="tipoCambio">Tipo de cambio <span class="hint">MXN por USD</span></label>
+        <div class="input-wrap"><span class="prefix">$</span>
+          <input type="number" id="tipoCambio" value="0" min="0" step="0.01" inputmode="decimal"></div>
+      </div>
+      <div class="field">
+        <label for="margen">Margen de ganancia <span class="hint">sobre costo base MXN</span></label>
+        <div class="slider-row">
+          <input type="range" id="margen" min="0" max="200" step="1" value="0">
+          <span class="margin-value" id="margenValor">0%</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>📊 Resultado de la cotización</h2>
+      <div class="breakdown">
+        <div class="breakdown-row"><span class="label">Costo Total (USD)</span><span class="value" id="outCostoTotalUsd">$0.00</span></div>
+        <div class="breakdown-row"><span class="label">Costo Base (MXN)</span><span class="value" id="outCostoBaseMxn">$0.00</span></div>
+        <div class="breakdown-row"><span class="label">Ganancia (MXN)</span><span class="value" id="outGananciaMxn">$0.00</span></div>
+      </div>
+      <div class="final-price">
+        <div class="label">Precio final de venta</div>
+        <div class="value" id="outPrecioFinal">$0.00</div>
+        <div class="profit-note" id="outMargenNota">Margen aplicado: 0%</div>
+      </div>
+    </section>
+  </div>
+
+  <p class="foot">Versión sin conexión · no necesita internet ni Claude</p>
+</div>
+
+<script>
+  /* FÓRMULAS:
+     Costo Total (USD)  = Costo del producto (USD)
+     Costo Base (MXN)   = Costo Total (USD) * Tipo de cambio + Logística (MXN)
+     Ganancia (MXN)     = Costo Base * Margen%
+     Precio Final (MXN) = Costo Base + Ganancia */
+  const ids = ['costoProducto', 'costoLogistica', 'tipoCambio', 'margen'];
+  const inputs = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+  const $ = id => document.getElementById(id);
+
+
+  function moneda(num, currency) {
+    if (isNaN(num)) num = 0;
+    return num.toLocaleString(currency === 'MXN' ? 'es-MX' : 'en-US',
+      { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function calcular() {
+    const costoProducto = parseFloat(inputs.costoProducto.value) || 0;
+    const logistica     = parseFloat(inputs.costoLogistica.value) || 0;
+    const tc            = parseFloat(inputs.tipoCambio.value) || 0;
+    const margen        = parseFloat(inputs.margen.value) || 0;
+
+    const costoBase = costoProducto * tc + logistica;
+    const ganancia  = costoBase * (margen / 100);
+
+    $('outCostoTotalUsd').textContent = moneda(costoProducto, 'USD');
+    $('outCostoBaseMxn').textContent  = moneda(costoBase, 'MXN');
+    $('outGananciaMxn').textContent   = moneda(ganancia, 'MXN');
+    $('outPrecioFinal').textContent   = moneda(costoBase + ganancia, 'MXN');
+    $('outMargenNota').textContent    = `Margen aplicado: ${margen}%`;
+    $('margenValor').textContent      = `${margen}%`;
+  }
+
+  ids.forEach(id => inputs[id].addEventListener('input', calcular));
+  calcular();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
+</script>
+</body>
+</html>

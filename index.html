@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#18171A">
+<title>Mis apps</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Mis apps">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+:root{--bg:#EEECE7;--surface:#FFFFFF;--line:#D9D5CD;--ink:#18171A;--muted:#6A6660;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0D0D0F;--surface:#161619;--line:#2B2B30;--ink:#ECE9E3;--muted:#8D8A85;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0D0D0F;--surface:#161619;--line:#2B2B30;--ink:#ECE9E3;--muted:#8D8A85;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.45;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top,0px) 0 calc(24px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+h1{margin:28px 0 4px;font-size:clamp(38px,11vw,56px);line-height:.95;font-weight:800;letter-spacing:-.02em}
+.sub{margin:0 0 22px;color:var(--muted)}
+.apps{display:grid;gap:12px}
+.app{display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:18px;color:inherit;text-decoration:none}
+.app img{width:64px;height:64px;border-radius:15px;display:block}
+.app b{display:block;font-size:19px}
+.app span{display:block;color:var(--muted);font-size:14px}
+.app i{font-style:normal;color:var(--muted);font-size:24px}
+h2{font-size:18px;margin:30px 0 10px}
+.pr{display:flex;gap:8px;flex-wrap:wrap}
+.pr a{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:999px;color:inherit;text-decoration:none;font-weight:600;font-size:15px}
+.tip{margin-top:30px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;color:var(--muted);font-size:14px}
+.tip b{color:var(--ink)}
+.tip ol{margin:8px 0 0;padding-left:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mis apps</h1>
+  <p class="sub">Funcionan sin internet. Tus datos se guardan solo en este aparato.</p>
+
+  <nav class="apps">
+    <a class="app" href="cotizador/"><img src="cotizador/icon-180.png" alt=""><div><b>Cotizador</b><span>Precio de venta de lo que importas</span></div><i>›</i></a>
+    <a class="app" href="facturas/"><img src="facturas/icon-180.png" alt=""><div><b>Facturas</b><span>Comprobantes para tus clientes</span></div><i>›</i></a>
+    <a class="app" href="clientes/"><img src="clientes/icon-180.png" alt=""><div><b>Clientes</b><span>Tu lista de clientes y sus compras</span></div><i>›</i></a>
+    <a class="app" href="catalogo/"><img src="catalogo/icon-180.png" alt=""><div><b>Catálogo</b><span>Stock, preventas, drops y lo que viene en camino</span></div><i>›</i></a>
+    <a class="app" href="historias/"><img src="historias/icon-180.png" alt=""><div><b>Historias</b><span>Collages para Instagram con tu precio y tu logo</span></div><i>›</i></a>
+  </nav>
+
+  <h2>Para practicar</h2>
+  <div class="pr">
+    <a href="facturas/prueba.html">Facturas · prueba</a>
+    <a href="clientes/prueba.html">Clientes · prueba</a>
+    <a href="catalogo/prueba.html">Catálogo · prueba</a>
+  </div>
+
+  <div class="tip">
+    <b>Para tenerla como app en tu iPhone:</b>
+    <ol>
+      <li>Abre esta página en <b>Safari</b>.</li>
+      <li>Toca <b>Compartir</b> (el cuadrito con la flecha ⬆️) → <b>“Agregar a Inicio”</b>.</li>
+      <li>Deja encendido <b>“Abrir como app web”</b> y toca <b>Agregar</b>.</li>
+    </ol>
+    Agrega <b>solo esta página</b> (“Mis apps”) y entra desde aquí a cada app: así Clientes, Facturas y Catálogo se conectan entre ellas.
+  </div>
+</div>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});}
+</script>
+</body>
+</html>
