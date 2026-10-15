@@ -677,7 +677,7 @@ function logoMarcaPara(txt,color){
 
 /* frases guardadas */
 const hoyMas=d=>{ const x=new Date(); x.setDate(x.getDate()+d); return x.getDate()+' de '+MESES[x.getMonth()]; };
-const FRASES=['Encarga con $500','Aparta con $500','Pedidos por DM o WhatsApp','Sobre pedido','Entrega inmediata','Últimas piezas','Todas las tallas'];
+const FRASES=['Aparta con $250','Aparta con $500','Aparta con $1,000','Encarga con $250','Encarga con $500','Encarga con $1,000','Pedidos por DM o WhatsApp','Sobre pedido','Entrega inmediata','Últimas piezas','Todas las tallas'];
 /* Tamaño general de los textos (multiplica los tres tamaños) */
 const TAMANOS=[['0.65','Muy chico'],['0.75','Chico'],['0.85','Mediano'],['1','Grande'],['1.15','Muy grande']];
 /* Colores para que resalte la frase "Aparta con $500" */
@@ -818,7 +818,12 @@ document.addEventListener('click',e=>{
   const lg=e.target.closest('[data-logo]'); if(lg){ if(lg.dataset.logo==='no') st.marca=false; else { st.marca=true; st.marcaPos=lg.dataset.logo; } LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lo=e.target.closest('[data-lop]'); if(lo){ st.logoOp=lo.dataset.lop; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lc=e.target.closest('[data-lcol]'); if(lc){ st.logoColor=lc.dataset.lcol; LS.set('estilo',st); pintarOpciones(); previa(); return; }
-  const fr=e.target.closest('[data-frase]'); if(fr){ const t=$('#tDesc'); const v=t.value.trim(); t.value=v&&!v.includes(fr.dataset.frase)?(v+' · '+fr.dataset.frase):fr.dataset.frase; previa(); return; }
+  const fr=e.target.closest('[data-frase]'); if(fr){ const t=$('#tDesc'), nueva=fr.dataset.frase;
+    // "Aparta/Encarga con $…" reemplaza al que ya estaba (no se juntan dos montos); las demás frases se agregan con " · "
+    let partes=t.value.split('·').map(s=>s.trim()).filter(Boolean);
+    if(/^(aparta|encarga) con/i.test(nueva)) partes=[nueva,...partes.filter(p=>!/^(aparta|encarga) con/i.test(p))];
+    else if(!partes.includes(nueva)) partes.push(nueva);
+    t.value=partes.join(' · '); previa(); return; }
   const et=e.target.closest('[data-etq]'); if(et){ $('#tEtiqueta').value=et.dataset.etq; previa(); return; }
 });
 ['tLinea1','tColeccion','tTitulo','tDesc','tEtiqueta','tLink'].forEach(id=>$('#'+id).addEventListener('input',previa));
