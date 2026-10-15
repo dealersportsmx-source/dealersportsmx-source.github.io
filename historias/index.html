@@ -118,40 +118,59 @@ label>input,label>select{margin-top:6px}
 
       <section class="card">
         <h2>2. Texto</h2>
-        <label>Marca o colección <span class="opt">(opcional, va chiquito arriba)</span><input id="tLinea1" placeholder="youngla, lifting…" autocomplete="off"></label>
-        <label>Nombre<input id="tTitulo" placeholder="THE ORIGINAL SWEATS" autocomplete="off" autocapitalize="characters"></label>
-        <div class="price">
-          <label>Precio en dólares<input id="tUsd" inputmode="decimal" placeholder="55" autocomplete="off"></label>
-          <label>Precio en pesos<input id="tMxn" inputmode="decimal" placeholder="Se calcula solo" autocomplete="off"></label>
+        <p class="note" style="margin:0 0 6px">Tipo de historia</p><div class="chips" id="tipoHistoria" style="margin-bottom:6px"></div>
+        <p class="note" id="modoNota" style="margin:0 0 12px"></p>
+        <label>Marca <span class="opt">(sale su logo; la extensión la llena sola)</span><input id="tLinea1" placeholder="Darc Sport" autocomplete="off"></label>
+        <div class="chips frases" id="marcasRapidas"></div>
+        <div data-modos="portada suelto">
+          <label>Etiqueta <span class="opt">(va grande)</span><input id="tEtiqueta" placeholder="PREVENTA" autocomplete="off"></label>
+          <div class="chips frases" id="etiquetas"></div>
+          <label>Fecha <span class="opt">(opcional)</span><input type="date" id="tFecha"></label>
+          <div class="chips frases" id="fechaTipos"></div>
         </div>
-        <p class="calc" id="calc"></p>
-        <label style="display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;margin:-4px 0 12px"><input type="checkbox" id="tSinPrecio" style="width:20px;height:20px;margin:0"> Ocultar el precio en esta historia</label>
-        <label>Frase <span class="opt">(opcional)</span><input id="tDesc" placeholder="Encarga con $500" autocomplete="off"></label>
-        <div class="chips frases" id="frases"></div>
-        <label>Etiqueta <span class="opt">(opcional · en el estilo Dealer va grande)</span><input id="tEtiqueta" placeholder="RESTOCK 13 DE OCTUBRE" autocomplete="off"></label>
-        <div class="chips frases" id="etiquetas"></div>
-        <label style="margin-top:6px">Link de la marca <span class="opt">(para recomprar rápido)</span><input id="tLink" inputmode="url" placeholder="https://www.youngla.com/products/…" autocomplete="off" autocapitalize="off"></label>
+        <div data-modos="portada">
+          <label>Colección <span class="opt">(se queda al darle "Nueva")</span><input id="tColeccion" placeholder="Corazón del Lobo" autocomplete="off"></label>
+        </div>
+        <div data-modos="producto suelto">
+          <label>Nombre del producto<input id="tTitulo" placeholder="CORAZÓN CH 3 SIDE-BY-SIDE TEE" autocomplete="off" autocapitalize="characters"></label>
+          <div class="price">
+            <label>Precio en dólares<input id="tUsd" inputmode="decimal" placeholder="55" autocomplete="off"></label>
+            <label>Precio en pesos<input id="tMxn" inputmode="decimal" placeholder="Se calcula solo" autocomplete="off"></label>
+          </div>
+          <p class="calc" id="calc"></p>
+          <label style="display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;margin:-4px 0 12px"><input type="checkbox" id="tSinPrecio" style="width:20px;height:20px;margin:0"> Ocultar el precio en esta historia</label>
+          <label>Frase<input id="tDesc" placeholder="Aparta con $500" autocomplete="off"></label>
+          <div class="chips frases" id="frases"></div>
+        </div>
+        <label style="margin-top:6px">Link de la marca <span class="opt">(no sale en la historia; cópialo para el sticker de enlace de Instagram)</span><input id="tLink" inputmode="url" placeholder="https://www.youngla.com/products/…" autocomplete="off" autocapitalize="off"></label>
+        <button class="btn ghost sm" id="btnCopiarLink" style="margin:-4px 0 12px">🔗 Copiar link</button>
         <button class="btn ghost full" id="btnACat">🏷️ Guardar también en mi Catálogo</button>
         <p class="note" id="catNota"></p>
       </section>
 
       <section class="card">
         <h2>3. Estilo</h2>
-        <p class="note" style="margin:0 0 6px">Estilo</p><div class="chips" id="estilos"></div>
+        <div hidden><div class="chips" id="estilos"></div></div>
         <div id="dealerBox">
-          <p class="note" style="margin:14px 0 6px">Tipo de letra</p><div class="chips" id="fuentes"></div>
+          <p class="note" style="margin:0 0 6px">Tipo de letra</p><div class="chips" id="fuentes"></div>
+          <p class="note" style="margin:14px 0 6px">Tamaño de los textos</p><div class="chips" id="tamanos"></div>
+          <details style="margin-top:8px"><summary class="note" style="cursor:pointer">Ajustar cada texto por separado</summary>
+          <div class="aj">
+            <label>Título (RESTOCK…)<input type="range" min="0.6" max="1.6" step="0.05" id="escTit"></label>
+            <label>Nombre y precio<input type="range" min="0.6" max="1.6" step="0.05" id="escNom"></label>
+            <label>Frase (Aparta con…)<input type="range" min="0.6" max="1.6" step="0.05" id="escFra"></label>
+            <button class="btn ghost sm" id="escReset">Regresar al tamaño elegido</button>
+          </div></details>
           <p class="note" style="margin:14px 0 6px">Fondo de los textos</p><div class="chips" id="fondoTexto"></div>
           <p class="note" style="margin:14px 0 6px">Cajas</p><div class="chips" id="cajasEst"></div>
-          <div class="aj" style="margin-top:14px">
-            <label>Tamaño del título (RESTOCK…)<input type="range" min="0.6" max="1.6" step="0.05" id="escTit"></label>
-            <label>Tamaño del nombre y precio<input type="range" min="0.6" max="1.6" step="0.05" id="escNom"></label>
-            <label>Tamaño de la frase (Encarga con…)<input type="range" min="0.6" max="1.6" step="0.05" id="escFra"></label>
-            <button class="btn ghost sm" id="escReset">Tamaños normales</button>
-          </div>
+          <p class="note" style="margin:14px 0 6px">Ancho del fondo</p><div class="chips" id="anchoFondo"></div>
+          <p class="note" style="margin:14px 0 6px">Logo de la marca</p><div class="chips" id="logoLugar"></div>
+          <div id="logoMarcaColorBox"><p class="note" style="margin:14px 0 6px">Color del logo de la marca</p><div class="chips" id="logoMarcaColor"></div></div>
+          <p class="note" style="margin:14px 0 6px">Color de la frase (Aparta con…)</p><div class="chips" id="colorFrase"></div>
           <p class="note" style="margin:14px 0 6px">Dónde van los textos</p><div class="chips" id="textoPos"></div>
           <p class="note" style="margin:14px 0 6px">Nombre de la marca (YoungLA, Gymshark…)</p><div class="chips" id="marcaEst"></div>
         </div>
-        <div id="colBox"><p class="note" style="margin:14px 0 6px">Colores (letras, fondo y etiqueta)</p><div class="chips" id="paletas"></div>
+        <div id="colBox" hidden><p class="note" style="margin:14px 0 6px">Colores (letras, fondo y etiqueta)</p><div class="chips" id="paletas"></div>
           <div class="grid2" id="colCustom" style="grid-template-columns:repeat(3,1fr);margin-top:10px" hidden>
             <label>Nombre<input type="color" id="cTit" style="min-height:44px;padding:4px"></label>
             <label>Precio<input type="color" id="cPre" style="min-height:44px;padding:4px"></label>
@@ -159,7 +178,7 @@ label>input,label>select{margin-top:6px}
             <label>Fondo<input type="color" id="cFon" style="min-height:44px;padding:4px"></label>
             <label>Etiqueta<input type="color" id="cEtq" style="min-height:44px;padding:4px"></label>
           </div></div>
-        <div id="etqBox"><p class="note" style="margin:14px 0 6px">Etiqueta (preview, restock…)</p><div class="chips" id="etqEst"></div></div>
+        <div id="etqBox" hidden><p class="note" style="margin:14px 0 6px">Etiqueta (preview, restock…)</p><div class="chips" id="etqEst"></div></div>
         <p class="note" style="margin:14px 0 6px">Tu logo</p><div class="chips" id="logos"></div>
         <p class="note" style="margin:14px 0 6px">Qué tan fuerte se ve tu logo</p><div class="chips" id="logoOp"></div>
         <p class="note" style="margin:14px 0 6px">Color de tu logo</p><div class="chips" id="logoCol"></div>
@@ -358,10 +377,6 @@ function marcaAgua(d,o){
 const FUENTES={
   // tit = letra de los títulos, del nombre y de la frase; base = tamaño del nombre; txt = letra del nombre de la marca escrito
   deportiva:{n:'Deportiva',tit:'Anton, Impact, "Arial Narrow", sans-serif',titW:'400',base:76,txt:'Montserrat, '+SANS},
-  moderna:{n:'Moderna',tit:'Montserrat, '+SANS,titW:'900',base:56,txt:'Montserrat, '+SANS},
-  clasica:{n:'Clásica',tit:'"Bebas Neue", Impact, sans-serif',titW:'400',base:80,txt:'Inter, '+SANS},
-  // como los textos de Reels: Montserrat muy gruesa, letras pegaditas, blanca con sombra y sin caja
-  reels:{n:'Reels',tit:'Montserrat, '+SANS,titW:'800',base:58,txt:'Montserrat, '+SANS,track:'-2px'},
   oswald:{n:'Condensada',tit:'Oswald, "Arial Narrow", sans-serif',titW:'700',base:70,txt:'Oswald, '+SANS},
   archivo:{n:'Gruesa',tit:'"Archivo Black", Impact, sans-serif',titW:'400',base:54,txt:'Archivo, '+SANS},
   poppins:{n:'Redonda',tit:'Poppins, '+SANS,titW:'800',base:56,txt:'Poppins, '+SANS},
@@ -401,15 +416,24 @@ function dibujarDealer(d,o,n,poner){
       if(mejor) fl=[mejor.a,mejor.b].map(l=>({t:l,f:fl[0].f,h:fl[0].h,color:C.titulo}));
     }
     cajas.push({filas:fl,px:40,py:16}); }
+  // la fecha va chiquita debajo de la etiqueta (o sola si no hay etiqueta): CIERRA EL SÁBADO 18 DE OCTUBRE
+  //    en la portada va hasta abajo: PREVENTA → logo → colección → CIERRA EL…
+  let cajaFecha=null;
+  if(o.fecha){ const t=String(o.fecha), z=ajustar(t,F.titW,F.tit,Math.round((F.base||60)*.62*E.tit),24), fl=lineas(t,F.titW,F.tit,z,C.titulo);
+    if(o.modo==='portada') cajaFecha={filas:fl,px:36,py:14};
+    else if(o.etiqueta&&cajas.length) cajas[cajas.length-1].filas.push(...fl); else cajas.push({filas:fl,px:36,py:14}); }
   // 2) marca chiquita + nombre y precio
   const filas=[];
   if(o.linea1){
     const ml=o.logoMarca;
-    if(ml&&ml.im){ const iw=ml.im.width, ih=ml.im.height, w=Math.min(620,ml.alto*E.nom*iw/ih), h=w*ih/iw; filas.push({logo:ml.im,w,h:h+18}); }
+    if(ml&&ml.im){ const iw=ml.im.width, ih=ml.im.height, w=Math.min(620,ml.alto*E.nom*iw/ih), h=w*ih/iw; filas.push({logo:ml.im,logoB:ml.imB,logoN:ml.imN,w,h:h+18}); }
     else if(ml&&ml.txt) filas.push({t:ml.txt,f:ml.font,h:62,color:C.titulo});
     else filas.push({t:String(o.linea1).toUpperCase(),f:'600 28px '+F.txt,h:40,color:alfa(C.desc,.8),esp:true});
   }
-  const tit=(o.titulo||'').trim(), pre=(o.precio||'').trim();
+  // la colección va chiquita arriba del nombre; si no hay nombre de producto (portada), la colección es el título
+  let tit=(o.titulo||'').trim(); const pre=(o.precio||'').trim(), col=String(o.coleccion||'').trim().toUpperCase();
+  if(col&&tit) filas.push({t:col,f:'600 '+Math.round(30*E.nom)+'px '+F.txt,h:Math.round(46*E.nom),color:alfa(C.titulo,.85),esp:true});
+  else if(col) tit=col;
   if(tit||pre){
     const pesoN=F.titW, famN=F.tit, base=Math.round((F.base||60)*E.nom);
     let z=base; const medir=()=>{ d.font=pesoN+' '+z+'px '+famN; return d.measureText(tit+(tit&&pre?'  ':'')+pre).width; };
@@ -417,36 +441,55 @@ function dibujarDealer(d,o,n,poner){
     if(medir()<=max) filas.push({tit,pre,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo});
     else { filas.push(...lineas(tit,pesoN,famN,z,C.titulo)); if(pre) filas.push({tit:'',pre,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo}); }
   }
+  // el logo de la marca puede ir afuera de la caja, solo y sin fondo (así la caja queda chica, solo con las letras)
+  if(o.logoFuera&&filas.length&&filas[0].logo) cajas.push({filas:[filas.shift()],px:0,py:6,libre:true});
   if(filas.length) cajas.push({filas,px:36,py:18});
   // 3) la frase: Encarga con $500, Aparta con $500…
   //    misma letra que el nombre, un poco más chica
-  if(o.linea3){ const t=String(o.linea3); const z=ajustar(t,F.titW,F.tit,Math.round((F.base||60)*.72*E.fra),26); cajas.push({filas:lineas(t,F.titW,F.tit,z,C.titulo),px:36,py:16}); }
+  //    con su propio color si lo escogiste: caja de ese color, o letras de ese color si va todo en una caja o sin fondo
+  if(o.linea3){ const t=String(o.linea3), cf=o.colorFrase||''; const z=ajustar(t,F.titW,F.tit,Math.round((F.base||60)*.72*E.fra),26);
+    const enCaja=cf&&!sinCaja&&!unaCaja, colorTxt=!cf?C.titulo:enCaja?(claro(cf)?'#0b0b0c':'#ffffff'):cf;
+    cajas.push({filas:lineas(t,F.titW,F.tit,z,colorTxt),px:36,py:16,bg:enCaja?cf:null}); }
+  if(cajaFecha) cajas.push(cajaFecha);
   if(!cajas.length) return;
-  const GAPC=sinCaja?4:unaCaja?0:14;
+  const GAPC=sinCaja?4:unaCaja?0:14, completo=o.anchoFondo==='completo'&&!sinCaja;
   if(sinCaja) cajas.forEach(c=>{ c.py=4; });
-  if(unaCaja) cajas.forEach((c,i)=>{ c.py=i===0?24:8; if(i===cajas.length-1) c.pyB=24; });
+  // "una sola caja": cada grupo de cajas seguidas (sin el logo suelto en medio) se pinta como un solo bloque
+  if(unaCaja) cajas.forEach((c,i)=>{ if(c.libre) return; c.py=(i===0||cajas[i-1].libre)?24:8; c.pyB=(i===cajas.length-1||cajas[i+1].libre)?24:8; });
   cajas.forEach(c=>{ c.w=Math.max(...c.filas.map(f=>{ if(f.logo) return f.w; d.font=f.f; if(f.esp) esp('6px'); const w=d.measureText(f.t!=null?f.t:(f.tit+(f.tit&&f.pre?'  ':'')+f.pre)).width; esp(LS0); return w; }))+c.px*2;
     c.h=c.filas.reduce((a,f)=>a+f.h,0)+c.py+(c.pyB!=null?c.pyB:c.py); });
-  if(unaCaja){ const wm=Math.max(...cajas.map(c=>c.w)); cajas.forEach(c=>{ c.w=wm; }); }
+  if(unaCaja){ const wm=Math.max(...cajas.filter(c=>!c.libre).map(c=>c.w)); cajas.forEach(c=>{ if(!c.libre) c.w=wm; }); }
+  if(completo) cajas.forEach(c=>{ if(!c.libre) c.w=W; }); // de orilla a orilla
   const total=cajas.reduce((a,c)=>a+c.h,0)+GAPC*(cajas.length-1);
   const centro=o.textoPos==='abajo'?H*.8:o.textoPos==='arriba'?H*.2:H/2;
   let y=Math.max(40,Math.min(H-40-total,centro-total/2));
+  cajas.forEach(c=>{ c.y=y; y+=c.h+GAPC; });
   d.textAlign='center'; d.textBaseline='middle';
   d.save();
   if(sinCaja){ d.shadowColor='rgba(0,0,0,.65)'; d.shadowBlur=26; d.shadowOffsetY=5; }
-  if(unaCaja){ const wm=cajas[0].w; d.fillStyle=alfa(C.fondo,opacidadCaja); d.fillRect((W-wm)/2,y,wm,total); }
+  if(unaCaja){ d.fillStyle=alfa(C.fondo,opacidadCaja);
+    for(let i=0;i<cajas.length;i++){ if(cajas[i].libre) continue; let j=i; while(j+1<cajas.length&&!cajas[j+1].libre) j++;
+      const wm=cajas[i].w; d.fillRect((W-wm)/2,cajas[i].y,wm,cajas[j].y+cajas[j].h-cajas[i].y); i=j; } }
   cajas.forEach(c=>{
     const x=(W-c.w)/2;
-    if(!sinCaja&&!unaCaja){ d.fillStyle=alfa(C.fondo,opacidadCaja); d.fillRect(x,y,c.w,c.h); }
-    let cy=y+c.py;
+    if(!sinCaja&&!unaCaja&&!c.libre){ d.fillStyle=c.bg||alfa(C.fondo,opacidadCaja); d.fillRect(x,c.y,c.w,c.h); }
+    let cy=c.y+c.py;
     c.filas.forEach(f=>{ const mid=cy+f.h/2+2;
+      if(f.logo&&c.libre){
+        // logo suelto: negro si lo de atrás es claro, blanco si es oscuro, con una sombra suave para que no se pierda
+        const lx=(W-f.w)/2, ly=cy+6, lh=f.h-18; let claroAtras=false;
+        try{ const px=d.getImageData(Math.max(0,lx),Math.max(0,ly),Math.max(1,f.w),Math.max(1,lh)).data; let s=0,k=0; for(let i=0;i<px.length;i+=64){ s+=px[i]+px[i+1]+px[i+2]; k++; } claroAtras=s/k/3>150; }catch(e){}
+        // o el color que tú fijes (blanco o negro, sólido)
+        const negro=o.logoMarcaColor==='negro'?true:o.logoMarcaColor==='blanco'?false:claroAtras;
+        const im=negro?(f.logoN||f.logo):(f.logoB||f.logo);
+        d.save(); d.shadowColor=negro?'rgba(255,255,255,.55)':'rgba(0,0,0,.6)'; d.shadowBlur=18; d.drawImage(im,lx,ly,f.w,lh); d.restore();
+        cy+=f.h; return; }
       if(f.logo){ d.drawImage(f.logo,(W-f.w)/2,cy+6,f.w,f.h-18); cy+=f.h; return; }
       d.font=f.f;
       if(f.t!=null){ if(f.esp) esp('6px'); d.fillStyle=f.color; d.fillText(f.t,W/2,mid); esp(LS0); }
       else { const sep=f.tit&&f.pre?'  ':'', a=d.measureText(f.tit+sep).width, b=d.measureText(f.pre).width, x0=(W-a-b)/2;
         d.textAlign='left'; d.fillStyle=f.color; d.fillText(f.tit+sep,x0,mid); d.fillStyle=C.precio; d.fillText(f.pre,x0+a,mid); d.textAlign='center'; }
       cy+=f.h; });
-    y+=c.h+GAPC;
   });
   d.restore(); esp('0px');
 }
@@ -510,7 +553,10 @@ if(!AJ){ AJ={tc:18,margen:60,red:10}; try{ Object.assign(AJ,JSON.parse(localStor
 function pesos(usd){ const v=num(usd)*num(AJ.tc)*(1+num(AJ.margen)/100), r=num(AJ.red)||1; return v?Math.ceil(v/r-1e-9)*r:0; }
 
 /* estado de la historia actual */
-const st=Object.assign({diseno:'4',estilo:'factura',etq:'franja',marcaPos:'arriba-der',marca:true,logoOp:'1',logoColor:'negro',paleta:'facturas',fuente:'deportiva',textoPos:'centro',marcaEst:'logo',fondoTexto:'negro',unaCaja:false},LS.get('estilo',{}));
+const st=Object.assign({diseno:'4',estilo:'dealer',etq:'franja',marcaPos:'arriba-der',marca:true,logoOp:'1',logoColor:'negro',paleta:'negro',fuente:'deportiva',textoPos:'centro',marcaEst:'logo',fondoTexto:'negro',unaCaja:false,tam:'0.85',colorFrase:'',modo:'producto',fechaTipo:'cierra',anchoFondo:'ajustado',logoFuera:true,logoMarcaColor:'auto'},LS.get('estilo',{}));
+// Solo queda el estilo Dealer (los de franja y facturas se quitaron) y solo las letras que siguen en la lista
+st.estilo='dealer'; st.paleta='negro';
+if(!Historia.FUENTES[st.fuente]){ if(st.fuente==='reels'&&st.fondoTexto==='sombra') st.fondoTexto='negro'; st.fuente='deportiva'; }
 st.escalas=Object.assign({tit:1,nom:1,fra:1},st.escalas||{});
 const MAXF=8, vacias=()=>Array(MAXF).fill(null), ajVacios=()=>Array.from({length:MAXF},()=>({}));
 let fotos=vacias(), ajustes=ajVacios(), sel=-1, cola=[], mxnManual=false;
@@ -520,13 +566,14 @@ const marca={negro:new Image(),crema:new Image()}; marca.negro.src=LOGO_NEGRO; m
 /* Logos de las marcas que vendes: si el campo "Marca" coincide, en el estilo Dealer va su logo en vez del nombre escrito.
    Las que no tienen logo en archivo van con su nombre en una letra parecida a la de la marca. */
 const MARCAS=[
-  {re:/gym\s*shark/i,src:'marcas/gymshark.png',alto:40},
-  {re:/young\s*la|^yla$/i,src:'marcas/youngla.png',alto:30},
-  {re:/dfyne/i,src:'marcas/dfyne.png',alto:38},
-  {re:/controlled\s*insanity|cntrld/i,src:'marcas/controlled-insanity.png',alto:52},
-  {re:/civil\s*regime/i,src:'marcas/civil-regime.png',alto:34},
-  {re:/darc\s*sport/i,src:'marcas/darc-sport.png',alto:130},
-  {re:/breathe\s*divinity|breathedivinity/i,src:'marcas/breathe-divinity.png',alto:92}
+  // n = nombre del botón; dom = dominio de su página (para reconocerla por el link si el campo Marca no coincide)
+  {n:'YoungLA',re:/young\s*la|^yla$/i,dom:/youngla\.com/i,src:'marcas/youngla.png',alto:30},
+  {n:'Gymshark',re:/gym\s*shark/i,dom:/gymshark\.com/i,src:'marcas/gymshark.png',alto:40},
+  {n:'Darc Sport',re:/darc\s*sport/i,dom:/darcsport/i,src:'marcas/darc-sport.png',alto:190},
+  {n:'DFYNE',re:/dfyne/i,dom:/dfyne\.com/i,src:'marcas/dfyne.png',alto:38},
+  {n:'Controlled Insanity',re:/controlled\s*insanity|cntrld/i,dom:/controlledinsanity/i,src:'marcas/controlled-insanity.png',alto:52},
+  {n:'Civil Regime',re:/civil\s*regime/i,dom:/civilregime|civilclothing/i,src:'marcas/civil-regime.png',alto:34},
+  {n:'Breathe Divinity',re:/breathe\s*divinity|breathedivinity/i,dom:/breathedivinity/i,src:'marcas/breathe-divinity.png',alto:92}
 ];
 MARCAS.forEach(m=>{ if(!m.src) return; m.img=new Image(); m.img.onload=()=>previa(); m.img.src=m.src; });
 const tintes=new Map();
@@ -534,17 +581,37 @@ function teñir(im,color){ const k=im.src+'|'+color; if(tintes.has(k)) return ti
   const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
   const x=c.getContext('2d'); x.drawImage(im,0,0); x.globalCompositeOperation='source-in'; x.fillStyle=color; x.fillRect(0,0,c.width,c.height);
   tintes.set(k,c); return c; }
+function marcaDeLink(){ const l=($('#tLink')&&$('#tLink').value)||'', m=MARCAS.find(x=>x.dom&&x.dom.test(l)); return m?m.n:''; }
 function logoMarcaPara(txt,color){
-  const m=MARCAS.find(x=>x.re.test(String(txt||'').trim())); if(!m) return null;
+  // primero por lo que dice el campo Marca; si no coincide, por el link de la página
+  const link=($('#tLink')&&$('#tLink').value)||'';
+  const m=MARCAS.find(x=>x.re.test(String(txt||'').trim()))||MARCAS.find(x=>x.dom&&x.dom.test(link)); if(!m) return null;
   if(m.txt) return {txt:m.txt,font:m.font};
   if(!m.img||!m.img.complete||!m.img.naturalWidth) return null;
-  return {im:teñir(m.img,color),alto:m.alto};
+  return {im:teñir(m.img,color),imB:teñir(m.img,'#ffffff'),imN:teñir(m.img,'#0b0b0c'),alto:m.alto};
 }
 
 /* frases guardadas */
 const hoyMas=d=>{ const x=new Date(); x.setDate(x.getDate()+d); return x.getDate()+' de '+MESES[x.getMonth()]; };
 const FRASES=['Encarga con $500','Aparta con $500','Pedidos por DM o WhatsApp','Sobre pedido','Entrega inmediata','Últimas piezas','Todas las tallas'];
-const ETIQ=['RESTOCK','RESTOCK '+hoyMas(1).toUpperCase(),'NUEVO DROP','NUEVA COLECCIÓN','PREVENTA','REBAJA','COLORES DISPONIBLES','PREVIEW'];
+/* Tamaño general de los textos (multiplica los tres tamaños) */
+const TAMANOS=[['0.65','Muy chico'],['0.75','Chico'],['0.85','Mediano'],['1','Grande'],['1.15','Muy grande']];
+/* Colores para que resalte la frase "Aparta con $500" */
+const COLORES_FRASE=[['','Igual'],['#E0261B','Rojo'],['#FFD400','Amarillo'],['#22C55E','Verde'],['#3B82F6','Azul'],['#FF7A00','Naranja'],['#FF4FA3','Rosa'],['#EFE6D4','Crema']];
+const ETIQ=['PREVENTA','PREVENTA ABIERTA','RESTOCK','NUEVO DROP','NUEVA COLECCIÓN','REBAJA','COLORES DISPONIBLES','PREVIEW'];
+/* Tipos de historia: qué textos lleva cada una */
+const TIPOS=[['portada','Portada'],['producto','Producto'],['suelto','Producto suelto']];
+const NOTA_TIPO={portada:'Portada de la colección: etiqueta, fecha, logo de la marca y colección. Pon las mejores fotos del drop.',
+  producto:'Cada modelo: logo de la marca, nombre, precio y frase (Aparta con $500).',
+  suelto:'Un solo producto sin portada: lleva también la etiqueta (PREVENTA) y la fecha.'};
+/* Fecha: cuándo lanza, cuándo cierran pedidos o cuándo llega */
+const TIPOS_FECHA=[['cierra','Cierra el'],['lanza','Lanza el'],['llega','Llega aprox.']];
+const DIAS=['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+function fechaHistoria(){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec($('#tFecha').value||''); if(!m) return '';
+  const f=new Date(+m[1],+m[2]-1,+m[3]), dia=f.getDate()+' DE '+MESES[f.getMonth()].toUpperCase();
+  return st.fechaTipo==='llega'?'LLEGA APROX. EL '+dia:(st.fechaTipo==='lanza'?'LANZA EL ':'CIERRA EL ')+DIAS[f.getDay()]+' '+dia;
+}
 
 const PALETAS={
   facturas:{n:'Facturas',titulo:'#f5f5f5',precio:'#46c86e',desc:'#96969b',fondo:'#161618',etiqueta:'#5a96ff'},
@@ -562,7 +629,7 @@ function chipsPaleta(){
   $('#paletas').innerHTML=Object.entries(PALETAS).map(([k,v])=>'<button type="button" class="chip'+(st.paleta===k?' on':'')+'" data-pal="'+k+'"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;'+swatch(v)+';margin-right:6px;vertical-align:-2px;box-shadow:0 0 0 1px rgba(0,0,0,.25)"></span>'+v.n+'</button>').join('')+
     '<button type="button" class="chip'+(st.paleta==='personal'?' on':'')+'" data-pal="personal">🎨 Personalizado</button>';
   $('#colCustom').hidden=st.paleta!=='personal'; const c=colores(); $('#cTit').value=c.titulo; $('#cPre').value=c.precio; $('#cDes').value=c.desc; $('#cFon').value=c.fondo; $('#cEtq').value=c.etiqueta;
-  $('#colBox').hidden=st.estilo!=='factura'&&st.estilo!=='dealer';
+  $('#colBox').hidden=true;
 }
 function chips(el,ops,val,key){ el.innerHTML=ops.map(o=>'<button type="button" class="chip'+(val===o[0]?' on':'')+'" data-'+key+'="'+esc(o[0])+'">'+esc(o[1])+'</button>').join(''); }
 function pintarOpciones(){
@@ -570,11 +637,21 @@ function pintarOpciones(){
   chips($('#estilos'),[['dealer','Dealer (cajas negras)'],['factura','Como mis facturas'],['blanco','Franja blanca'],['negro','Franja negra']],st.estilo,'est');
   $('#fuentes').innerHTML=Object.entries(Historia.FUENTES).map(([k,v])=>'<button type="button" class="chip'+(st.fuente===k?' on':'')+'" data-fte="'+k+'" style="font-family:'+esc(v.tit)+';font-weight:'+v.titW+'">'+esc(v.n)+'</button>').join('');
   chips($('#cajasEst'),[['separadas','Separadas'],['una','Una sola']],st.unaCaja?'una':'separadas','caj');
+  chips($('#tamanos'),TAMANOS,st.tam,'tam');
+  chips($('#anchoFondo'),[['ajustado','Ajustado al texto'],['completo','De orilla a orilla']],st.anchoFondo,'anch');
+  chips($('#logoLugar'),[['dentro','Dentro de la caja'],['fuera','Afuera, sin fondo']],st.logoFuera?'fuera':'dentro','llug');
+  chips($('#logoMarcaColor'),[['auto','Automático'],['blanco','Blanco'],['negro','Negro']],st.logoMarcaColor,'lmc');
+  $('#logoMarcaColorBox').hidden=!st.logoFuera; // dentro de la caja el logo va del color de las letras
+  $('#marcasRapidas').innerHTML=MARCAS.map(m=>'<button type="button" class="chip" data-mrc="'+esc(m.n)+'">'+esc(m.n)+'</button>').join('');
+  chips($('#tipoHistoria'),TIPOS,st.modo,'tipo'); $('#modoNota').textContent=NOTA_TIPO[st.modo]||'';
+  chips($('#fechaTipos'),TIPOS_FECHA,st.fechaTipo,'ftipo');
+  document.querySelectorAll('[data-modos]').forEach(el=>{ el.hidden=!el.dataset.modos.split(' ').includes(st.modo); });
+  $('#colorFrase').innerHTML=COLORES_FRASE.map(([v,nombre])=>'<button type="button" class="chip'+(st.colorFrase===v?' on':'')+'" data-cfr="'+v+'">'+(v?'<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:'+v+';margin-right:6px;vertical-align:-2px;box-shadow:0 0 0 1px rgba(0,0,0,.25)"></span>':'')+esc(nombre)+'</button>').join('');
   $('#escTit').value=st.escalas.tit; $('#escNom').value=st.escalas.nom; $('#escFra').value=st.escalas.fra;
   chips($('#fondoTexto'),[['negro','Negro'],['transparente','Translúcido'],['blanco','Blanco'],['crema','Crema'],['sombra','Sin fondo (sombra)']],st.fondoTexto,'ftx');
   chips($('#textoPos'),[['arriba','Arriba'],['centro','Al centro'],['abajo','Abajo']],st.textoPos,'tpos');
   chips($('#marcaEst'),[['logo','Con su logo'],['texto','Escrita'],['no','No ponerla']],st.marcaEst,'mest');
-  $('#dealerBox').hidden=st.estilo!=='dealer'; $('#etqBox').hidden=st.estilo!=='factura';
+  $('#dealerBox').hidden=false; $('#etqBox').hidden=true;
   chips($('#etqEst'),[['franja','Dentro de la franja'],['negro','Abajo, negra'],['azul','Abajo, azul']],st.etq,'etqe');
   chips($('#logos'),[['arriba-der','Arriba derecha'],['arriba-izq','Arriba izquierda'],['abajo-der','Abajo derecha'],['abajo-izq','Abajo izquierda'],['no','Sin logo']],st.marca?st.marcaPos:'no','logo');
   chips($('#logoOp'),[['0.45','Suave'],['0.7','Medio'],['1','Sólido']],st.logoOp,'lop');
@@ -593,11 +670,17 @@ function pintarSlots(){
     chips($('#modos'),[['','Automático'],['llenar','Llenar el cuadro'],['completa','Foto completa']],a.modo||'','modo'); }
 }
 function opciones(){
+  // Cada tipo de historia lleva solo sus textos: Portada (etiqueta, fecha, logo, colección),
+  // Producto (logo, nombre, precio, frase) y Producto suelto (lo de Producto + etiqueta y fecha)
+  const m=st.modo, conEtq=m!=='producto', esProd=m!=='portada';
   return {diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
-    linea1:st.estilo==='dealer'&&st.marcaEst==='no'?'':$('#tLinea1').value.trim(),
-    logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value,st.fondoTexto==='blanco'||st.fondoTexto==='crema'?'#0b0b0c':(colores().titulo||'#ffffff')):null,titulo:$('#tTitulo').value.trim().toUpperCase(),precio:precioTxt(),
-    linea3:$('#tDesc').value.trim(),etiqueta:$('#tEtiqueta').value.trim(),
-    marca:st.marca?marca:null,marcaPos:st.marcaPos,marcaOpacidad:num(st.logoOp)||1,marcaColor:st.logoColor,etqEstilo:st.estilo==='factura'?st.etq:'rojo',colores:colores(),fuente:st.fuente,textoPos:st.textoPos,fondoTexto:st.fondoTexto,unaCaja:st.unaCaja,escalas:st.escalas};
+    linea1:st.estilo==='dealer'&&st.marcaEst==='no'?'':($('#tLinea1').value.trim()||marcaDeLink()),
+    coleccion:m==='portada'?$('#tColeccion').value.trim():'',
+    logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value||marcaDeLink(),st.fondoTexto==='blanco'||st.fondoTexto==='crema'?'#0b0b0c':(colores().titulo||'#ffffff')):null,
+    titulo:esProd?$('#tTitulo').value.trim().toUpperCase():'',precio:esProd?precioTxt():'',
+    linea3:esProd?$('#tDesc').value.trim():'',etiqueta:conEtq?$('#tEtiqueta').value.trim():'',fecha:conEtq?fechaHistoria():'',modo:m,anchoFondo:st.anchoFondo,logoFuera:st.logoFuera,logoMarcaColor:st.logoMarcaColor,
+    marca:st.marca?marca:null,marcaPos:st.marcaPos,marcaOpacidad:num(st.logoOp)||1,marcaColor:st.logoColor,etqEstilo:st.estilo==='factura'?st.etq:'rojo',colores:colores(),fuente:st.fuente,textoPos:st.textoPos,fondoTexto:st.fondoTexto,unaCaja:st.unaCaja,colorFrase:st.colorFrase,
+    escalas:{tit:st.escalas.tit*num(st.tam),nom:st.escalas.nom*num(st.tam),fra:st.escalas.fra*num(st.tam)}};
 }
 function precioTxt(){ if($('#tSinPrecio').checked) return ''; const v=num($('#tMxn').value); return v?'$'+Math.round(v).toLocaleString('en-US'):''; }
 let raf=0;
@@ -631,6 +714,14 @@ $('#ajReset').addEventListener('click',()=>{ ajustes[sel]={}; pintarSlots(); pre
 document.addEventListener('click',e=>{
   const d=e.target.closest('[data-dis]'); if(d){ st.diseno=d.dataset.dis; sel=-1; LS.set('estilo',st); pintarOpciones(); pintarSlots(); previa(); return; }
   const es=e.target.closest('[data-est]'); if(es){ st.estilo=es.dataset.est; if(st.estilo==='dealer'&&st.paleta==='facturas') st.paleta='negro'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const mr=e.target.closest('[data-mrc]'); if(mr){ $('#tLinea1').value=mr.dataset.mrc; marcaOriginal=mr.dataset.mrc; previa(); return; }
+  const lm=e.target.closest('[data-lmc]'); if(lm){ st.logoMarcaColor=lm.dataset.lmc; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const an=e.target.closest('[data-anch]'); if(an){ st.anchoFondo=an.dataset.anch; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const ll=e.target.closest('[data-llug]'); if(ll){ st.logoFuera=ll.dataset.llug==='fuera'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const ti=e.target.closest('[data-tipo]'); if(ti){ st.modo=ti.dataset.tipo; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const tf=e.target.closest('[data-ftipo]'); if(tf){ st.fechaTipo=tf.dataset.ftipo; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const tm=e.target.closest('[data-tam]'); if(tm){ st.tam=tm.dataset.tam; st.escalas={tit:1,nom:1,fra:1}; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const cf=e.target.closest('[data-cfr]'); if(cf){ st.colorFrase=cf.dataset.cfr; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const cj=e.target.closest('[data-caj]'); if(cj){ st.unaCaja=cj.dataset.caj==='una'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const fx=e.target.closest('[data-ftx]'); if(fx){ st.fondoTexto=fx.dataset.ftx; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const ft=e.target.closest('[data-fte]'); if(ft){ st.fuente=ft.dataset.fte; if(st.fuente==='reels') st.fondoTexto='sombra'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
@@ -644,10 +735,17 @@ document.addEventListener('click',e=>{
   const fr=e.target.closest('[data-frase]'); if(fr){ const t=$('#tDesc'); const v=t.value.trim(); t.value=v&&!v.includes(fr.dataset.frase)?(v+' · '+fr.dataset.frase):fr.dataset.frase; previa(); return; }
   const et=e.target.closest('[data-etq]'); if(et){ $('#tEtiqueta').value=et.dataset.etq; previa(); return; }
 });
-['tLinea1','tTitulo','tDesc','tEtiqueta'].forEach(id=>$('#'+id).addEventListener('input',previa));
+['tLinea1','tColeccion','tTitulo','tDesc','tEtiqueta','tLink'].forEach(id=>$('#'+id).addEventListener('input',previa));
+/* Copiar el link de la marca para pegarlo en el sticker de enlace de Instagram */
+$('#btnCopiarLink').addEventListener('click',async()=>{
+  const u=$('#tLink').value.trim(); if(!u){ toast('No hay link todavía'); return; }
+  try{ await navigator.clipboard.writeText(u); toast('Link copiado ✓ Pégalo en el sticker de enlace'); }
+  catch(e){ $('#tLink').select(); toast('Selecciona el link y cópialo'); }
+});
 [['cTit','titulo'],['cPre','precio'],['cDes','desc'],['cFon','fondo'],['cEtq','etiqueta']].forEach(([id,k])=>$('#'+id).addEventListener('input',()=>{ st.colores=Object.assign({},st.colores||{},{[k]:$('#'+id).value}); LS.set('estilo',st); previa(); }));
 $('#tUsd').addEventListener('input',()=>{ calcular(); previa(); });
 $('#tSinPrecio').addEventListener('change',previa);
+$('#tFecha').addEventListener('change',previa);
 [['escTit','tit'],['escNom','nom'],['escFra','fra']].forEach(([id,k])=>$('#'+id).addEventListener('input',()=>{ st.escalas[k]=num($('#'+id).value)||1; LS.set('estilo',st); previa(); }));
 $('#escReset').addEventListener('click',()=>{ st.escalas={tit:1,nom:1,fra:1}; LS.set('estilo',st); pintarOpciones(); previa(); });
 $('#tMxn').addEventListener('input',()=>{ mxnManual=$('#tMxn').value.trim()!==''; calcular(); previa(); });
@@ -805,12 +903,18 @@ function leerCatHash(){ const m=/[#&]cat=([^&]+)/.exec(location.hash); if(!m) re
 
 /* datos que manda la extensión de Chrome o el Atajo del iPhone */
 async function cargarURL(src){ const r=await fetch(src,{mode:'cors'}); if(!r.ok) throw 0; const b=await r.blob(); return cargarArchivo(b); }
+/* La colección viene en el link cuando entraste desde ella: /collections/corazon-del-lobo/products/… → "Corazon Del Lobo" */
+function coleccionDeLink(u){
+  try{ const m=/\/collections\/([^/?#]+)\/products\//i.exec(new URL(u).pathname); if(!m) return '';
+    const s=decodeURIComponent(m[1]); if(/^(all|frontpage|new|new-arrivals|shop-all|todo|best-sellers?)$/i.test(s)) return '';
+    return s.replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }catch(e){ return ''; }
+}
 async function recibirProducto(d){
   if(!d) return;
   if(d.marca){ marcaOriginal=String(d.marca); $('#tLinea1').value=marcaOriginal.toLowerCase(); }
   if(d.nombre) $('#tTitulo').value=String(d.nombre).replace(/^\s*\d+\s*-\s*/,'').toUpperCase();
   if(d.precioUsd){ $('#tUsd').value=num(d.precioUsd); mxnManual=false; }
-  if(d.url) $('#tLink').value=d.url;
+  if(d.url){ $('#tLink').value=d.url; const c=coleccionDeLink(d.url); if(c) $('#tColeccion').value=c; }
   origen=null; notaCat();
   calcular();
   const srcs=(d.fotos||[]).slice(0,n()); let ok=0;
@@ -827,7 +931,7 @@ function disenoPara(k){ return k<=1?'1':k<=2?'2':k<=4?'4':k<=6?'6':'8'; }
 async function recibirSerie(d){
   if(!d) return;
   fotos=vacias(); ajustes=ajVacios(); sel=-1;
-  st.diseno=disenoPara(Math.min(4,(d.fotos||[]).length||4)); LS.set('estilo',st); pintarOpciones();
+  st.diseno=disenoPara(Math.min(4,(d.fotos||[]).length||4)); st.modo='producto'; LS.set('estilo',st); pintarOpciones();
   serieColores=(d.colores||[]).filter(Boolean).slice(0,MAXF);
   if(serieColores.length<2) serieColores=null;
   await recibirProducto(d);
@@ -836,8 +940,8 @@ async function recibirSerie(d){
 async function pasoColores(){
   const srcs=serieColores; serieColores=null;
   fotos=vacias(); ajustes=ajVacios(); sel=-1;
-  st.diseno=disenoPara(srcs.length); LS.set('estilo',st);
-  $('#tEtiqueta').value='COLORES DISPONIBLES';
+  st.diseno=disenoPara(srcs.length); st.modo='suelto'; LS.set('estilo',st);
+  $('#tEtiqueta').value='COLORES DISPONIBLES'; $('#tFecha').value='';
   pintarOpciones(); pintarSlots(); previa();
   let ok=0;
   for(let i=0;i<Math.min(n(),srcs.length);i++){ try{ fotos[i]=await cargarURL(srcs[i]); ok++; }catch(e){} }
