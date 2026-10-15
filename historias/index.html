@@ -434,6 +434,12 @@ function ponerRejilla(poner,n,x0,y0,w,h,gap){
     poner(2,x0,y0+rh+gap,w,rh);
     poner(3,x0,y0+2*(rh+gap),cw,rh); poner(4,x0+cw+gap,y0+2*(rh+gap),cw,rh);
     return; }
+  if(n===7){ // 7 fotos: 2 arriba, 3 en medio, 2 abajo
+    const rh=(h-gap*2)/3, c2=(w-gap)/2, c3=(w-gap*2)/3;
+    poner(0,x0,y0,c2,rh); poner(1,x0+c2+gap,y0,c2,rh);
+    for(let i=0;i<3;i++) poner(2+i,x0+i*(c3+gap),y0+rh+gap,c3,rh);
+    poner(5,x0,y0+2*(rh+gap),c2,rh); poner(6,x0+c2+gap,y0+2*(rh+gap),c2,rh);
+    return; }
   const [c,r]=rejilla(n), cw=(w-gap*(c-1))/c, ch=(h-gap*(r-1))/r;
   for(let i=0;i<n;i++){ const col=i%c, row=Math.floor(i/c); poner(i,x0+col*(cw+gap),y0+row*(ch+gap),cw,ch); }
 }
@@ -723,7 +729,7 @@ function chipsPaleta(){
 }
 function chips(el,ops,val,key){ el.innerHTML=ops.map(o=>'<button type="button" class="chip'+(val===o[0]?' on':'')+'" data-'+key+'="'+esc(o[0])+'">'+esc(o[1])+'</button>').join(''); }
 function pintarOpciones(){
-  chips($('#disenos'),[['1','1 foto'],['2','2 fotos'],['4','4 fotos'],['5','5 fotos'],['6','6 fotos'],['8','8 fotos']],st.diseno,'dis');
+  chips($('#disenos'),[['1','1 foto'],['2','2 fotos'],['4','4 fotos'],['5','5 fotos'],['6','6 fotos'],['7','7 fotos'],['8','8 fotos']],st.diseno,'dis');
   chips($('#estilos'),[['dealer','Dealer (cajas negras)'],['factura','Como mis facturas'],['blanco','Franja blanca'],['negro','Franja negra']],st.estilo,'est');
   $('#fuentes').innerHTML=Object.entries(Historia.FUENTES).map(([k,v])=>'<button type="button" class="chip'+(st.fuente===k?' on':'')+'" data-fte="'+k+'" style="font-family:'+esc(v.tit)+';font-weight:'+v.titW+'">'+esc(v.n)+'</button>').join('');
   chips($('#cajasEst'),[['separadas','Separadas'],['una','Una sola']],st.unaCaja?'una':'separadas','caj');
@@ -1024,7 +1030,7 @@ window.recibirProducto=recibirProducto;
 /* Armar serie (desde la extensión): paso 1 la portada con 4 fotos de un color,
    paso 2 "colores disponibles" con una foto de cada color. Entre paso y paso puedes ajustar todo. */
 function notaSerie(t){ const el=$('#serieNota'); el.textContent=t; el.hidden=!t; }
-function disenoPara(k){ return k<=1?'1':k<=2?'2':k<=4?'4':k===5?'5':k<=6?'6':'8'; }
+function disenoPara(k){ return k<=1?'1':k<=2?'2':k<=4?'4':k===5?'5':k<=6?'6':k===7?'7':'8'; }
 async function recibirSerie(d){
   if(!d) return;
   fotos=vacias(); ajustes=ajVacios(); sel=-1;
