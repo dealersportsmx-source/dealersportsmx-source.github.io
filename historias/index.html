@@ -610,11 +610,11 @@ const marca={negro:new Image(),crema:new Image()}; marca.negro.src=LOGO_NEGRO; m
 const MARCAS=[
   // n = nombre del botón; dom = dominio de su página (para reconocerla por el link si el campo Marca no coincide)
   {n:'YoungLA',re:/young\s*la|^yla$/i,dom:/youngla\.com/i,src:'marcas/youngla.png',alto:30},
-  {n:'Gymshark',re:/gym\s*shark/i,dom:/gymshark\.com/i,src:'marcas/gymshark.png',alto:58},
+  {n:'Gymshark',re:/gym\s*shark/i,dom:/gymshark\.com/i,src:'marcas/gymshark.png',alto:70},
   {n:'Darc Sport',re:/darc\s*sport/i,dom:/darcsport/i,src:'marcas/darc-sport.png',alto:190},
   {n:'DFYNE',re:/dfyne/i,dom:/dfyne\.com/i,src:'marcas/dfyne.png',alto:38},
-  {n:'Controlled Insanity',re:/controlled\s*insanity|cntrld/i,dom:/controlledinsanity/i,src:'marcas/controlled-insanity.png',alto:52},
-  {n:'Civil Regime',re:/civil\s*regime/i,dom:/civilregime|civilclothing/i,src:'marcas/civil-regime.png',alto:34},
+  {n:'Controlled Insanity',re:/controlled\s*insanity|cntrld/i,dom:/controlledinsanity/i,src:'marcas/controlled-insanity.png',alto:120},
+  {n:'Civil Regime',re:/civil\s*regime/i,dom:/civilregime|civilclothing/i,src:'marcas/civil-regime.png',alto:100},
   {n:'Breathe Divinity',re:/breathe\s*divinity|breathedivinity/i,dom:/breathedivinity/i,src:'marcas/breathe-divinity.png',alto:92}
 ];
 MARCAS.forEach(m=>{ if(!m.src) return; m.img=new Image(); m.img.onload=()=>previa(); m.img.src=m.src; });
