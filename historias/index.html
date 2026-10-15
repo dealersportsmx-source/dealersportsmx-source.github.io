@@ -447,6 +447,48 @@ function dibujarDealer(d,o,n,poner){
   esp(LS0);
   const ajustar=(t,peso,fam,z,min)=>{ d.font=peso+' '+z+'px '+fam; while(z>min&&d.measureText(t).width>max){ z-=2; d.font=peso+' '+z+'px '+fam; } return z; };
   const lineas=(t,peso,fam,z,color)=>{ d.font=peso+' '+z+'px '+fam; return wrap(d,t,max).map(l=>({t:l,f:peso+' '+z+'px '+fam,h:z*interl,color})); };
+  // PORTADA: un solo bloque en el tercio de abajo → logo de la marca, PREVENTA ABIERTA (chico),
+  // la COLECCIÓN (grande, la protagonista) y la fecha de cierre en una franja de color
+  if(o.modo==='portada'){
+    const etq=String(o.etiqueta||'').toUpperCase(), col=String(o.coleccion||'').toUpperCase(), fch=String(o.fecha||'').toUpperCase();
+    const filas=[];
+    // sin colección, la etiqueta (PREVENTA ABIERTA) pasa a ser lo grande
+    if(etq&&col){ const z=ajustar(etq,F.titW,F.tit,Math.round((F.base||60)*.7*E.tit),22); filas.push(...lineas(etq,F.titW,F.tit,z,alfa(C.titulo,.9))); }
+    else if(etq){ const z=ajustar(etq,F.titW,F.tit,Math.round((n===1?150:124)*E.tit),48); filas.push(...lineas(etq,F.titW,F.tit,z,C.titulo)); }
+    // un poco más de aire arriba del título grande, para que los acentos (CORAZÓN) no choquen con la etiqueta
+    if(col){ const z=ajustar(col,F.titW,F.tit,Math.round((n===1?150:124)*E.tit),48);
+      if(filas.length) filas.push({t:'',f:'400 10px '+F.txt,h:Math.round(z*.24),color:C.titulo});
+      filas.push(...lineas(col,F.titW,F.tit,z,C.titulo)); }
+    let fFecha=null;
+    if(fch){ const z=ajustar(fch,F.titW,F.tit,Math.round((F.base||60)*.62*E.fra),22); fFecha=lineas(fch,F.titW,F.tit,z,'#fff'); }
+    const medirF=f=>{ d.font=f.f; return d.measureText(f.t).width; };
+    const px=40, py=22, anchoTxt=Math.max(0,...filas.map(medirF),...(fFecha||[]).map(medirF));
+    if(!filas.length&&!fFecha&&!(o.logoMarca&&o.logoMarca.im)) return;
+    const bw=o.anchoFondo==='completo'&&!sinCaja?W:anchoTxt+px*2;
+    const hBloque=filas.length?filas.reduce((a,f)=>a+f.h,0)+py*2:0, hFecha=fFecha?fFecha.reduce((a,f)=>a+f.h,0)+28:0;
+    let lg=null; const ml=o.logoMarca;
+    // sin colección, el logo de la marca sale más grande para que la marca sea la protagonista
+    if(ml&&ml.im){ const iw=ml.im.width, ih=ml.im.height, w=Math.min(820,ml.alto*E.nom*(o.logoMarcaTam||1.3)*(col?1:1.35)*iw/ih); lg={w,h:w*ih/iw,ml}; }
+    const total=(lg?lg.h+18:0)+hBloque+hFecha;
+    const centro=o.textoPos==='arriba'?H*.24:o.textoPos==='abajo'?H*.8:H*.72;
+    let y=Math.max(40,Math.min(H-40-total,centro-total/2));
+    d.textAlign='center'; d.textBaseline='middle';
+    if(lg){ // el logo suelto: negro si atrás es claro, blanco si es oscuro (o el color que fijes)
+      const lx=(W-lg.w)/2; let claroAtras=false;
+      try{ const p=d.getImageData(Math.max(0,lx),Math.max(0,y),Math.max(1,lg.w),Math.max(1,lg.h)).data; let s=0,k=0; for(let i=0;i<p.length;i+=64){ s+=p[i]+p[i+1]+p[i+2]; k++; } claroAtras=s/k/3>150; }catch(e){}
+      const negro=o.logoMarcaColor==='negro'?true:o.logoMarcaColor==='blanco'?false:claroAtras;
+      d.save(); d.shadowColor=negro?'rgba(255,255,255,.55)':'rgba(0,0,0,.6)'; d.shadowBlur=18; d.drawImage(negro?(lg.ml.imN||lg.ml.im):(lg.ml.imB||lg.ml.im),lx,y,lg.w,lg.h); d.restore();
+      y+=lg.h+18; }
+    d.save(); if(sinCaja){ d.shadowColor='rgba(0,0,0,.65)'; d.shadowBlur=26; d.shadowOffsetY=5; }
+    if(filas.length){
+      if(!sinCaja){ d.fillStyle=alfa(C.fondo,opacidadCaja); d.fillRect((W-bw)/2,y,bw,hBloque); }
+      let cy=y+py; filas.forEach(f=>{ d.font=f.f; d.fillStyle=f.color; d.fillText(f.t,W/2,cy+f.h/2+2); cy+=f.h; }); y+=hBloque; }
+    if(fFecha){ // franja de la fecha: del color de la frase (o rojo), pegada abajo del bloque
+      const cf=o.colorFrase||'#E0261B'; d.fillStyle=cf; d.fillRect((W-bw)/2,y,bw,hFecha);
+      let cy=y+14; fFecha.forEach(f=>{ d.font=f.f; d.fillStyle=claro(cf)?'#0b0b0c':'#ffffff'; d.fillText(f.t,W/2,cy+f.h/2+2); cy+=f.h; }); }
+    d.restore(); esp('0px');
+    return;
+  }
   // 1) la etiqueta grande: RESTOCK, NUEVO DROP, PREVENTA…  (en Reels, si no cabe, se parte en dos renglones grandes)
   if(o.etiqueta){ const t=String(o.etiqueta).toUpperCase(); const z=ajustar(t,F.titW,F.tit,Math.round((n===1?150:(sinCaja?136:104))*E.tit),Math.round((sinCaja?110:56)*Math.min(1,E.tit)));
     let fl=lineas(t,F.titW,F.tit,z,C.titulo);
