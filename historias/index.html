@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@500;600;700&family=Montserrat:wght@500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@500;600;700&family=Montserrat:wght@500;600;700;800;900&family=Oswald:wght@700&family=Archivo+Black&family=Archivo:wght@600&family=Poppins:wght@600;800&family=Teko:wght@600&family=Russo+One&family=Unbounded:wght@800&family=Playfair+Display:wght@800&display=swap">
 
 <style>
 :root{
@@ -140,6 +140,14 @@ label>input,label>select{margin-top:6px}
         <p class="note" style="margin:0 0 6px">Estilo</p><div class="chips" id="estilos"></div>
         <div id="dealerBox">
           <p class="note" style="margin:14px 0 6px">Tipo de letra</p><div class="chips" id="fuentes"></div>
+          <p class="note" style="margin:14px 0 6px">Fondo de los textos</p><div class="chips" id="fondoTexto"></div>
+          <p class="note" style="margin:14px 0 6px">Cajas</p><div class="chips" id="cajasEst"></div>
+          <div class="aj" style="margin-top:14px">
+            <label>Tamaño del título (RESTOCK…)<input type="range" min="0.6" max="1.6" step="0.05" id="escTit"></label>
+            <label>Tamaño del nombre y precio<input type="range" min="0.6" max="1.6" step="0.05" id="escNom"></label>
+            <label>Tamaño de la frase (Encarga con…)<input type="range" min="0.6" max="1.6" step="0.05" id="escFra"></label>
+            <button class="btn ghost sm" id="escReset">Tamaños normales</button>
+          </div>
           <p class="note" style="margin:14px 0 6px">Dónde van los textos</p><div class="chips" id="textoPos"></div>
           <p class="note" style="margin:14px 0 6px">Nombre de la marca (YoungLA, Gymshark…)</p><div class="chips" id="marcaEst"></div>
         </div>
@@ -348,11 +356,19 @@ function marcaAgua(d,o){
 }
 /* Tipos de letra del estilo Dealer (se bajan de Google Fonts; sin internet se usa la letra del aparato) */
 const FUENTES={
-  deportiva:{tit:'Anton, Impact, "Arial Narrow", sans-serif',titW:'400',txt:'Montserrat, '+SANS},
-  moderna:{tit:'Montserrat, '+SANS,titW:'900',txt:'Montserrat, '+SANS},
-  clasica:{tit:'"Bebas Neue", Impact, sans-serif',titW:'400',txt:'Inter, '+SANS},
+  // tit = letra de los títulos, del nombre y de la frase; base = tamaño del nombre; txt = letra del nombre de la marca escrito
+  deportiva:{n:'Deportiva',tit:'Anton, Impact, "Arial Narrow", sans-serif',titW:'400',base:76,txt:'Montserrat, '+SANS},
+  moderna:{n:'Moderna',tit:'Montserrat, '+SANS,titW:'900',base:56,txt:'Montserrat, '+SANS},
+  clasica:{n:'Clásica',tit:'"Bebas Neue", Impact, sans-serif',titW:'400',base:80,txt:'Inter, '+SANS},
   // como los textos de Reels: Montserrat muy gruesa, letras pegaditas, blanca con sombra y sin caja
-  reels:{tit:'Montserrat, '+SANS,titW:'800',txt:'Montserrat, '+SANS,track:'-2px',sinCaja:true}
+  reels:{n:'Reels',tit:'Montserrat, '+SANS,titW:'800',base:58,txt:'Montserrat, '+SANS,track:'-2px'},
+  oswald:{n:'Condensada',tit:'Oswald, "Arial Narrow", sans-serif',titW:'700',base:70,txt:'Oswald, '+SANS},
+  archivo:{n:'Gruesa',tit:'"Archivo Black", Impact, sans-serif',titW:'400',base:54,txt:'Archivo, '+SANS},
+  poppins:{n:'Redonda',tit:'Poppins, '+SANS,titW:'800',base:56,txt:'Poppins, '+SANS},
+  teko:{n:'Atlética',tit:'Teko, "Arial Narrow", sans-serif',titW:'600',base:84,txt:'Teko, '+SANS},
+  russo:{n:'Racing',tit:'"Russo One", Impact, sans-serif',titW:'400',base:54,txt:'Montserrat, '+SANS},
+  unbounded:{n:'Ancha',tit:'Unbounded, '+SANS,titW:'800',base:46,txt:'Unbounded, '+SANS},
+  playfair:{n:'Elegante',tit:'"Playfair Display", Georgia, serif',titW:'800',base:58,txt:'"Playfair Display", Georgia, serif'}
 };
 /* Cuántas columnas y filas lleva cada diseño */
 function rejilla(n){ return {1:[1,1],2:[1,2],4:[2,2],6:[2,3],8:[2,4]}[n]||[2,2]; }
@@ -365,14 +381,19 @@ function dibujarDealer(d,o,n,poner){
   d.fillStyle='#000000'; d.fillRect(0,0,W,H);
   ponerRejilla(poner,n,0,0,W,H,n>1?4:0);
   const F=FUENTES[o.fuente]||FUENTES.deportiva;
-  const C=Object.assign({titulo:'#ffffff',precio:'#ffffff',desc:'#ffffff',fondo:'#000000'},o.colores||{});
-  const max=W-150, cajas=[], sinCaja=!!F.sinCaja, LS0=F.track||'0px', interl=sinCaja?1.02:1.12;
+  // Fondo de los textos: negro, translúcido, blanco, crema (el de tu logo) o sin fondo con sombra
+  const FT=o.fondoTexto||'negro';
+  const C=Object.assign({titulo:'#ffffff',precio:'#ffffff',desc:'#ffffff',fondo:'#000000'},o.colores||{},
+    FT==='blanco'?{titulo:'#0b0b0c',precio:'#0b0b0c',desc:'#0b0b0c',fondo:'#ffffff'}:FT==='crema'?{titulo:'#0b0b0c',precio:'#0b0b0c',desc:'#0b0b0c',fondo:'#efe6d4'}:{});
+  const opacidadCaja=FT==='transparente'?.55:.95;
+  const E=Object.assign({tit:1,nom:1,fra:1},o.escalas||{}); // tus tamaños: título, nombre y precio, frase
+  const max=W-150, cajas=[], sinCaja=FT==='sombra', unaCaja=!sinCaja&&!!o.unaCaja, LS0=F.track||'0px', interl=sinCaja?1.02:1.12;
   const esp=v=>{ if('letterSpacing' in d) d.letterSpacing=v; };
   esp(LS0);
   const ajustar=(t,peso,fam,z,min)=>{ d.font=peso+' '+z+'px '+fam; while(z>min&&d.measureText(t).width>max){ z-=2; d.font=peso+' '+z+'px '+fam; } return z; };
   const lineas=(t,peso,fam,z,color)=>{ d.font=peso+' '+z+'px '+fam; return wrap(d,t,max).map(l=>({t:l,f:peso+' '+z+'px '+fam,h:z*interl,color})); };
   // 1) la etiqueta grande: RESTOCK, NUEVO DROP, PREVENTA…  (en Reels, si no cabe, se parte en dos renglones grandes)
-  if(o.etiqueta){ const t=String(o.etiqueta).toUpperCase(); const z=ajustar(t,F.titW,F.tit,n===1?150:(sinCaja?136:104),sinCaja?110:56);
+  if(o.etiqueta){ const t=String(o.etiqueta).toUpperCase(); const z=ajustar(t,F.titW,F.tit,Math.round((n===1?150:(sinCaja?136:104))*E.tit),Math.round((sinCaja?110:56)*Math.min(1,E.tit)));
     let fl=lineas(t,F.titW,F.tit,z,C.titulo);
     if(sinCaja&&fl.length===2){ // que los dos renglones queden parejos: "DINÁMICA / DE COMPRAS"
       const pal=t.split(/\s+/); let mejor=null;
@@ -384,13 +405,13 @@ function dibujarDealer(d,o,n,poner){
   const filas=[];
   if(o.linea1){
     const ml=o.logoMarca;
-    if(ml&&ml.im){ const iw=ml.im.width, ih=ml.im.height, w=Math.min(520,ml.alto*iw/ih), h=w*ih/iw; filas.push({logo:ml.im,w,h:h+18}); }
+    if(ml&&ml.im){ const iw=ml.im.width, ih=ml.im.height, w=Math.min(620,ml.alto*E.nom*iw/ih), h=w*ih/iw; filas.push({logo:ml.im,w,h:h+18}); }
     else if(ml&&ml.txt) filas.push({t:ml.txt,f:ml.font,h:62,color:C.titulo});
     else filas.push({t:String(o.linea1).toUpperCase(),f:'600 28px '+F.txt,h:40,color:alfa(C.desc,.8),esp:true});
   }
   const tit=(o.titulo||'').trim(), pre=(o.precio||'').trim();
   if(tit||pre){
-    const pesoN=F.titW==='400'?'400':'800', famN=F.titW==='400'?F.tit:F.txt, base=F.titW==='400'?76:56;
+    const pesoN=F.titW, famN=F.tit, base=Math.round((F.base||60)*E.nom);
     let z=base; const medir=()=>{ d.font=pesoN+' '+z+'px '+famN; return d.measureText(tit+(tit&&pre?'  ':'')+pre).width; };
     while(z>40&&medir()>max) z-=2;
     if(medir()<=max) filas.push({tit,pre,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo});
@@ -398,21 +419,25 @@ function dibujarDealer(d,o,n,poner){
   }
   if(filas.length) cajas.push({filas,px:36,py:18});
   // 3) la frase: Encarga con $500, Aparta con $500…
-  if(o.linea3) cajas.push({filas:lineas(String(o.linea3),'600',F.txt,44,C.titulo),px:36,py:16});
+  //    misma letra que el nombre, un poco más chica
+  if(o.linea3){ const t=String(o.linea3); const z=ajustar(t,F.titW,F.tit,Math.round((F.base||60)*.72*E.fra),26); cajas.push({filas:lineas(t,F.titW,F.tit,z,C.titulo),px:36,py:16}); }
   if(!cajas.length) return;
-  const GAPC=sinCaja?4:14;
+  const GAPC=sinCaja?4:unaCaja?0:14;
   if(sinCaja) cajas.forEach(c=>{ c.py=4; });
+  if(unaCaja) cajas.forEach((c,i)=>{ c.py=i===0?24:8; if(i===cajas.length-1) c.pyB=24; });
   cajas.forEach(c=>{ c.w=Math.max(...c.filas.map(f=>{ if(f.logo) return f.w; d.font=f.f; if(f.esp) esp('6px'); const w=d.measureText(f.t!=null?f.t:(f.tit+(f.tit&&f.pre?'  ':'')+f.pre)).width; esp(LS0); return w; }))+c.px*2;
-    c.h=c.filas.reduce((a,f)=>a+f.h,0)+c.py*2; });
+    c.h=c.filas.reduce((a,f)=>a+f.h,0)+c.py+(c.pyB!=null?c.pyB:c.py); });
+  if(unaCaja){ const wm=Math.max(...cajas.map(c=>c.w)); cajas.forEach(c=>{ c.w=wm; }); }
   const total=cajas.reduce((a,c)=>a+c.h,0)+GAPC*(cajas.length-1);
   const centro=o.textoPos==='abajo'?H*.8:o.textoPos==='arriba'?H*.2:H/2;
   let y=Math.max(40,Math.min(H-40-total,centro-total/2));
   d.textAlign='center'; d.textBaseline='middle';
   d.save();
   if(sinCaja){ d.shadowColor='rgba(0,0,0,.65)'; d.shadowBlur=26; d.shadowOffsetY=5; }
+  if(unaCaja){ const wm=cajas[0].w; d.fillStyle=alfa(C.fondo,opacidadCaja); d.fillRect((W-wm)/2,y,wm,total); }
   cajas.forEach(c=>{
     const x=(W-c.w)/2;
-    if(!sinCaja){ d.fillStyle=alfa(C.fondo,.95); d.fillRect(x,y,c.w,c.h); }
+    if(!sinCaja&&!unaCaja){ d.fillStyle=alfa(C.fondo,opacidadCaja); d.fillRect(x,y,c.w,c.h); }
     let cy=y+c.py;
     c.filas.forEach(f=>{ const mid=cy+f.h/2+2;
       if(f.logo){ d.drawImage(f.logo,(W-f.w)/2,cy+6,f.w,f.h-18); cy+=f.h; return; }
@@ -465,7 +490,7 @@ function dibujar(canvas,o){
   marcaAgua(d,o);
   return canvas;
 }
-g.Historia={dibujar,W,H};
+g.Historia={dibujar,W,H,FUENTES};
 })(window);
 
 </script>
@@ -485,7 +510,8 @@ if(!AJ){ AJ={tc:18,margen:60,red:10}; try{ Object.assign(AJ,JSON.parse(localStor
 function pesos(usd){ const v=num(usd)*num(AJ.tc)*(1+num(AJ.margen)/100), r=num(AJ.red)||1; return v?Math.ceil(v/r-1e-9)*r:0; }
 
 /* estado de la historia actual */
-const st=Object.assign({diseno:'4',estilo:'factura',etq:'franja',marcaPos:'arriba-der',marca:true,logoOp:'1',logoColor:'negro',paleta:'facturas',fuente:'deportiva',textoPos:'centro',marcaEst:'logo'},LS.get('estilo',{}));
+const st=Object.assign({diseno:'4',estilo:'factura',etq:'franja',marcaPos:'arriba-der',marca:true,logoOp:'1',logoColor:'negro',paleta:'facturas',fuente:'deportiva',textoPos:'centro',marcaEst:'logo',fondoTexto:'negro',unaCaja:false},LS.get('estilo',{}));
+st.escalas=Object.assign({tit:1,nom:1,fra:1},st.escalas||{});
 const MAXF=8, vacias=()=>Array(MAXF).fill(null), ajVacios=()=>Array.from({length:MAXF},()=>({}));
 let fotos=vacias(), ajustes=ajVacios(), sel=-1, cola=[], mxnManual=false;
 let serieColores=null; // fotos de "colores disponibles" que siguen después de la portada (Armar serie)
@@ -542,7 +568,10 @@ function chips(el,ops,val,key){ el.innerHTML=ops.map(o=>'<button type="button" c
 function pintarOpciones(){
   chips($('#disenos'),[['1','1 foto'],['2','2 fotos'],['4','4 fotos'],['6','6 fotos'],['8','8 fotos']],st.diseno,'dis');
   chips($('#estilos'),[['dealer','Dealer (cajas negras)'],['factura','Como mis facturas'],['blanco','Franja blanca'],['negro','Franja negra']],st.estilo,'est');
-  chips($('#fuentes'),[['deportiva','Deportiva'],['moderna','Moderna'],['clasica','Clásica'],['reels','Reels (sin caja)']],st.fuente,'fte');
+  $('#fuentes').innerHTML=Object.entries(Historia.FUENTES).map(([k,v])=>'<button type="button" class="chip'+(st.fuente===k?' on':'')+'" data-fte="'+k+'" style="font-family:'+esc(v.tit)+';font-weight:'+v.titW+'">'+esc(v.n)+'</button>').join('');
+  chips($('#cajasEst'),[['separadas','Separadas'],['una','Una sola']],st.unaCaja?'una':'separadas','caj');
+  $('#escTit').value=st.escalas.tit; $('#escNom').value=st.escalas.nom; $('#escFra').value=st.escalas.fra;
+  chips($('#fondoTexto'),[['negro','Negro'],['transparente','Translúcido'],['blanco','Blanco'],['crema','Crema'],['sombra','Sin fondo (sombra)']],st.fondoTexto,'ftx');
   chips($('#textoPos'),[['arriba','Arriba'],['centro','Al centro'],['abajo','Abajo']],st.textoPos,'tpos');
   chips($('#marcaEst'),[['logo','Con su logo'],['texto','Escrita'],['no','No ponerla']],st.marcaEst,'mest');
   $('#dealerBox').hidden=st.estilo!=='dealer'; $('#etqBox').hidden=st.estilo!=='factura';
@@ -566,9 +595,9 @@ function pintarSlots(){
 function opciones(){
   return {diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
     linea1:st.estilo==='dealer'&&st.marcaEst==='no'?'':$('#tLinea1').value.trim(),
-    logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value,colores().titulo||'#ffffff'):null,titulo:$('#tTitulo').value.trim().toUpperCase(),precio:precioTxt(),
+    logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value,st.fondoTexto==='blanco'||st.fondoTexto==='crema'?'#0b0b0c':(colores().titulo||'#ffffff')):null,titulo:$('#tTitulo').value.trim().toUpperCase(),precio:precioTxt(),
     linea3:$('#tDesc').value.trim(),etiqueta:$('#tEtiqueta').value.trim(),
-    marca:st.marca?marca:null,marcaPos:st.marcaPos,marcaOpacidad:num(st.logoOp)||1,marcaColor:st.logoColor,etqEstilo:st.estilo==='factura'?st.etq:'rojo',colores:colores(),fuente:st.fuente,textoPos:st.textoPos};
+    marca:st.marca?marca:null,marcaPos:st.marcaPos,marcaOpacidad:num(st.logoOp)||1,marcaColor:st.logoColor,etqEstilo:st.estilo==='factura'?st.etq:'rojo',colores:colores(),fuente:st.fuente,textoPos:st.textoPos,fondoTexto:st.fondoTexto,unaCaja:st.unaCaja,escalas:st.escalas};
 }
 function precioTxt(){ if($('#tSinPrecio').checked) return ''; const v=num($('#tMxn').value); return v?'$'+Math.round(v).toLocaleString('en-US'):''; }
 let raf=0;
@@ -602,7 +631,9 @@ $('#ajReset').addEventListener('click',()=>{ ajustes[sel]={}; pintarSlots(); pre
 document.addEventListener('click',e=>{
   const d=e.target.closest('[data-dis]'); if(d){ st.diseno=d.dataset.dis; sel=-1; LS.set('estilo',st); pintarOpciones(); pintarSlots(); previa(); return; }
   const es=e.target.closest('[data-est]'); if(es){ st.estilo=es.dataset.est; if(st.estilo==='dealer'&&st.paleta==='facturas') st.paleta='negro'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
-  const ft=e.target.closest('[data-fte]'); if(ft){ st.fuente=ft.dataset.fte; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const cj=e.target.closest('[data-caj]'); if(cj){ st.unaCaja=cj.dataset.caj==='una'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const fx=e.target.closest('[data-ftx]'); if(fx){ st.fondoTexto=fx.dataset.ftx; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const ft=e.target.closest('[data-fte]'); if(ft){ st.fuente=ft.dataset.fte; if(st.fuente==='reels') st.fondoTexto='sombra'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const me=e.target.closest('[data-mest]'); if(me){ st.marcaEst=me.dataset.mest; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const tp=e.target.closest('[data-tpos]'); if(tp){ st.textoPos=tp.dataset.tpos; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const pl=e.target.closest('[data-pal]'); if(pl){ if(pl.dataset.pal==='personal'&&st.paleta!=='personal') st.colores=Object.assign({},colores()); st.paleta=pl.dataset.pal; LS.set('estilo',st); chipsPaleta(); previa(); return; }
@@ -617,6 +648,8 @@ document.addEventListener('click',e=>{
 [['cTit','titulo'],['cPre','precio'],['cDes','desc'],['cFon','fondo'],['cEtq','etiqueta']].forEach(([id,k])=>$('#'+id).addEventListener('input',()=>{ st.colores=Object.assign({},st.colores||{},{[k]:$('#'+id).value}); LS.set('estilo',st); previa(); }));
 $('#tUsd').addEventListener('input',()=>{ calcular(); previa(); });
 $('#tSinPrecio').addEventListener('change',previa);
+[['escTit','tit'],['escNom','nom'],['escFra','fra']].forEach(([id,k])=>$('#'+id).addEventListener('input',()=>{ st.escalas[k]=num($('#'+id).value)||1; LS.set('estilo',st); previa(); }));
+$('#escReset').addEventListener('click',()=>{ st.escalas={tit:1,nom:1,fra:1}; LS.set('estilo',st); pintarOpciones(); previa(); });
 $('#tMxn').addEventListener('input',()=>{ mxnManual=$('#tMxn').value.trim()!==''; calcular(); previa(); });
 
 /* lista y guardar */
@@ -826,7 +859,7 @@ function logoBlanco(im){ const c=document.createElement('canvas'); c.width=im.na
 Promise.all([marca.negro.decode().catch(()=>{}),marca.crema.decode().catch(()=>{})]).then(()=>{ try{ if(marca.negro.naturalWidth) marca.blanco=logoBlanco(marca.negro); }catch(e){} previa(); });
 document.fonts&&document.fonts.ready.then(previa);
 // Las letras del estilo Dealer solo se usan en el dibujo, así que hay que pedirlas para que estén listas
-if(document.fonts&&document.fonts.load) Promise.all(['400 60px Anton','400 60px "Bebas Neue"','600 40px Montserrat','800 40px Montserrat','900 40px Montserrat','600 40px Inter'].map(f=>document.fonts.load(f).catch(()=>{}))).then(previa);
+if(document.fonts&&document.fonts.load) Promise.all(['400 60px Anton','400 60px "Bebas Neue"','600 40px Montserrat','800 40px Montserrat','900 40px Montserrat','600 40px Inter','700 40px Oswald','400 40px "Archivo Black"','800 40px Poppins','600 40px Teko','400 40px "Russo One"','800 40px Unbounded','800 40px "Playfair Display"'].map(f=>document.fonts.load(f).catch(()=>{}))).then(previa);
 leerHash(); leerCatHash();
 })();
 </script>
