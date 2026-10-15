@@ -470,7 +470,7 @@ function dibujarDealer(d,o,n,poner){
     // sin colección, el logo de la marca sale más grande para que la marca sea la protagonista
     if(ml&&ml.im){ const iw=ml.im.width, ih=ml.im.height, w=Math.min(820,ml.alto*E.nom*(o.logoMarcaTam||1.3)*(col?1:1.35)*iw/ih); lg={w,h:w*ih/iw,ml}; }
     const total=(lg?lg.h+18:0)+hBloque+hFecha;
-    const centro=o.textoPos==='arriba'?H*.24:o.textoPos==='abajo'?H*.8:H*.72;
+    const centro=o.textoPos==='arriba'?H*.22:o.textoPos==='abajo'?H*.82:H*.5;
     let y=Math.max(40,Math.min(H-40-total,centro-total/2));
     d.textAlign='center'; d.textBaseline='middle';
     if(lg){ // el logo suelto: negro si atrás es claro, blanco si es oscuro (o el color que fijes)
