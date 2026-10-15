@@ -12,6 +12,9 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-title" content="Historias">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@500;600;700&family=Montserrat:wght@500;600;700;800;900&display=swap">
 
 <style>
 :root{
@@ -102,6 +105,7 @@ label>input,label>select{margin-top:6px}
         <div class="slots" id="slots"></div>
         <input type="file" id="fileIn" accept="image/*" multiple class="sr">
         <p class="note">Toca un cuadro para poner foto. Puedes elegir varias a la vez y se acomodan en orden.</p>
+        <p class="note" id="serieNota" hidden style="color:var(--ink);font-weight:600"></p>
         <button class="btn ghost full" id="btnDelCat" style="margin-top:10px">🏷️ Usar un producto de mi Catálogo</button>
         <div class="aj" id="ajBox" hidden>
           <div class="chips" style="margin-bottom:10px" id="modos"></div>
@@ -121,9 +125,10 @@ label>input,label>select{margin-top:6px}
           <label>Precio en pesos<input id="tMxn" inputmode="decimal" placeholder="Se calcula solo" autocomplete="off"></label>
         </div>
         <p class="calc" id="calc"></p>
-        <label>Descripción <span class="opt">(opcional)</span><input id="tDesc" placeholder="ordena con $500 · líquidas en 2 semanas" autocomplete="off"></label>
+        <label style="display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;margin:-4px 0 12px"><input type="checkbox" id="tSinPrecio" style="width:20px;height:20px;margin:0"> Ocultar el precio en esta historia</label>
+        <label>Frase <span class="opt">(opcional)</span><input id="tDesc" placeholder="Encarga con $500" autocomplete="off"></label>
         <div class="chips frases" id="frases"></div>
-        <label>Etiqueta <span class="opt">(opcional)</span><input id="tEtiqueta" placeholder="PREVIEW RESTOCK 13 de octubre" autocomplete="off"></label>
+        <label>Etiqueta <span class="opt">(opcional · en el estilo Dealer va grande)</span><input id="tEtiqueta" placeholder="RESTOCK 13 DE OCTUBRE" autocomplete="off"></label>
         <div class="chips frases" id="etiquetas"></div>
         <label style="margin-top:6px">Link de la marca <span class="opt">(para recomprar rápido)</span><input id="tLink" inputmode="url" placeholder="https://www.youngla.com/products/…" autocomplete="off" autocapitalize="off"></label>
         <button class="btn ghost full" id="btnACat">🏷️ Guardar también en mi Catálogo</button>
@@ -132,7 +137,12 @@ label>input,label>select{margin-top:6px}
 
       <section class="card">
         <h2>3. Estilo</h2>
-        <p class="note" style="margin:0 0 6px">Franja</p><div class="chips" id="estilos"></div>
+        <p class="note" style="margin:0 0 6px">Estilo</p><div class="chips" id="estilos"></div>
+        <div id="dealerBox">
+          <p class="note" style="margin:14px 0 6px">Tipo de letra</p><div class="chips" id="fuentes"></div>
+          <p class="note" style="margin:14px 0 6px">Dónde van los textos</p><div class="chips" id="textoPos"></div>
+          <p class="note" style="margin:14px 0 6px">Nombre de la marca (YoungLA, Gymshark…)</p><div class="chips" id="marcaEst"></div>
+        </div>
         <div id="colBox"><p class="note" style="margin:14px 0 6px">Colores (letras, fondo y etiqueta)</p><div class="chips" id="paletas"></div>
           <div class="grid2" id="colCustom" style="grid-template-columns:repeat(3,1fr);margin-top:10px" hidden>
             <label>Nombre<input type="color" id="cTit" style="min-height:44px;padding:4px"></label>
@@ -141,7 +151,7 @@ label>input,label>select{margin-top:6px}
             <label>Fondo<input type="color" id="cFon" style="min-height:44px;padding:4px"></label>
             <label>Etiqueta<input type="color" id="cEtq" style="min-height:44px;padding:4px"></label>
           </div></div>
-        <p class="note" style="margin:14px 0 6px">Etiqueta (preview, restock…)</p><div class="chips" id="etqEst"></div>
+        <div id="etqBox"><p class="note" style="margin:14px 0 6px">Etiqueta (preview, restock…)</p><div class="chips" id="etqEst"></div></div>
         <p class="note" style="margin:14px 0 6px">Tu logo</p><div class="chips" id="logos"></div>
         <p class="note" style="margin:14px 0 6px">Qué tan fuerte se ve tu logo</p><div class="chips" id="logoOp"></div>
         <p class="note" style="margin:14px 0 6px">Color de tu logo</p><div class="chips" id="logoCol"></div>
@@ -336,21 +346,111 @@ function marcaAgua(d,o){
   }
   d.save(); d.globalAlpha=o.marcaOpacidad||1; d.drawImage(im,x,y,w,h); d.restore();
 }
-/* o = {diseno:'4'|'2'|'1', fotos:[Image], ajustes:[{zoom,x,y}], completa:bool,
-        linea1, titulo, precio, linea3, etiqueta, estilo:'negro'|'blanco'} */
+/* Tipos de letra del estilo Dealer (se bajan de Google Fonts; sin internet se usa la letra del aparato) */
+const FUENTES={
+  deportiva:{tit:'Anton, Impact, "Arial Narrow", sans-serif',titW:'400',txt:'Montserrat, '+SANS},
+  moderna:{tit:'Montserrat, '+SANS,titW:'900',txt:'Montserrat, '+SANS},
+  clasica:{tit:'"Bebas Neue", Impact, sans-serif',titW:'400',txt:'Inter, '+SANS},
+  // como los textos de Reels: Montserrat muy gruesa, letras pegaditas, blanca con sombra y sin caja
+  reels:{tit:'Montserrat, '+SANS,titW:'800',txt:'Montserrat, '+SANS,track:'-2px',sinCaja:true}
+};
+/* Cuántas columnas y filas lleva cada diseño */
+function rejilla(n){ return {1:[1,1],2:[1,2],4:[2,2],6:[2,3],8:[2,4]}[n]||[2,2]; }
+function ponerRejilla(poner,n,x0,y0,w,h,gap){
+  const [c,r]=rejilla(n), cw=(w-gap*(c-1))/c, ch=(h-gap*(r-1))/r;
+  for(let i=0;i<n;i++){ const col=i%c, row=Math.floor(i/c); poner(i,x0+col*(cw+gap),y0+row*(ch+gap),cw,ch); }
+}
+/* Estilo Dealer: fotos de orilla a orilla y los textos en cajas negras encimadas, como en tus historias de Instagram */
+function dibujarDealer(d,o,n,poner){
+  d.fillStyle='#000000'; d.fillRect(0,0,W,H);
+  ponerRejilla(poner,n,0,0,W,H,n>1?4:0);
+  const F=FUENTES[o.fuente]||FUENTES.deportiva;
+  const C=Object.assign({titulo:'#ffffff',precio:'#ffffff',desc:'#ffffff',fondo:'#000000'},o.colores||{});
+  const max=W-150, cajas=[], sinCaja=!!F.sinCaja, LS0=F.track||'0px', interl=sinCaja?1.02:1.12;
+  const esp=v=>{ if('letterSpacing' in d) d.letterSpacing=v; };
+  esp(LS0);
+  const ajustar=(t,peso,fam,z,min)=>{ d.font=peso+' '+z+'px '+fam; while(z>min&&d.measureText(t).width>max){ z-=2; d.font=peso+' '+z+'px '+fam; } return z; };
+  const lineas=(t,peso,fam,z,color)=>{ d.font=peso+' '+z+'px '+fam; return wrap(d,t,max).map(l=>({t:l,f:peso+' '+z+'px '+fam,h:z*interl,color})); };
+  // 1) la etiqueta grande: RESTOCK, NUEVO DROP, PREVENTA…  (en Reels, si no cabe, se parte en dos renglones grandes)
+  if(o.etiqueta){ const t=String(o.etiqueta).toUpperCase(); const z=ajustar(t,F.titW,F.tit,n===1?150:(sinCaja?136:104),sinCaja?110:56);
+    let fl=lineas(t,F.titW,F.tit,z,C.titulo);
+    if(sinCaja&&fl.length===2){ // que los dos renglones queden parejos: "DINÁMICA / DE COMPRAS"
+      const pal=t.split(/\s+/); let mejor=null;
+      for(let i=1;i<pal.length;i++){ const a=pal.slice(0,i).join(' '), b=pal.slice(i).join(' '), m=Math.max(d.measureText(a).width,d.measureText(b).width); if(m<=max&&(!mejor||m<mejor.m)) mejor={a,b,m}; }
+      if(mejor) fl=[mejor.a,mejor.b].map(l=>({t:l,f:fl[0].f,h:fl[0].h,color:C.titulo}));
+    }
+    cajas.push({filas:fl,px:40,py:16}); }
+  // 2) marca chiquita + nombre y precio
+  const filas=[];
+  if(o.linea1){
+    const ml=o.logoMarca;
+    if(ml&&ml.im){ const iw=ml.im.width, ih=ml.im.height, w=Math.min(520,ml.alto*iw/ih), h=w*ih/iw; filas.push({logo:ml.im,w,h:h+18}); }
+    else if(ml&&ml.txt) filas.push({t:ml.txt,f:ml.font,h:62,color:C.titulo});
+    else filas.push({t:String(o.linea1).toUpperCase(),f:'600 28px '+F.txt,h:40,color:alfa(C.desc,.8),esp:true});
+  }
+  const tit=(o.titulo||'').trim(), pre=(o.precio||'').trim();
+  if(tit||pre){
+    const pesoN=F.titW==='400'?'400':'800', famN=F.titW==='400'?F.tit:F.txt, base=F.titW==='400'?76:56;
+    let z=base; const medir=()=>{ d.font=pesoN+' '+z+'px '+famN; return d.measureText(tit+(tit&&pre?'  ':'')+pre).width; };
+    while(z>40&&medir()>max) z-=2;
+    if(medir()<=max) filas.push({tit,pre,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo});
+    else { filas.push(...lineas(tit,pesoN,famN,z,C.titulo)); if(pre) filas.push({tit:'',pre,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo}); }
+  }
+  if(filas.length) cajas.push({filas,px:36,py:18});
+  // 3) la frase: Encarga con $500, Aparta con $500…
+  if(o.linea3) cajas.push({filas:lineas(String(o.linea3),'600',F.txt,44,C.titulo),px:36,py:16});
+  if(!cajas.length) return;
+  const GAPC=sinCaja?4:14;
+  if(sinCaja) cajas.forEach(c=>{ c.py=4; });
+  cajas.forEach(c=>{ c.w=Math.max(...c.filas.map(f=>{ if(f.logo) return f.w; d.font=f.f; if(f.esp) esp('6px'); const w=d.measureText(f.t!=null?f.t:(f.tit+(f.tit&&f.pre?'  ':'')+f.pre)).width; esp(LS0); return w; }))+c.px*2;
+    c.h=c.filas.reduce((a,f)=>a+f.h,0)+c.py*2; });
+  const total=cajas.reduce((a,c)=>a+c.h,0)+GAPC*(cajas.length-1);
+  const centro=o.textoPos==='abajo'?H*.8:o.textoPos==='arriba'?H*.2:H/2;
+  let y=Math.max(40,Math.min(H-40-total,centro-total/2));
+  d.textAlign='center'; d.textBaseline='middle';
+  d.save();
+  if(sinCaja){ d.shadowColor='rgba(0,0,0,.65)'; d.shadowBlur=26; d.shadowOffsetY=5; }
+  cajas.forEach(c=>{
+    const x=(W-c.w)/2;
+    if(!sinCaja){ d.fillStyle=alfa(C.fondo,.95); d.fillRect(x,y,c.w,c.h); }
+    let cy=y+c.py;
+    c.filas.forEach(f=>{ const mid=cy+f.h/2+2;
+      if(f.logo){ d.drawImage(f.logo,(W-f.w)/2,cy+6,f.w,f.h-18); cy+=f.h; return; }
+      d.font=f.f;
+      if(f.t!=null){ if(f.esp) esp('6px'); d.fillStyle=f.color; d.fillText(f.t,W/2,mid); esp(LS0); }
+      else { const sep=f.tit&&f.pre?'  ':'', a=d.measureText(f.tit+sep).width, b=d.measureText(f.pre).width, x0=(W-a-b)/2;
+        d.textAlign='left'; d.fillStyle=f.color; d.fillText(f.tit+sep,x0,mid); d.fillStyle=C.precio; d.fillText(f.pre,x0+a,mid); d.textAlign='center'; }
+      cy+=f.h; });
+    y+=c.h+GAPC;
+  });
+  d.restore(); esp('0px');
+}
+/* o = {diseno:'1'|'2'|'4'|'6'|'8', fotos:[Image], ajustes:[{zoom,x,y}], completa:bool,
+        linea1, titulo, precio, linea3, etiqueta, estilo:'dealer'|'factura'|'negro'|'blanco', fuente, textoPos} */
 function dibujar(canvas,o){
   canvas.width=W; canvas.height=H;
   const d=canvas.getContext('2d'); d.imageSmoothingQuality='high';
   d.fillStyle='#ffffff'; d.fillRect(0,0,W,H);
-  const fr=o.estilo==='factura'?franjaFactura(d,o):armarFranja(d,o), fotos=(o.fotos||[]).filter(Boolean), aj=o.ajustes||[];
-  const n=o.diseno==='4'?4:o.diseno==='2'?2:1;
-  const bg=o.estilo==='blanco'?'#f2f2f2':'#ececec';
-  const poner=(i,x,y,w,h)=>{ const im=fotos[i]; if(!im){ d.fillStyle='#e5e5e5'; d.fillRect(x,y,w,h); return; }
+  const fotos=(o.fotos||[]).filter(Boolean), aj=o.ajustes||[];
+  const n=+o.diseno||1;
+  const poner=(i,x,y,w,h)=>{ const im=fotos[i];
+    if(!im){
+      if(o.estilo!=='dealer'){ d.fillStyle='#e5e5e5'; d.fillRect(x,y,w,h); return; }
+      // estilo Dealer: el hueco que sobra (5 colores en el diseño de 6) va negro con tu logo
+      d.fillStyle=fotos.length?'#000000':'#2a2a2d'; d.fillRect(x,y,w,h);
+      const lg=o.marca, li=lg&&(lg.blanco||lg.crema);
+      if(fotos.length&&li){ const lw=w*.6, lh=lw*(li.naturalHeight||li.height)/(li.naturalWidth||li.width); d.drawImage(li,x+(w-lw)/2,y+(h-lh)/2,lw,lh); }
+      return; }
     const a=aj[i]||{};
     // automático: si llenar el espacio cortaría más de un tercio de la foto, se muestra completa
     const completa=a.modo==='completa'||(a.modo!=='llenar'&&(o.completa||recorte(im,w,h)>.33));
     if(completa) contain(d,im,x,y,w,h,colorFondo(im)); else cover(d,im,x,y,w,h,a); };
-  if(n===1){
+  if(o.estilo==='dealer'){ dibujarDealer(d,o,n,poner); marcaAgua(d,o); return canvas; }
+  const fr=o.estilo==='factura'?franjaFactura(d,o):armarFranja(d,o);
+  if(n>4){
+    // 6 y 8 fotos: cuadrícula arriba y la franja abajo
+    const ph=H-fr.alto; ponerRejilla(poner,n,0,0,W,ph,GAP); pintarFranja(d,ph,fr,o); etiqueta(d,o,ph);
+  } else if(n===1){
     const ph=H-fr.alto; poner(0,0,0,W,ph); pintarFranja(d,ph,fr,o); etiqueta(d,o,ph);
   } else {
     const fy=Math.round((H-fr.alto)/2), hb=H-fy-fr.alto;
@@ -385,14 +485,40 @@ if(!AJ){ AJ={tc:18,margen:60,red:10}; try{ Object.assign(AJ,JSON.parse(localStor
 function pesos(usd){ const v=num(usd)*num(AJ.tc)*(1+num(AJ.margen)/100), r=num(AJ.red)||1; return v?Math.ceil(v/r-1e-9)*r:0; }
 
 /* estado de la historia actual */
-const st=Object.assign({diseno:'4',estilo:'factura',etq:'franja',marcaPos:'arriba-der',marca:true,logoOp:'1',logoColor:'negro',paleta:'facturas'},LS.get('estilo',{}));
-let fotos=[null,null,null,null], ajustes=[{},{},{},{}], sel=-1, cola=[], mxnManual=false;
+const st=Object.assign({diseno:'4',estilo:'factura',etq:'franja',marcaPos:'arriba-der',marca:true,logoOp:'1',logoColor:'negro',paleta:'facturas',fuente:'deportiva',textoPos:'centro',marcaEst:'logo'},LS.get('estilo',{}));
+const MAXF=8, vacias=()=>Array(MAXF).fill(null), ajVacios=()=>Array.from({length:MAXF},()=>({}));
+let fotos=vacias(), ajustes=ajVacios(), sel=-1, cola=[], mxnManual=false;
+let serieColores=null; // fotos de "colores disponibles" que siguen después de la portada (Armar serie)
 const marca={negro:new Image(),crema:new Image()}; marca.negro.src=LOGO_NEGRO; marca.crema.src=LOGO_CREMA;
+
+/* Logos de las marcas que vendes: si el campo "Marca" coincide, en el estilo Dealer va su logo en vez del nombre escrito.
+   Las que no tienen logo en archivo van con su nombre en una letra parecida a la de la marca. */
+const MARCAS=[
+  {re:/gym\s*shark/i,src:'marcas/gymshark.png',alto:40},
+  {re:/young\s*la|^yla$/i,src:'marcas/youngla.png',alto:30},
+  {re:/dfyne/i,src:'marcas/dfyne.png',alto:38},
+  {re:/controlled\s*insanity|cntrld/i,src:'marcas/controlled-insanity.png',alto:52},
+  {re:/civil\s*regime/i,src:'marcas/civil-regime.png',alto:34},
+  {re:/darc\s*sport/i,src:'marcas/darc-sport.png',alto:130},
+  {re:/breathe\s*divinity|breathedivinity/i,src:'marcas/breathe-divinity.png',alto:92}
+];
+MARCAS.forEach(m=>{ if(!m.src) return; m.img=new Image(); m.img.onload=()=>previa(); m.img.src=m.src; });
+const tintes=new Map();
+function teñir(im,color){ const k=im.src+'|'+color; if(tintes.has(k)) return tintes.get(k);
+  const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
+  const x=c.getContext('2d'); x.drawImage(im,0,0); x.globalCompositeOperation='source-in'; x.fillStyle=color; x.fillRect(0,0,c.width,c.height);
+  tintes.set(k,c); return c; }
+function logoMarcaPara(txt,color){
+  const m=MARCAS.find(x=>x.re.test(String(txt||'').trim())); if(!m) return null;
+  if(m.txt) return {txt:m.txt,font:m.font};
+  if(!m.img||!m.img.complete||!m.img.naturalWidth) return null;
+  return {im:teñir(m.img,color),alto:m.alto};
+}
 
 /* frases guardadas */
 const hoyMas=d=>{ const x=new Date(); x.setDate(x.getDate()+d); return x.getDate()+' de '+MESES[x.getMonth()]; };
-const FRASES=['ordena con $500','líquidas en 2 semanas','entrega inmediata','disp el '+hoyMas(1),'últimas piezas','todas las tallas'];
-const ETIQ=['PREVIEW RESTOCK '+hoyMas(0),'PREVIEW','RESTOCK','NUEVO DROP','OFERTA','ÚLTIMAS PIEZAS','PREVENTA'];
+const FRASES=['Encarga con $500','Aparta con $500','Pedidos por DM o WhatsApp','Sobre pedido','Entrega inmediata','Últimas piezas','Todas las tallas'];
+const ETIQ=['RESTOCK','RESTOCK '+hoyMas(1).toUpperCase(),'NUEVO DROP','NUEVA COLECCIÓN','PREVENTA','REBAJA','COLORES DISPONIBLES','PREVIEW'];
 
 const PALETAS={
   facturas:{n:'Facturas',titulo:'#f5f5f5',precio:'#46c86e',desc:'#96969b',fondo:'#161618',etiqueta:'#5a96ff'},
@@ -410,12 +536,16 @@ function chipsPaleta(){
   $('#paletas').innerHTML=Object.entries(PALETAS).map(([k,v])=>'<button type="button" class="chip'+(st.paleta===k?' on':'')+'" data-pal="'+k+'"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;'+swatch(v)+';margin-right:6px;vertical-align:-2px;box-shadow:0 0 0 1px rgba(0,0,0,.25)"></span>'+v.n+'</button>').join('')+
     '<button type="button" class="chip'+(st.paleta==='personal'?' on':'')+'" data-pal="personal">🎨 Personalizado</button>';
   $('#colCustom').hidden=st.paleta!=='personal'; const c=colores(); $('#cTit').value=c.titulo; $('#cPre').value=c.precio; $('#cDes').value=c.desc; $('#cFon').value=c.fondo; $('#cEtq').value=c.etiqueta;
-  $('#colBox').hidden=st.estilo!=='factura';
+  $('#colBox').hidden=st.estilo!=='factura'&&st.estilo!=='dealer';
 }
 function chips(el,ops,val,key){ el.innerHTML=ops.map(o=>'<button type="button" class="chip'+(val===o[0]?' on':'')+'" data-'+key+'="'+esc(o[0])+'">'+esc(o[1])+'</button>').join(''); }
 function pintarOpciones(){
-  chips($('#disenos'),[['4','4 fotos'],['2','2 fotos'],['1','1 foto']],st.diseno,'dis');
-  chips($('#estilos'),[['factura','Como mis facturas'],['blanco','Blanca'],['negro','Negra']],st.estilo,'est');
+  chips($('#disenos'),[['1','1 foto'],['2','2 fotos'],['4','4 fotos'],['6','6 fotos'],['8','8 fotos']],st.diseno,'dis');
+  chips($('#estilos'),[['dealer','Dealer (cajas negras)'],['factura','Como mis facturas'],['blanco','Franja blanca'],['negro','Franja negra']],st.estilo,'est');
+  chips($('#fuentes'),[['deportiva','Deportiva'],['moderna','Moderna'],['clasica','Clásica'],['reels','Reels (sin caja)']],st.fuente,'fte');
+  chips($('#textoPos'),[['arriba','Arriba'],['centro','Al centro'],['abajo','Abajo']],st.textoPos,'tpos');
+  chips($('#marcaEst'),[['logo','Con su logo'],['texto','Escrita'],['no','No ponerla']],st.marcaEst,'mest');
+  $('#dealerBox').hidden=st.estilo!=='dealer'; $('#etqBox').hidden=st.estilo!=='factura';
   chips($('#etqEst'),[['franja','Dentro de la franja'],['negro','Abajo, negra'],['azul','Abajo, azul']],st.etq,'etqe');
   chips($('#logos'),[['arriba-der','Arriba derecha'],['arriba-izq','Arriba izquierda'],['abajo-der','Abajo derecha'],['abajo-izq','Abajo izquierda'],['no','Sin logo']],st.marca?st.marcaPos:'no','logo');
   chips($('#logoOp'),[['0.45','Suave'],['0.7','Medio'],['1','Sólido']],st.logoOp,'lop');
@@ -428,18 +558,19 @@ function n(){ return +st.diseno; }
 function pintarSlots(){
   let h=''; for(let i=0;i<n();i++){ const f=fotos[i];
     h+='<button type="button" class="slot'+(sel===i?' sel':'')+'" data-slot="'+i+'" aria-label="Foto '+(i+1)+'">'+(f?'<img src="'+f.src+'" alt=""><span class="n">'+(i+1)+'</span>':'<span><b>+</b>Foto '+(i+1)+'</span>')+'</button>'; }
-  $('#slots').innerHTML=h; $('#slots').style.gridTemplateColumns='repeat('+Math.max(n(),2)+',minmax(0,1fr))';
+  $('#slots').innerHTML=h; $('#slots').style.gridTemplateColumns='repeat('+Math.min(Math.max(n(),2),4)+',minmax(0,1fr))';
   $('#ajBox').hidden=!(sel>=0&&fotos[sel]);
   if(sel>=0&&fotos[sel]){ const a=ajustes[sel]; $('#ajZoom').value=a.zoom||1; $('#ajX').value=a.x==null?.5:a.x; $('#ajY').value=a.y==null?.5:a.y;
     chips($('#modos'),[['','Automático'],['llenar','Llenar el cuadro'],['completa','Foto completa']],a.modo||'','modo'); }
 }
 function opciones(){
   return {diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
-    linea1:$('#tLinea1').value.trim(),titulo:$('#tTitulo').value.trim().toUpperCase(),precio:precioTxt(),
+    linea1:st.estilo==='dealer'&&st.marcaEst==='no'?'':$('#tLinea1').value.trim(),
+    logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value,colores().titulo||'#ffffff'):null,titulo:$('#tTitulo').value.trim().toUpperCase(),precio:precioTxt(),
     linea3:$('#tDesc').value.trim(),etiqueta:$('#tEtiqueta').value.trim(),
-    marca:st.marca?marca:null,marcaPos:st.marcaPos,marcaOpacidad:num(st.logoOp)||1,marcaColor:st.logoColor,etqEstilo:st.estilo==='factura'?st.etq:'rojo',colores:colores()};
+    marca:st.marca?marca:null,marcaPos:st.marcaPos,marcaOpacidad:num(st.logoOp)||1,marcaColor:st.logoColor,etqEstilo:st.estilo==='factura'?st.etq:'rojo',colores:colores(),fuente:st.fuente,textoPos:st.textoPos};
 }
-function precioTxt(){ const v=num($('#tMxn').value); return v?'$'+Math.round(v):''; }
+function precioTxt(){ if($('#tSinPrecio').checked) return ''; const v=num($('#tMxn').value); return v?'$'+Math.round(v).toLocaleString('en-US'):''; }
 let raf=0;
 function previa(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>Historia.dibujar($('#pv'),opciones())); }
 function calcular(){
@@ -470,18 +601,22 @@ $('#ajReset').addEventListener('click',()=>{ ajustes[sel]={}; pintarSlots(); pre
 /* opciones */
 document.addEventListener('click',e=>{
   const d=e.target.closest('[data-dis]'); if(d){ st.diseno=d.dataset.dis; sel=-1; LS.set('estilo',st); pintarOpciones(); pintarSlots(); previa(); return; }
-  const es=e.target.closest('[data-est]'); if(es){ st.estilo=es.dataset.est; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const es=e.target.closest('[data-est]'); if(es){ st.estilo=es.dataset.est; if(st.estilo==='dealer'&&st.paleta==='facturas') st.paleta='negro'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const ft=e.target.closest('[data-fte]'); if(ft){ st.fuente=ft.dataset.fte; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const me=e.target.closest('[data-mest]'); if(me){ st.marcaEst=me.dataset.mest; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const tp=e.target.closest('[data-tpos]'); if(tp){ st.textoPos=tp.dataset.tpos; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const pl=e.target.closest('[data-pal]'); if(pl){ if(pl.dataset.pal==='personal'&&st.paleta!=='personal') st.colores=Object.assign({},colores()); st.paleta=pl.dataset.pal; LS.set('estilo',st); chipsPaleta(); previa(); return; }
   const ee=e.target.closest('[data-etqe]'); if(ee){ st.etq=ee.dataset.etqe; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lg=e.target.closest('[data-logo]'); if(lg){ if(lg.dataset.logo==='no') st.marca=false; else { st.marca=true; st.marcaPos=lg.dataset.logo; } LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lo=e.target.closest('[data-lop]'); if(lo){ st.logoOp=lo.dataset.lop; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lc=e.target.closest('[data-lcol]'); if(lc){ st.logoColor=lc.dataset.lcol; LS.set('estilo',st); pintarOpciones(); previa(); return; }
-  const fr=e.target.closest('[data-frase]'); if(fr){ const t=$('#tDesc'); const v=t.value.trim(); t.value=v?(v+' · '+fr.dataset.frase):fr.dataset.frase; previa(); return; }
+  const fr=e.target.closest('[data-frase]'); if(fr){ const t=$('#tDesc'); const v=t.value.trim(); t.value=v&&!v.includes(fr.dataset.frase)?(v+' · '+fr.dataset.frase):fr.dataset.frase; previa(); return; }
   const et=e.target.closest('[data-etq]'); if(et){ $('#tEtiqueta').value=et.dataset.etq; previa(); return; }
 });
 ['tLinea1','tTitulo','tDesc','tEtiqueta'].forEach(id=>$('#'+id).addEventListener('input',previa));
 [['cTit','titulo'],['cPre','precio'],['cDes','desc'],['cFon','fondo'],['cEtq','etiqueta']].forEach(([id,k])=>$('#'+id).addEventListener('input',()=>{ st.colores=Object.assign({},st.colores||{},{[k]:$('#'+id).value}); LS.set('estilo',st); previa(); }));
 $('#tUsd').addEventListener('input',()=>{ calcular(); previa(); });
+$('#tSinPrecio').addEventListener('change',previa);
 $('#tMxn').addEventListener('input',()=>{ mxnManual=$('#tMxn').value.trim()!==''; calcular(); previa(); });
 
 /* lista y guardar */
@@ -499,9 +634,10 @@ $('#btnAgregar').addEventListener('click',async()=>{
   cola.push({blob,url:URL.createObjectURL(blob),nombre:nombreArchivo(cola.length+1)});
   pintarCola(); toast('Agregada · '+cola.length+(cola.length===1?' historia lista':' historias listas'));
   window.scrollTo({top:0,behavior:'smooth'});
+  if(serieColores) await pasoColores();
 });
 $('#btnNueva').addEventListener('click',()=>{
-  fotos=[null,null,null,null]; ajustes=[{},{},{},{}]; sel=-1; mxnManual=false;
+  fotos=vacias(); ajustes=ajVacios(); sel=-1; mxnManual=false; serieColores=null; notaSerie(''); $('#tSinPrecio').checked=false;
   ['tTitulo','tUsd','tMxn','tLink'].forEach(id=>$('#'+id).value=''); origen=null; notaCat();
   pintarSlots(); calcular(); previa(); toast('Lista para el siguiente producto');
 });
@@ -585,7 +721,7 @@ async function cargarDeCatalogo(id){
   (p.colores||[]).forEach(c=>{ const f=fs.find(x=>x.colorK===c.k&&!usados.has(x.id)&&!elegidas.some(e=>e.colorK===c.k)); if(f){ elegidas.push(f); usados.add(f.id); } });
   fs.forEach(f=>{ if(!usados.has(f.id)){ elegidas.push(f); usados.add(f.id); } });
   const k=Math.min(4,elegidas.length); st.diseno=k>=4?'4':k>=2?'2':'1'; LS.set('estilo',st);
-  fotos=[null,null,null,null]; ajustes=[{},{},{},{}]; sel=-1;
+  fotos=vacias(); ajustes=ajVacios(); sel=-1;
   for(let i=0;i<Math.min(n(),elegidas.length);i++){ try{ fotos[i]=await cargarArchivo(elegidas[i].blob); }catch(e){} }
   marcaOriginal=p.marca||''; $('#tLinea1').value=marcaOriginal.toLowerCase();
   $('#tTitulo').value=(p.nombre||'').toUpperCase();
@@ -650,6 +786,33 @@ async function recibirProducto(d){
   toast(srcs.length&&ok<srcs.length?'Llegó el producto; algunas fotos no se pudieron traer, ponlas a mano':'Producto cargado ✓');
 }
 window.recibirProducto=recibirProducto;
+
+/* Armar serie (desde la extensión): paso 1 la portada con 4 fotos de un color,
+   paso 2 "colores disponibles" con una foto de cada color. Entre paso y paso puedes ajustar todo. */
+function notaSerie(t){ const el=$('#serieNota'); el.textContent=t; el.hidden=!t; }
+function disenoPara(k){ return k<=1?'1':k<=2?'2':k<=4?'4':k<=6?'6':'8'; }
+async function recibirSerie(d){
+  if(!d) return;
+  fotos=vacias(); ajustes=ajVacios(); sel=-1;
+  st.diseno=disenoPara(Math.min(4,(d.fotos||[]).length||4)); LS.set('estilo',st); pintarOpciones();
+  serieColores=(d.colores||[]).filter(Boolean).slice(0,MAXF);
+  if(serieColores.length<2) serieColores=null;
+  await recibirProducto(d);
+  notaSerie(serieColores?'Serie · paso 1 de 2: la portada. Ajústala y dale "Agregar a la lista"; luego sigue la de colores disponibles.':'');
+}
+async function pasoColores(){
+  const srcs=serieColores; serieColores=null;
+  fotos=vacias(); ajustes=ajVacios(); sel=-1;
+  st.diseno=disenoPara(srcs.length); LS.set('estilo',st);
+  $('#tEtiqueta').value='COLORES DISPONIBLES';
+  pintarOpciones(); pintarSlots(); previa();
+  let ok=0;
+  for(let i=0;i<Math.min(n(),srcs.length);i++){ try{ fotos[i]=await cargarURL(srcs[i]); ok++; }catch(e){} }
+  pintarSlots(); previa();
+  notaSerie('Serie · paso 2 de 2: colores disponibles ('+ok+' colores). Revisa y dale "Agregar a la lista".');
+  toast('Ahora: colores disponibles');
+}
+window.recibirSerie=recibirSerie;
 window.addEventListener('message',e=>{ if(e.data&&e.data.tipo==='fitwearmx-producto') recibirProducto(e.data.producto); });
 function leerHash(){ const m=/[#&]d=([^&]+)/.exec(location.hash); if(!m) return; try{ const j=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/'))))); history.replaceState(null,'',location.pathname); recibirProducto(j); }catch(e){} }
 
@@ -662,6 +825,8 @@ function logoBlanco(im){ const c=document.createElement('canvas'); c.width=im.na
   c.naturalWidth=c.width; c.naturalHeight=c.height; return c; }
 Promise.all([marca.negro.decode().catch(()=>{}),marca.crema.decode().catch(()=>{})]).then(()=>{ try{ if(marca.negro.naturalWidth) marca.blanco=logoBlanco(marca.negro); }catch(e){} previa(); });
 document.fonts&&document.fonts.ready.then(previa);
+// Las letras del estilo Dealer solo se usan en el dibujo, así que hay que pedirlas para que estén listas
+if(document.fonts&&document.fonts.load) Promise.all(['400 60px Anton','400 60px "Bebas Neue"','600 40px Montserrat','800 40px Montserrat','900 40px Montserrat','600 40px Inter'].map(f=>document.fonts.load(f).catch(()=>{}))).then(previa);
 leerHash(); leerCatHash();
 })();
 </script>
