@@ -1,6 +1,6 @@
 /* Guarda las apps en el aparato para que abran sin internet.
    Cuando hay internet, revisa en segundo plano si hay una versión nueva. */
-const CACHE = 'mis-apps-v21';
+const CACHE = 'mis-apps-v22';
 const FILES = ["/", "/index.html", "/manifest.webmanifest", "/icon-180.png", "/icon-512.png", "/cotizador/", "/cotizador/index.html", "/cotizador/manifest.webmanifest", "/cotizador/icon-180.png", "/cotizador/icon-512.png", "/facturas/prueba.html", "/facturas/", "/facturas/index.html", "/facturas/manifest.webmanifest", "/facturas/icon-180.png", "/facturas/icon-512.png", "/facturas/logo.png","/clientes/prueba.html", "/clientes/", "/clientes/index.html", "/clientes/manifest.webmanifest", "/clientes/icon-180.png", "/clientes/icon-512.png", "/catalogo/prueba.html", "/catalogo/", "/catalogo/index.html", "/catalogo/manifest.webmanifest", "/catalogo/icon-180.png", "/catalogo/icon-512.png", "/historias/", "/historias/index.html", "/historias/manifest.webmanifest", "/historias/icon-180.png", "/historias/icon-512.png", "/historias/marcas/gymshark.png", "/historias/marcas/youngla.png", "/historias/marcas/dfyne.png", "/historias/marcas/controlled-insanity.png", "/historias/marcas/civil-regime.png", "/historias/marcas/darc-sport.png", "/historias/marcas/breathe-divinity.png"];
 
 self.addEventListener('install', e => {
