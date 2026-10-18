@@ -231,7 +231,7 @@ label>input,label>textarea,label>select{margin-top:6px}
       <h3>Precio</h3>
       <div class="grid2">
         <label>Costo en dólares<input data-f="costoUsd" inputmode="decimal" placeholder="40" autocomplete="off"></label>
-        <label>Margen % <span class="opt">(vacío = el de ajustes)</span><input data-f="margen" inputmode="decimal" autocomplete="off"></label>
+        <label>Multiplicador <span class="opt" id="multOpt">(vacío = el de la marca)</span><input data-f="mult" inputmode="decimal" autocomplete="off"></label>
       </div>
       <div class="price-box">
         <span class="lbl" style="display:block;margin:0">Precio de venta</span>
@@ -324,17 +324,10 @@ label>input,label>textarea,label>select{margin-top:6px}
 <div class="drawer" id="aj" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="ajTitle">
     <h2 id="ajTitle">Ajustes</h2>
-    <p>Precio = costo USD × tipo de cambio × (1 + margen). Tu margen ya incluye la importación a Monterrey.</p>
-    <div class="grid2">
-      <label>Tipo de cambio<input id="ajTc" inputmode="decimal" autocomplete="off"></label>
-      <label>Margen % por default<input id="ajMargen" inputmode="decimal" autocomplete="off"></label>
-    </div>
-    <label>Redondear precios<select id="ajRed">
-      <option value="10">Hacia arriba a la decena ($1,152 → $1,160)</option>
-      <option value="50">Hacia arriba a $50 ($1,152 → $1,200)</option>
-      <option value="1">Sin redondeo ($1,152)</option>
-    </select></label>
-    <button type="button" class="btn full" id="ajGuardar">Guardar ajustes</button>
+    <p>Precio = costo USD × multiplicador de la marca × tipo de cambio, redondeado a $50.</p>
+    <p id="ajResumen" style="font-weight:600"></p>
+    <p>El tipo de cambio, los multiplicadores, el anticipo y los envíos se cambian en <a href="../cotizador/" style="color:inherit;font-weight:700">Cotizador › Ajustes</a>. Después regresa aquí y toca:</p>
+    <button type="button" class="btn full" id="ajGuardar">Recalcular precios de todos los productos</button>
     <h2 style="font-size:20px;margin-top:14px">Tienda en internet</h2>
     <p>Publica tus productos (los que tienen “Mostrar en la tienda”) en tu página. Nunca se publican costos, márgenes, notas ni datos de tus clientes.</p>
     <div class="grid2">
@@ -365,6 +358,7 @@ label>input,label>textarea,label>select{margin-top:6px}
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="/precios.js"></script>
 <script>
 (function(){
 'use strict';
@@ -407,11 +401,18 @@ function base(e){ if(ESTADO_TXT[e]) return e; const x=extras().find(x=>x.id===e)
 function B(p){ return base(p&&p.estado); }
 function estTxt(e){ if(ESTADO_TXT[e]) return ESTADO_TXT[e]; const x=extras().find(x=>x.id===e); return x?x.nombre:'Disponible'; }
 function guardarAjustes(){ try{ localStorage.setItem(AJ_KEY,JSON.stringify(AJ)); }catch(e){} }
+/* precio = costo USD × multiplicador × tipo de cambio, redondeado a $50 (PRECIOS, se cambia en Cotizador › Ajustes).
+   Multiplicador: el de la prenda si lo escribes; si no, el de la marca; si la marca no está en la lista, el margen viejo. */
+function multDe(p){
+  if(has(p.mult)&&num(p.mult)>0) return num(p.mult);
+  const mb=PRECIOS.marca(p.marca);
+  if(mb) return mb.mult||0; // marca variable sin multiplicador: no hay precio hasta que lo escribas
+  return 1+(has(p.margen)?num(p.margen):num(AJ.margen))/100;
+}
 function precioCalc(p){
-  const usd=num(p.costoUsd); if(!usd) return 0;
-  const m=has(p.margen)?num(p.margen):num(AJ.margen), r=num(AJ.red)||1;
-  const v=usd*num(AJ.tc)*(1+m/100);
-  return Math.ceil(v/r-1e-9)*r;
+  const usd=num(p.costoUsd), m=multDe(p); if(!usd||!m) return 0;
+  const PR=PRECIOS.cargar();
+  return PRECIOS.redondear(usd*m*num(PR.tc),PR);
 }
 function precioDe(p){ return has(p.precioManual)?num(p.precioManual):precioCalc(p); }
 function precioVenta(p){ return has(p.oferta)&&num(p.oferta)>0?num(p.oferta):precioDe(p); }
@@ -461,7 +462,7 @@ let seccion='stock', filtroMarca='', filtroLinea='';
 try{ seccion=sessionStorage.getItem(CFG.db+'_sec')||'stock'; }catch(e){}
 function blankColor(nombre){ return {k:'c'+uid(),nombre:nombre||'',tallas:Object.fromEntries(TALLAS.map(t=>[t,0]))}; }
 function blank(){
-  return {id:'p'+uid(),nombre:'',marca:'',categoria:'',descripcion:'',link:'',costoUsd:'',margen:'',precioManual:'',oferta:'',
+  return {id:'p'+uid(),nombre:'',marca:'',categoria:'',descripcion:'',link:'',costoUsd:'',margen:'',mult:'',precioManual:'',oferta:'',
     linea:AJ.ultimaLinea||'',estado:'disponible',dropFecha:'',llegaFecha:'',colores:[blankColor('')],gente:[],enTienda:true,destacado:false,notas:'',
     portada:null,precio:0,createdAt:Date.now(),updatedAt:Date.now()};
 }
@@ -546,7 +547,7 @@ function renderList(){
   const sec=SECCIONES.find(s=>s[0]===seccion);
   $('#secName').textContent=sec?sec[1]:'';
   $('#secCount').textContent=rows.length===1?'1 producto':rows.length+' productos';
-  $('#subInfo').textContent='Dólar $'+num(AJ.tc).toFixed(2)+' · Margen '+num(AJ.margen)+'% · '+(productos.length===1?'1 producto':productos.length+' productos');
+  $('#subInfo').textContent='Dólar $'+num(PRECIOS.cargar().tc).toFixed(2)+' · '+(productos.length===1?'1 producto':productos.length+' productos');
   if(!rows.length){
     const vacio={stock:'Aquí aparece lo que tienes disponible para vender.',preventas:'Aquí aparecen las preventas y lo que te apartan.',drops:'Aquí aparecen los Early Access con su fecha de drop.',camino:'Aquí aparece lo que ya pediste y viene en camino.',todos:'Todavía no tienes productos. Toca “Nuevo producto”.'};
     $('#list').innerHTML='<p class="empty">'+((q||filtroMarca||filtroLinea)?'Ningún producto coincide con la búsqueda.':vacio[seccion])+'</p>'; return;
@@ -587,7 +588,7 @@ async function nuevo(){
 function mostrar(){
   document.querySelectorAll('#form [data-f]').forEach(el=>{ el.value=cur[el.dataset.f]==null?'':cur[el.dataset.f]; });
   document.querySelectorAll('#form [data-b]').forEach(el=>{ el.checked=!!cur[el.dataset.b]; });
-  $('[data-f="margen"]').placeholder=String(num(AJ.margen));
+  { const mb=PRECIOS.marca(cur.marca); $('[data-f="mult"]').placeholder=mb&&mb.mult?String(mb.mult):mb?'1.70':''; }
   renderColores(); renderFotos(); renderLineas(); renderCats(); renderEstados(); renderTallas(); renderPrecio(); renderGente(); renderOfrecer(); head();
   cerrarForm(); confirmDel(false);
   sheet.classList.add('open'); sheet.scrollTop=0; document.body.style.overflow='hidden';
@@ -629,7 +630,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 $('#form').addEventListener('input',e=>{
   if(!cur) return;
   const f=e.target.dataset.f, b=e.target.dataset.b;
-  if(f){ cur[f]=e.target.value; if(f==='nombre'||f==='link') head(); if(['costoUsd','margen','precioManual','oferta'].includes(f)) renderPrecio(); cambio(); }
+  if(f){ cur[f]=e.target.value; if(f==='nombre'||f==='link') head(); if(['costoUsd','mult','marca','precioManual','oferta'].includes(f)) renderPrecio(); cambio(); }
   else if(b){ cur[b]=e.target.checked; cambio(); }
 });
 
@@ -716,10 +717,12 @@ $('#estDelX').addEventListener('click',async()=>{
 /* precio */
 function renderPrecio(){
   const calc=precioCalc(cur), base=precioDe(cur), venta=precioVenta(cur);
-  const m=has(cur.margen)?num(cur.margen):num(AJ.margen);
+  const m=multDe(cur), tc=num(PRECIOS.cargar().tc), mb=PRECIOS.marca(cur.marca);
+  $('#multOpt').textContent=mb&&mb.variable?'(esta marca es variable: escríbelo)':mb?'(vacío = ×'+mb.mult+' de '+mb.nombre+')':'(vacío = el de la marca)';
   $('#pBig').innerHTML=venta?(money(venta)+' <span style="font-size:15px;font-weight:600">MXN</span>'+(venta<base?' <s style="font-size:16px;color:var(--muted);font-weight:500">'+money(base)+'</s>':'')):'$0';
-  $('#pCalc').textContent=num(cur.costoUsd)?('$'+num(cur.costoUsd)+' × '+num(AJ.tc)+' × '+(1+m/100).toFixed(2)+' = '+money(calc)+(has(cur.precioManual)?' (usando precio a mano)':'')):'Pon el costo en dólares para calcular el precio.';
-  const costoMx=num(cur.costoUsd)*num(AJ.tc);
+  $('#pCalc').textContent=!num(cur.costoUsd)?'Pon el costo en dólares para calcular el precio.':!m?'Escribe el multiplicador de esta prenda.':
+    ('$'+num(cur.costoUsd)+' × '+m+' × '+tc+' = $'+(Math.round(num(cur.costoUsd)*m*tc*100)/100).toLocaleString('en-US')+' → '+money(calc)+(has(cur.precioManual)?' (usando precio a mano)':''));
+  const costoMx=num(cur.costoUsd)*tc;
   $('#pGan').innerHTML=costoMx&&venta?('Te deja <b>'+money(venta-costoMx)+'</b> por pieza <span style="color:var(--muted)">(de ahí sale la importación)</span>'):'';
 }
 
@@ -988,18 +991,17 @@ $('#btnDel').addEventListener('click',async()=>{
 });
 
 /* ---------- ajustes ---------- */
-function abrirAj(){ pintarGH(); $('#ajTc').value=AJ.tc; $('#ajMargen').value=AJ.margen; $('#ajRed').value=String(AJ.red); updateBackupWarn(); $('#aj').hidden=false; }
+function abrirAj(){ pintarGH(); const PR=PRECIOS.cargar();
+  $('#ajResumen').textContent='Dólar $'+PR.tc+' · Anticipo '+PR.anticipo+' % · Envío gratis en compras mayores a $'+Number(PR.gratisMas).toLocaleString('en-US');
+  updateBackupWarn(); $('#aj').hidden=false; }
 $('#btnAjustes').addEventListener('click',abrirAj);
 $('#bkWarn').addEventListener('click',abrirAj);
 $('#ajClose').addEventListener('click',()=>{ $('#aj').hidden=true; });
 $('#aj').addEventListener('click',e=>{ if(e.target.id==='aj') $('#aj').hidden=true; });
 $('#ajGuardar').addEventListener('click',async()=>{
-  const tc=num($('#ajTc').value), m=num($('#ajMargen').value);
-  if(!(tc>0)){ toast('Pon un tipo de cambio válido'); return; }
-  AJ.tc=tc; AJ.margen=m; AJ.red=num($('#ajRed').value)||1; guardarAjustes();
-  // recalcula y guarda el precio de todos los productos
+  // recalcula y guarda el precio de todos los productos con los números del Cotizador
   for(const p of productos){ const nv=precioVenta(p); if(nv!==p.precio){ p.precio=nv; try{ await put('productos',p); }catch(e){} } }
-  $('#aj').hidden=true; renderList(); toast('Ajustes guardados: precios actualizados');
+  $('#aj').hidden=true; renderList(); toast('Precios actualizados');
 });
 
 /* ---------- publicar la tienda en GitHub ---------- */
@@ -1049,7 +1051,8 @@ async function armarTienda(){
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
       precio:venta,precioBase:base,oferta:venta<base,destacado:!!p.destacado,creado:p.createdAt||0,colores});
   }
-  return {datos:{actualizado:new Date().toISOString(),productos:lista},fotos:usadas};
+  // la tienda recibe el anticipo, el redondeo y los envíos (nunca costos ni multiplicadores)
+  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),productos:lista},fotos:usadas};
 }
 function estado(t){ $('#pubStatus').textContent=t; }
 $('#btnPublicar').addEventListener('click',async()=>{
