@@ -167,7 +167,7 @@ label>input,label>select{margin-top:6px}
           <p class="note" style="margin:14px 0 6px">Logo de la marca</p><div class="chips" id="logoLugar"></div>
           <p class="note" style="margin:14px 0 6px">Tamaño del logo de la marca</p><div class="chips" id="logoMarcaTam"></div>
           <div id="logoMarcaColorBox"><p class="note" style="margin:14px 0 6px">Color del logo de la marca</p><div class="chips" id="logoMarcaColor"></div></div>
-          <p class="note" style="margin:14px 0 6px">Color de la frase (Aparta con…)</p><div class="chips" id="colorFrase"></div>
+          <p class="note" style="margin:14px 0 6px">Color de la franja (fecha y Aparta con…)</p><div class="chips" id="colorFrase"></div>
           <p class="note" style="margin:14px 0 6px">Dónde van los textos</p><div class="chips" id="textoPos"></div>
           <p class="note" style="margin:14px 0 6px">Nombre de la marca (YoungLA, Gymshark…)</p><div class="chips" id="marcaEst"></div>
         </div>
@@ -664,7 +664,7 @@ const marca={negro:new Image(),crema:new Image()}; marca.negro.src=LOGO_NEGRO; m
 const MARCAS=[
   // n = nombre del botón; dom = dominio de su página (para reconocerla por el link si el campo Marca no coincide)
   {n:'YoungLA',re:/young\s*la|^yla$/i,dom:/youngla\.com/i,src:'marcas/youngla.png',alto:30},
-  {n:'Gymshark',re:/gym\s*shark/i,dom:/gymshark\.com/i,src:'marcas/gymshark.png',alto:70},
+  {n:'Gymshark',re:/gym\s*shark/i,dom:/gymshark\.com/i,src:'marcas/gymshark-tiburon.png',alto:140}, // solo el tiburón
   {n:'Darc Sport',re:/darc\s*sport/i,dom:/darcsport/i,src:'marcas/darc-sport.png',alto:190},
   {n:'DFYNE',re:/dfyne/i,dom:/dfyne\.com/i,src:'marcas/dfyne.png',alto:38},
   {n:'Controlled Insanity',re:/controlled\s*insanity|cntrld/i,dom:/controlledinsanity/i,src:'marcas/controlled-insanity.png',alto:120},
@@ -701,12 +701,12 @@ const NOTA_TIPO={portada:'Portada de la colección: etiqueta, fecha, logo de la 
   producto:'Cada modelo: logo de la marca, nombre, precio y frase (Aparta con $500).',
   suelto:'Un solo producto sin portada: lleva también la etiqueta (PREVENTA) y la fecha.'};
 /* Fecha: cuándo lanza, cuándo cierran pedidos o cuándo llega */
-const TIPOS_FECHA=[['cierra','Cierra el'],['lanza','Lanza el'],['llega','Llega aprox.']];
+const TIPOS_FECHA=[['cierra','Cierra el'],['lanza','Lanzamiento el'],['llega','Llega aprox.']];
 const DIAS=['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
 function fechaHistoria(){
   const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec($('#tFecha').value||''); if(!m) return '';
   const f=new Date(+m[1],+m[2]-1,+m[3]), dia=f.getDate()+' DE '+MESES[f.getMonth()].toUpperCase();
-  return st.fechaTipo==='llega'?'LLEGA APROX. EL '+dia:(st.fechaTipo==='lanza'?'LANZA EL ':'CIERRA EL ')+DIAS[f.getDay()]+' '+dia;
+  return st.fechaTipo==='llega'?'LLEGA APROX. EL '+dia:(st.fechaTipo==='lanza'?'LANZAMIENTO EL ':'CIERRA EL ')+DIAS[f.getDay()]+' '+dia;
 }
 
 const PALETAS={
