@@ -997,6 +997,23 @@ $('#catTallas').addEventListener('click',async e=>{
   toast('Se agregó '+(p.nombre||'la prenda')+(b.dataset.ct?' talla '+b.dataset.ct:''));
 });
 
+/* ---------- prenda que manda la extensión desde la página de la marca (ya cotizada) ----------
+   Se agrega a la factura abierta. Si la extensión tuvo que abrir Facturas, primero hace una factura nueva
+   (para no meter la prenda en la factura de otro cliente). */
+window.recibirPrenda=async d=>{
+  for(let i=0;i<50&&backend==='pending';i++) await new Promise(r=>setTimeout(r,100));
+  if(d.nueva){ saveNow(true); cur=newInvoice(); dirty=false; lastBlob=null; renderAll(); window.scrollTo(0,0); }
+  const it=Object.assign(blankItem(),{nombre:d.nombre||'',desc:d.desc||'',talla:d.talla||'',precio:d.precio?String(d.precio):''});
+  const last=cur.items[cur.items.length-1];
+  if(last&&!last.nombre&&!num(last.precio)&&!last.foto) cur.items[cur.items.length-1]=it; else cur.items.push(it);
+  renderItems(); changed();
+  if(d.foto){ try{ const b=await (await fetch(d.foto)).blob(); await setFoto(it,new File([b],'foto.jpg',{type:b.type||'image/jpeg'}),cur); }catch(e){} }
+  // el anticipo solo se anota como pago si ya te lo dieron
+  if(d.pagado&&num(d.anticipo)>0){ cur.anticipos.push({monto:String(d.anticipo),fecha:todayISO()}); renderAnts(); changed(); }
+  toast('Se agregó '+(d.nombre||'la prenda')+(d.talla?' talla '+d.talla:''));
+  return true;
+};
+
 /* ---------- respaldo ---------- */
 $('#bkExport').addEventListener('click',async()=>{
   saveNow(true); await q;
