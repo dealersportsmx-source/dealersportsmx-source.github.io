@@ -91,6 +91,13 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
 .chip.on{background:var(--inv-bg);color:var(--inv-ink);border-color:var(--inv-bg)}
 .tallas input.chip-in{width:84px;min-height:38px;height:38px;padding:0 10px;font-size:16px}
 .tallas input.chip-in.on{border-color:var(--ink)}
+/* descuento por prenda (escondido hasta que lo actives) */
+.dct{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
+.dct .t-l{font-size:13px;color:var(--muted);margin-right:4px}
+.dchip{min-width:44px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--ink);font-weight:600;font-size:13px;cursor:pointer}
+.dchip.on{background:var(--green);color:#fff;border-color:var(--green)}
+.dct-r{font-size:13px;font-weight:700;color:var(--green);margin-left:4px}
+.dlink{background:none;border:0;padding:4px 0;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer}
 .adj{margin-top:10px}
 .adj summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 0}
 .adj label{margin:6px 0 4px}
@@ -337,16 +344,20 @@ function normalize(inv){
   if(inv.envio==null) inv.envio='';
   return inv;
 }
+// % de descuento de una prenda (0 si no lo activaste)
+function dctoDe(it){ return Math.max(0,Math.min(100,num(it&&it.dcto))); }
 function totals(inv){
   const items=inv.items||[];
   const sub=items.reduce((a,i)=>a+num(i.precio),0);
   const envio=num(inv.envio);
+  // descuento por prenda (5 %, 10 %…) solo en las que lo actives; no toca el envío
+  const desc=Math.round(items.reduce((a,i)=>a+num(i.precio)*dctoDe(i),0))/100;
   const saldos=(inv.saldos||[]).filter(s=>num(s.monto)>0);
-  const prev=saldos.reduce((a,s)=>a+num(s.monto),0), tot=sub+envio+prev;
+  const prev=saldos.reduce((a,s)=>a+num(s.monto),0), tot=sub-desc+envio+prev;
   const ants=(inv.anticipos||[]).filter(a=>num(a.monto)>0);
   const pagado=ants.reduce((a,x)=>a+num(x.monto),0);
   const rest=Math.round((tot-pagado)*100)/100;
-  return {sub,envio,saldos,prev,tot,ants,pagado,rest,pagada:tot>0&&rest<=0};
+  return {sub,desc,envio,saldos,prev,tot,ants,pagado,rest,pagada:tot>0&&rest<=0};
 }
 function nextPedido(last){
   const m=/^(.*?)(\d+)$/.exec((last&&last.pedido)||'');
@@ -369,7 +380,7 @@ function newInvoice(){
   });
 }
 function serial(inv){
-  return JSON.parse(JSON.stringify(inv,(k,v)=>(k==='local'||k==='pending')?undefined:v));
+  return JSON.parse(JSON.stringify(inv,(k,v)=>(k==='local'||k==='pending'||k==='_verDcto')?undefined:v));
 }
 function fotoSrc(f){ if(!f) return null; return f.local||(f.id?'/_blob/'+f.id:null)||f.data||null; }
 function hasPending(inv){ return (inv.items||[]).some(i=>i.foto&&i.foto.pending); }
@@ -462,6 +473,11 @@ function itemHTML(it,i){
       TALLAS.map(t=>'<button type="button" class="chip'+(it.talla===t?' on':'')+'" data-talla="'+t+'" aria-pressed="'+(it.talla===t)+'">'+t+'</button>').join('')+
       '<input class="chip-in'+(other?' on':'')+'" data-k="tallaOtra" value="'+esc(other)+'" placeholder="Otra" aria-label="Otra talla">'+
     '</div>'+
+    // descuento escondido: solo aparece si lo activas en esta prenda
+    '<div class="dct">'+(dctoDe(it)>0||it._verDcto
+      ?'<span class="t-l">Descuento</span>'+[0,5,10].map(p=>'<button type="button" class="dchip'+(dctoDe(it)===p?' on':'')+'" data-dcto="'+p+'" aria-pressed="'+(dctoDe(it)===p)+'">'+(p?p+' %':'Sin')+'</button>').join('')+
+        (dctoDe(it)?'<span class="dct-r">Queda en '+money(num(it.precio)*(1-dctoDe(it)/100))+'</span>':'')
+      :'<button type="button" class="dlink" data-a="verdcto">+ Aplicar descuento</button>')+'</div>'+
     (src?'<details class="adj"><summary>Ajustar foto</summary>'+
       '<label>Acercar<input type="range" min="1" max="3" step="0.05" value="'+(f.zoom||1)+'" data-adj="zoom"></label>'+
       '<label>Mover a los lados<input type="range" min="0" max="1" step="0.01" value="'+(f.x==null?.5:f.x)+'" data-adj="x"></label>'+
@@ -493,7 +509,7 @@ function renderSaldos(){
 function refresh(){
   const t=totals(cur);
   $('#itemCount').textContent=cur.items.length===1?'1 prenda':cur.items.length+' prendas';
-  let h='<dt>Subtotal</dt><dd>'+money(t.sub)+'</dd><dt>Envío</dt><dd>'+money(t.envio)+'</dd>';
+  let h='<dt>Subtotal</dt><dd>'+money(t.sub)+'</dd>'+(t.desc?'<dt class="ab">Descuento cliente</dt><dd class="ab">−'+money(t.desc)+'</dd>':'')+'<dt>Envío</dt><dd>'+money(t.envio)+'</dd>';
   t.saldos.forEach(s=>{h+='<dt class="deb">Saldo anterior'+((s.concepto||'').trim()?' ('+esc(s.concepto.trim())+')':'')+'</dt><dd class="deb">'+money(s.monto)+'</dd>';});
   h+='<dt>Total</dt><dd>'+money(t.tot)+'</dd>';
   t.ants.forEach((a,k)=>{h+='<dt class="ab">'+(k?'Abono':'Anticipo')+(a.fecha?' ('+fechaCorta(a.fecha)+')':'')+'</dt><dd class="ab">−'+money(a.monto)+'</dd>';});
@@ -525,12 +541,17 @@ itemsEl.addEventListener('input',e=>{
     const v=e.target.value.trim(); it.talla=v;
     art.querySelectorAll('.chip').forEach(c=>{c.classList.remove('on');c.setAttribute('aria-pressed','false');});
     e.target.classList.toggle('on',!!v);
-  } else if(k){ it[k]=e.target.value; }
+  } else if(k){ it[k]=e.target.value;
+    if(k==='precio'){ const r=art.querySelector('.dct-r'); if(r) r.textContent='Queda en '+money(num(it.precio)*(1-dctoDe(it)/100)); } }
   else if(a&&it.foto){ it.foto[a]=parseFloat(e.target.value); const im=art.querySelector('.ph img'); if(im) im.setAttribute('style',thumbStyle(it.foto)); }
   changed();
 });
 itemsEl.addEventListener('click',e=>{
   const art=e.target.closest('.item'); if(!art) return; const i=+art.dataset.i, it=cur.items[i];
+  // descuento de esta prenda: "+ Aplicar descuento" muestra los botones; "Sin" lo quita y los vuelve a esconder
+  if(e.target.closest('[data-a="verdcto"]')){ it._verDcto=true; renderItems(); return; }
+  const dc=e.target.closest('[data-dcto]');
+  if(dc){ const p=num(dc.dataset.dcto); it.dcto=p?String(p):''; if(!p) it._verDcto=false; renderItems(); changed(); return; }
   const chip=e.target.closest('[data-talla]');
   if(chip){
     it.talla=chip.dataset.talla;
@@ -736,7 +757,9 @@ async function drawInvoice(inv){
         T(d,tl,tx+tw/2,y+133,fM(14,700),'#ffffff','center','middle'); sp(d,'0px');
       }
       T(d,price,X1-24,y+92,fA(32),K.ink,'right','middle');
-      T(d,'MXN',X1-24,y+122,fM(12,700),K.dim,'right','middle');
+      // con descuento: abajo del precio, en verde, cuánto queda
+      if(dctoDe(it)) T(d,'−'+dctoDe(it)+' %: '+money(num(it.precio)*(1-dctoDe(it)/100)),X1-24,y+124,fM(15,700),K.green,'right','middle');
+      else T(d,'MXN',X1-24,y+122,fM(12,700),K.dim,'right','middle');
       y+=ROW; L(d,X0,y,X1,y,K.line,1);
     });
     y+=36;
@@ -745,7 +768,7 @@ async function drawInvoice(inv){
   // cuentas
   const lx=X1-250, rx=X1;
   const row=(lab,val,c,lc,b)=>{ d.font=fM(18,b?700:600); T(d,ell(d,lab,lx-X0-20),lx,y,fM(18,b?700:600),lc||K.grey,'right'); T(d,val,rx,y,fM(20,700),c||K.ink,'right'); y+=44; };
-  if(items.length){ row('Subtotal productos',money(t.sub)); row('Envío',money(t.envio)); }
+  if(items.length){ row('Subtotal productos',money(t.sub)); if(t.desc) row('Descuento cliente','−'+money(t.desc),K.green,K.green); row('Envío',money(t.envio)); }
   else if(t.envio) row('Envío',money(t.envio));
   t.saldos.forEach(s=>row('Saldo anterior'+((s.concepto||'').trim()?' · '+s.concepto.trim():''),money(s.monto)));
   L(d,lx-220,y-8,rx,y-8,K.line,1); y+=8;
@@ -1003,7 +1026,7 @@ $('#catTallas').addEventListener('click',async e=>{
 window.recibirPrenda=async d=>{
   for(let i=0;i<50&&backend==='pending';i++) await new Promise(r=>setTimeout(r,100));
   if(d.nueva){ saveNow(true); cur=newInvoice(); dirty=false; lastBlob=null; renderAll(); window.scrollTo(0,0); }
-  const it=Object.assign(blankItem(),{nombre:d.nombre||'',desc:d.desc||'',talla:d.talla||'',precio:d.precio?String(d.precio):''});
+  const it=Object.assign(blankItem(),{nombre:d.nombre||'',desc:d.desc||'',talla:d.talla||'',precio:d.precio?String(d.precio):'',dcto:num(d.descuento)>0?String(num(d.descuento)):''});
   const last=cur.items[cur.items.length-1];
   if(last&&!last.nombre&&!num(last.precio)&&!last.foto) cur.items[cur.items.length-1]=it; else cur.items.push(it);
   renderItems(); changed();
