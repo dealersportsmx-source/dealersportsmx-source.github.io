@@ -256,7 +256,7 @@ label>input,label>textarea,label>select{margin-top:6px}
         <div class="grid2"><button type="button" class="btn ghost" id="estCancel">Cancelar</button><button type="button" class="btn" id="estOk">Guardar</button></div>
       </div>
       <p class="note" id="estExtraOps" hidden><button type="button" class="x" id="estRen" style="color:var(--blue)">Renombrar este estado</button> · <button type="button" class="x" id="estDelX">Quitar este estado de la lista</button></p>
-      <label id="dropWrap">Fecha y hora del drop<input data-f="dropFecha" type="datetime-local"></label>
+      <label id="dropWrap">Cierre de la preventa (fecha y hora)<input data-f="dropFecha" type="datetime-local"></label>
       <label id="llegaWrap">Fecha estimada de llegada<input data-f="llegaFecha" type="date"></label>
     </section>
 
@@ -380,7 +380,8 @@ const CATS=['Playeras','Tank tops','Compresión','Tops deportivos','Crop tops','
 const ABAJO=['Pants','Shorts','Bikers','Leggings'];
 const LINEAS=[['hombre','Hombre'],['mujer','Mujer'],['unisex','Unisex']];
 const LINEA_TXT=Object.fromEntries(LINEAS);
-const ESTADOS=[['early','Early Access'],['preventa','Preventa'],['camino','En camino'],['disponible','Disponible'],['agotado','Agotado']];
+// mismos nombres que en la tienda: early = Preventa (con fecha de cierre), preventa = Sobre pedido, disponible = Entrega inmediata
+const ESTADOS=[['early','Preventa'],['preventa','Sobre pedido'],['disponible','Entrega inmediata'],['camino','En camino'],['agotado','Agotado']];
 const ESTADO_TXT=Object.fromEntries(ESTADOS);
 const PILL={early:'early',preventa:'pre',camino:'camino',disponible:'disp',agotado:'ago'};
 const ICON={
@@ -390,7 +391,7 @@ const ICON={
   camino:'<svg viewBox="0 0 24 24"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
   todos:'<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>'
 };
-const SECCIONES=[['stock','Stock'],['preventas','Preventas'],['drops','Drops'],['camino','En camino'],['todos','Todos']];
+const SECCIONES=[['stock','Stock'],['preventas','Sobre pedido'],['drops','Preventas'],['camino','En camino'],['todos','Todos']];
 
 /* ---------- ajustes (tipo de cambio, margen, redondeo) ---------- */
 const AJ_KEY=CFG.db+'_ajustes';
@@ -505,7 +506,7 @@ function renderStats(){
   const apt=productos.reduce((a,p)=>a+apartados(p).length,0);
   const prox=productos.filter(p=>B(p)==='early'&&dropDate(p)&&dropDate(p)>=new Date()).sort((a,b)=>dropDate(a)-dropDate(b))[0];
   const cam=productos.filter(p=>B(p)==='camino').reduce((a,p)=>a+piezas(p),0);
-  const it=[['stock','En stock',pzs===1?'1 pieza':pzs+' piezas'],['preventas','Apartados',String(apt)],['drops','Próximo drop',prox?cuandoDrop(prox):'—'],['camino','En camino',cam===1?'1 pieza':cam+' piezas']];
+  const it=[['stock','En stock',pzs===1?'1 pieza':pzs+' piezas'],['preventas','Apartados',String(apt)],['drops','Próximo cierre',prox?cuandoDrop(prox):'—'],['camino','En camino',cam===1?'1 pieza':cam+' piezas']];
   $('#stats').innerHTML=it.map(x=>'<button type="button" class="stat'+(seccion===x[0]?' on':'')+'" data-sec="'+x[0]+'"><span>'+x[1]+'</span><b>'+esc(x[2])+'</b></button>').join('');
 }
 function renderTabs(){
@@ -549,7 +550,7 @@ function renderList(){
   $('#secCount').textContent=rows.length===1?'1 producto':rows.length+' productos';
   $('#subInfo').textContent='Dólar $'+num(PRECIOS.cargar().tc).toFixed(2)+' · '+(productos.length===1?'1 producto':productos.length+' productos');
   if(!rows.length){
-    const vacio={stock:'Aquí aparece lo que tienes disponible para vender.',preventas:'Aquí aparecen las preventas y lo que te apartan.',drops:'Aquí aparecen los Early Access con su fecha de drop.',camino:'Aquí aparece lo que ya pediste y viene en camino.',todos:'Todavía no tienes productos. Toca “Nuevo producto”.'};
+    const vacio={stock:'Aquí aparece lo que tienes disponible para vender.',preventas:'Aquí aparece lo que vendes sobre pedido y lo que te apartan.',drops:'Aquí aparecen tus preventas con su fecha de cierre.',camino:'Aquí aparece lo que ya pediste y viene en camino.',todos:'Todavía no tienes productos. Toca “Nuevo producto”.'};
     $('#list').innerHTML='<p class="empty">'+((q||filtroMarca||filtroLinea)?'Ningún producto coincide con la búsqueda.':vacio[seccion])+'</p>'; return;
   }
   $('#list').innerHTML=rows.map(rowHTML).join('');
@@ -673,7 +674,7 @@ $('#catDelX').addEventListener('click',()=>{
   if(!confirm('¿Quitar “'+ex.nombre+'” de la lista de categorías? Los productos que ya la tienen la conservan.')) return;
   AJ.cats=catsExtra().filter(c=>c!==ex); guardarAjustes(); renderCats(); toast('Categoría quitada de la lista');
 });
-const COMO=[['early','Drops'],['preventa','Preventas'],['camino','En camino'],['disponible','Stock']];
+const COMO=[['early','Preventa'],['preventa','Sobre pedido'],['camino','En camino'],['disponible','Entrega inmediata']];
 let estComo='early', estEdit=null;
 function renderEstados(){
   const todos=ESTADOS.concat(extras().map(x=>[x.id,x.nombre]));
