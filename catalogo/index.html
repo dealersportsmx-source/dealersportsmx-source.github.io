@@ -1118,7 +1118,7 @@ $('#inBanners').addEventListener('change',async e=>{
   const file=f.files&&f.files[0]; f.value=''; if(!file) return;
   const b=ini.banners[+f.dataset.bnfoto];
   try{
-    const blob=await comprimir(file,1600,.85), id='bn'+uid();
+    const blob=await comprimir(file,2000,.9), id='bn'+uid();
     await put('fotos',{id,productoId:'__inicio',colorK:'',fecha:Date.now(),blob});
     if(b.foto){ await delFoto(b.foto).catch(()=>{}); bnURL.delete(b.foto); }
     b.foto=id; guardarAjustes(); pintarInicio(); toast('Foto lista. Toca Publicar tienda para verla.');
@@ -1258,7 +1258,8 @@ $('#btnPublicar').addEventListener('click',async()=>{
       n++; estado('Subiendo fotos… '+n+' de '+fotos.length);
       const ya=remoto.get(f.path);
       let sha=ya&&ya.sha;
-      if(!sha){ const bytes=await jpegTienda(f.blob); sha=(await gh('/git/blobs',{method:'POST',body:{content:b64(bytes),encoding:'base64'}})).sha; }
+      if(!sha){ // banners: se suben tal cual (ya vienen en buena calidad); fotos de productos: 1200 px
+        const bytes=f.path.startsWith('fotos/bn')?new Uint8Array(await f.blob.arrayBuffer()):await jpegTienda(f.blob); sha=(await gh('/git/blobs',{method:'POST',body:{content:b64(bytes),encoding:'base64'}})).sha; }
       entradas.push({path:f.path,mode:'100644',type:'blob',sha});
     }
     entradas.push({path:'datos.json',mode:'100644',type:'blob',content:JSON.stringify(datos)});
