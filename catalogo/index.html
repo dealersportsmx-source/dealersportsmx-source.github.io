@@ -1097,39 +1097,45 @@ function destinos(){
 const bnURL=new Map();
 async function pintarInicio(){
   const ini=inicioAJ(), ops=destinos();
-  for(const b of ini.banners) if(b.foto&&!bnURL.has(b.foto)){ const f=await reqP(db.transaction('fotos').objectStore('fotos').get(b.foto)).catch(()=>null); if(f&&f.blob) bnURL.set(b.foto,URL.createObjectURL(f.blob)); else b.foto=''; }
-  $('#inBanners').innerHTML=ini.banners.map((b,i)=>{ const u=b.foto&&bnURL.get(b.foto);
-    return '<div style="border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 10px">'+
+  // cada banner: foto para teléfono (vertical) y, si quieres, otra para PC (horizontal); se ven completas, sin recortes
+  for(const b of ini.banners) for(const k of ['foto','fotoPc']) if(b[k]&&!bnURL.has(b[k])){ const f=await reqP(db.transaction('fotos').objectStore('fotos').get(b[k])).catch(()=>null); if(f&&f.blob) bnURL.set(b[k],URL.createObjectURL(f.blob)); else b[k]=''; }
+  const slot=(b,i,k,txt,med,w,h)=>{ const u=b[k]&&bnURL.get(b[k]);
+    return '<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><div style="width:'+w+'px;height:'+h+'px;border-radius:8px;background:var(--pill);overflow:hidden;flex:none;display:grid;place-items:center;font-size:11px;color:var(--muted);text-align:center">'+(u?'<img src="'+u+'" alt="" style="width:100%;height:100%;object-fit:cover">':'Sin foto')+'</div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:14px">'+txt+'</b><span class="opt" style="margin:-4px 0 2px">'+med+'</span>'+
+      '<label class="btn ghost" style="margin:0">'+(u?'Cambiar':'Poner foto')+'<input type="file" accept="image/*" class="sr" data-bnfoto="'+i+'|'+k+'"></label>'+(u?'<button type="button" class="btn ghost" data-bnsinfoto="'+i+'|'+k+'" style="margin:0">Quitar</button>':'')+'</div></div>'; };
+  $('#inBanners').innerHTML=ini.banners.map((b,i)=>'<div style="border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 10px">'+
       '<p class="lbl" style="margin:0 0 8px">Banner '+(i+1)+'</p>'+
-      '<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><div style="width:64px;height:80px;border-radius:8px;background:var(--pill);overflow:hidden;flex:none;display:grid;place-items:center;font-size:11px;color:var(--muted)">'+(u?'<img src="'+u+'" alt="" style="width:100%;height:100%;object-fit:cover">':'Sin foto')+'</div>'+
-      '<div style="display:flex;flex-direction:column;gap:6px"><label class="btn ghost" style="margin:0">'+(u?'Cambiar foto':'Poner foto')+'<input type="file" accept="image/*" class="sr" data-bnfoto="'+i+'"></label>'+(u?'<button type="button" class="btn ghost" data-bnsinfoto="'+i+'" style="margin:0">Quitar foto</button>':'')+'</div></div>'+
-      '<label>Texto <span class="opt">(corto; vacío = solo la foto)</span><input data-bntit="'+i+'" value="'+esc(b.titulo||'')+'" placeholder="Ej. Nueva colección Looney Tunes" autocomplete="off"></label>'+
+      slot(b,i,'foto','Foto para teléfono','Vertical, 1080 × 1350',64,80)+
+      slot(b,i,'fotoPc','Foto para PC (opcional)','Horizontal, 2000 × 820. Si no la pones, en PC sale la del teléfono.',96,40)+
+      '<label>Texto <span class="opt">(corto; vacío si tu imagen ya trae letras)</span><input data-bntit="'+i+'" value="'+esc(b.titulo||'')+'" placeholder="Ej. Nueva colección Looney Tunes" autocomplete="off"></label>'+
+      '<label>Botón <span class="opt">(opcional, ej. “Ver preventa”)</span><input data-bnbtn="'+i+'" value="'+esc(b.boton||'')+'" placeholder="Sin botón" autocomplete="off"></label>'+
       '<label>Al tocarlo lleva a<select data-bnir="'+i+'">'+ops.map(o=>'<option value="'+esc(o[0])+'"'+(b.ir===o[0]?' selected':'')+'>'+esc(o[1])+'</option>').join('')+(b.ir&&!ops.some(o=>o[0]===b.ir)?'<option value="'+esc(b.ir)+'" selected>'+esc(b.ir)+'</option>':'')+'</select></label>'+
-      ((b.titulo||b.foto)?'<button type="button" class="btn ghost full" data-bnborrar="'+i+'" style="margin-top:6px">Quitar este banner</button>':'')+'</div>'; }).join('');
+      ((b.titulo||b.foto||b.fotoPc||b.boton)?'<button type="button" class="btn ghost full" data-bnborrar="'+i+'" style="margin-top:6px">Quitar este banner</button>':'')+'</div>').join('');
   const cols=coleccionesCat();
   $('#inCols').innerHTML=cols.length?cols.map(([k,n])=>'<label class="check" style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-incol="'+esc(k)+'"'+(ini.colOcultas.includes(k)?'':' checked')+'> '+esc(k.replace('|',' · '))+' <span class="opt">('+n+(n===1?' prenda':' prendas')+')</span></label>').join('')
     :'<p class="note">Todavía no hay prendas con colección. Escríbela en la ficha de la prenda (campo “Colección”) o súbela con la extensión.</p>';
 }
-$('#inBanners').addEventListener('input',e=>{ const t=e.target.closest('[data-bntit]'); if(!t) return; inicioAJ().banners[+t.dataset.bntit].titulo=t.value; guardarAjustes(); });
+$('#inBanners').addEventListener('input',e=>{ const t=e.target.closest('[data-bntit],[data-bnbtn]'); if(!t) return; const b=inicioAJ().banners[+(t.dataset.bntit||t.dataset.bnbtn)];
+  if('bntit' in t.dataset) b.titulo=t.value; else b.boton=t.value; guardarAjustes(); });
+async function quitarFotoBn(b,k){ if(b[k]){ await delFoto(b[k]).catch(()=>{}); bnURL.delete(b[k]); b[k]=''; } }
 $('#inBanners').addEventListener('change',async e=>{
   const ini=inicioAJ(), s=e.target.closest('[data-bnir]');
   if(s){ ini.banners[+s.dataset.bnir].ir=s.value; guardarAjustes(); return; }
   const f=e.target.closest('[data-bnfoto]'); if(!f) return;
   const file=f.files&&f.files[0]; f.value=''; if(!file) return;
-  const b=ini.banners[+f.dataset.bnfoto];
+  const [i,k]=f.dataset.bnfoto.split('|'), b=ini.banners[+i];
   try{
     const blob=await comprimir(file,2000,.9), id='bn'+uid();
     await put('fotos',{id,productoId:'__inicio',colorK:'',fecha:Date.now(),blob});
-    if(b.foto){ await delFoto(b.foto).catch(()=>{}); bnURL.delete(b.foto); }
-    b.foto=id; guardarAjustes(); pintarInicio(); toast('Foto lista. Toca Publicar tienda para verla.');
+    await quitarFotoBn(b,k);
+    b[k]=id; guardarAjustes(); pintarInicio(); toast('Foto lista. Toca Publicar tienda para verla.');
   }catch(err){ toast('No se pudo usar esa foto'); }
 });
 $('#inBanners').addEventListener('click',async e=>{
   const ini=inicioAJ(), q=e.target.closest('[data-bnsinfoto]'), d=e.target.closest('[data-bnborrar]');
-  if(!q&&!d) return;
-  const b=ini.banners[+(q||d).dataset[q?'bnsinfoto':'bnborrar']];
-  if(b.foto){ await delFoto(b.foto).catch(()=>{}); bnURL.delete(b.foto); b.foto=''; }
-  if(d){ b.titulo=''; b.ir=''; }
+  if(q){ const [i,k]=q.dataset.bnsinfoto.split('|'); await quitarFotoBn(ini.banners[+i],k); }
+  else if(d){ const b=ini.banners[+d.dataset.bnborrar]; await quitarFotoBn(b,'foto'); await quitarFotoBn(b,'fotoPc'); b.titulo=''; b.ir=''; b.boton=''; }
+  else return;
   guardarAjustes(); pintarInicio();
 });
 $('#inCols').addEventListener('change',e=>{ const c=e.target.closest('[data-incol]'); if(!c) return; const ini=inicioAJ(), k=c.dataset.incol;
@@ -1230,11 +1236,12 @@ async function armarTienda(){
   }
   // inicio: tus banners (foto, texto y a dónde llevan) y las colecciones que escondiste
   const ini=inicioAJ(), banners=[];
+  const fotoBn=id=>{ const f=id&&fotos.find(x=>x.id===id); if(!f) return ''; const p='fotos/'+f.id+'.jpg'; usadas.push({path:p,blob:f.blob}); return p; };
   for(const b of ini.banners){
-    if(!b||(!(b.titulo||'').trim()&&!b.foto)) continue;
-    let img=''; const f=b.foto&&fotos.find(x=>x.id===b.foto);
-    if(f){ img='fotos/'+f.id+'.jpg'; usadas.push({path:img,blob:f.blob}); }
-    banners.push({titulo:(b.titulo||'').trim(),ir:b.ir||'',img});
+    if(!b||(!(b.titulo||'').trim()&&!b.foto&&!b.fotoPc)) continue;
+    const img=fotoBn(b.foto), imgPc=fotoBn(b.fotoPc);
+    // si solo hay foto para PC, en el teléfono también se usa esa
+    banners.push({titulo:(b.titulo||'').trim(),boton:(b.boton||'').trim(),ir:b.ir||'',img:img||imgPc,imgPc:img?imgPc:''});
   }
   // la tienda recibe el anticipo, el redondeo y los envíos (nunca costos ni multiplicadores)
   return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),inicio:{banners,colOcultas:ini.colOcultas.slice()},productos:lista},fotos:usadas};
