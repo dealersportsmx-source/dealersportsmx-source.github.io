@@ -1052,10 +1052,13 @@ $('#ajGuardar').addEventListener('click',async()=>{
 
 /* Juntar prendas repetidas (mismo nombre y marca): quedan en una sola con todos sus colores y fotos.
    Se queda la que tiene más colores; de las otras se pasan los colores que falten (con sus fotos) y luego se borran. */
-const normR=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+// el nombre cuenta igual aunque cambie un poco: "464 - Skyline Tees" = "Skyline Tee"
+const claveR=s=>String(s||'').split('|')[0].normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
+  .replace(/^\s*\d+\s*[-–—]?\s*/,'').replace(/[^a-z0-9]/g,'').replace(/s$/,'');
+const normR=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 function gruposRepetidos(){
   const g=new Map();
-  productos.forEach(p=>{ if(!normR(p.nombre)) return; const k=normR(p.nombre)+'|'+normR(p.marca); if(!g.has(k)) g.set(k,[]); g.get(k).push(p); });
+  productos.forEach(p=>{ if(!claveR(p.nombre)) return; const k=claveR(p.nombre)+'|'+claveR(p.marca); if(!g.has(k)) g.set(k,[]); g.get(k).push(p); });
   return [...g.values()].filter(ps=>ps.length>1);
 }
 $('#ajJuntar').addEventListener('click',async()=>{
