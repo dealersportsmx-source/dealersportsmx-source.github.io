@@ -232,7 +232,7 @@ label>input,label>textarea,label>select{margin-top:6px}
       </div>
       <datalist id="marcasList"></datalist>
       <div class="blk"><p class="lbl">Línea</p><div class="chips" id="lineas"></div></div>
-      <div class="blk"><p class="lbl">Categoría</p><div class="chips" id="cats"></div>
+      <div class="blk"><p class="lbl">Categoría</p><p class="hint" id="catAuto" style="margin:-4px 0 8px;font-size:13px"></p><div class="chips" id="cats"></div>
         <div class="form-in" id="catForm" hidden>
           <label>Nombre de la categoría<input id="catNombre" placeholder="Gorras, Calcetas, Chamarras…" autocomplete="off"></label>
           <p class="lbl">¿Qué talla del cliente usa? (para sugerirte a quién ofrecerle)</p>
@@ -397,6 +397,26 @@ const TALLAS=['XS','S','M','L','XL','2XL'];
 // los mismos nombres que los botones de HOMBRE y MUJER en la tienda (Tops/Sports bras/Bikers/Vestidos/Tenis se quedan para productos viejos)
 const CATS=['Playeras','Tank tops','Compresión','Tops deportivos','Crop tops','Bodysuits','Hoodies','Pants','Shorts','Leggings','Conjuntos','Tops','Sports bras','Bikers','Vestidos','Tenis','Accesorios'];
 const ABAJO=['Pants','Shorts','Bikers','Leggings'];
+/* Tipo de prenda según el nombre (igual que en la tienda). '' = no se reconoce: sale "Revisar tipo" para que lo elijas tú.
+   Si tú eliges la categoría a mano en la ficha, esa manda. */
+function tipoPorNombre(nombre,linea){
+  const s=String(nombre||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/cap sleeves?/g,'sleeve');
+  const t=re=>re.test(s), mujer=linea!=='hombre';
+  if(t(/\b(jugs?|bottles?|botellas?|termos?|tumblers?|shakers?|hats?|caps?|gorras?|snapbacks?|beanies?|socks?|calcetas?|calcetines|bags?|backpacks?|mochilas?|duffles?|straps?|keychains?|llaveros?|necklaces?|bracelets?|chains?|belts?|gloves?|guantes|towels?|toallas?|wallets?|briefs?|boxers?|underwear|calzones?|trusas?)\b/)) return 'Accesorios';
+  if(t(/compression|compresion/)) return 'Compresión';
+  if(t(/\b(tanks?|sleeveless|stringers?|cut-?offs?)\b/)) return 'Tank tops';
+  if(t(/hoodies?|zip-?ups?|\bzips?\b|quarter-?zips?|sweatshirts?|crewnecks?|sudaderas?/)) return 'Hoodies';
+  if(t(/leggings?/)) return 'Leggings';
+  if(t(/\b(shorts?|jorts|bikers?)\b/)) return 'Shorts';
+  if(t(/\b(pants?|joggers?|sweatpants|sweats|jeans?|trousers?|pantalon(es)?)\b/)) return 'Pants';
+  if(mujer&&t(/sports? bras?|\bbras?\b/)) return 'Tops deportivos';
+  if(mujer&&t(/\bcrop/)) return 'Crop tops';
+  if(mujer&&t(/\b(sets?|conjuntos?)\b/)) return 'Conjuntos';
+  if(t(/\b(tees?|t-?shirts?|shirts?|longsleeves?|long ?sleeves?|tops?|polos?|jerseys?|henleys?|raglans?|thermals?|flannels?|knits?|ringers?|playeras?|camisas?)\b/)) return 'Playeras';
+  return '';
+}
+const revisarTipo=p=>!p.catManual&&!tipoPorNombre(p.nombre,p.linea);
+let filtroRevisar=false;
 const LINEAS=[['hombre','Hombre'],['mujer','Mujer'],['unisex','Unisex']];
 const LINEA_TXT=Object.fromEntries(LINEAS);
 // mismos nombres que en la tienda: early = Preventa (con fecha de cierre), preventa = Sobre pedido, disponible = Entrega inmediata
@@ -537,7 +557,10 @@ function renderFilters(){
   const hayLinea=productos.some(p=>p.linea);
   if(!hayLinea) filtroLinea='';
   $('#filtLinea').innerHTML=hayLinea?[['','Todo'],['hombre','Hombre'],['mujer','Mujer']].map(l=>'<button type="button" class="chip'+(filtroLinea===l[0]?' on':'')+'" data-linea="'+l[0]+'" aria-pressed="'+(filtroLinea===l[0])+'">'+l[1]+'</button>').join(''):'';
-  $('#filters').innerHTML=marcas.length>1?[''].concat(marcas).map(m=>'<button type="button" class="chip'+(filtroMarca===m?' on':'')+'" data-marca="'+esc(m)+'">'+(m?esc(m):'Todas')+'</button>').join(''):'';
+  // "Revisar tipo": prendas cuyo nombre no dice qué son (la tienda no sabe en qué botón ponerlas)
+  const nRev=productos.filter(revisarTipo).length; if(!nRev) filtroRevisar=false;
+  $('#filters').innerHTML=(nRev?'<button type="button" class="chip'+(filtroRevisar?' on':'')+'" data-rev="1" style="border-color:var(--warn);color:'+(filtroRevisar?'':'var(--warn)')+'">Revisar tipo ('+nRev+')</button>':'')+
+    (marcas.length>1?[''].concat(marcas).map(m=>'<button type="button" class="chip'+(filtroMarca===m?' on':'')+'" data-marca="'+esc(m)+'">'+(m?esc(m):'Todas')+'</button>').join(''):'');
   $('#marcasList').innerHTML=marcas.map(m=>'<option value="'+esc(m)+'">').join('');
 }
 function rowHTML(p){
@@ -550,6 +573,7 @@ function rowHTML(p){
   if(int) pills.push('<span class="pill">'+int+(int===1?' interesado':' interesados')+'</span>');
   if(poco(p)) pills.push('<span class="pill low">Poco inventario</span>');
   if(p.destacado) pills.push('<span class="pill">⭐</span>');
+  if(revisarTipo(p)) pills.push('<span class="pill low">Revisar tipo</span>');
   const sz=t.size?[...t].map(([k,v])=>k+(v>1?'·'+v:'')).join('  '):(['disponible','agotado'].includes(p.estado)?'Sin piezas':'');
   const precio=precioVenta(p), base=precioDe(p), of=has(p.oferta)&&num(p.oferta)>0&&num(p.oferta)<base;
   const colores=(p.colores||[]).filter(c=>c.nombre).length;
@@ -559,7 +583,7 @@ function rowHTML(p){
 }
 function renderList(){
   const q=($('#q').value||'').toLowerCase().trim();
-  let rows=productos.filter(p=>enSeccion(p,seccion)&&(!filtroMarca||(p.marca||'').trim()===filtroMarca)&&(!filtroLinea||p.linea===filtroLinea||p.linea==='unisex'));
+  let rows=productos.filter(p=>(filtroRevisar?revisarTipo(p):enSeccion(p,seccion))&&(!filtroMarca||(p.marca||'').trim()===filtroMarca)&&(!filtroLinea||p.linea===filtroLinea||p.linea==='unisex'));
   if(q) rows=rows.filter(p=>[p.nombre,p.marca,p.categoria,p.descripcion,(p.colores||[]).map(c=>c.nombre).join(' ')].join(' ').toLowerCase().includes(q));
   if(seccion==='drops') rows.sort((a,b)=>(dropDate(a)||0)-(dropDate(b)||0));
   else if(seccion==='camino') rows.sort((a,b)=>(a.llegaFecha||'9').localeCompare(b.llegaFecha||'9'));
@@ -584,7 +608,9 @@ function irA(s){ seccion=s; try{ sessionStorage.setItem(CFG.db+'_sec',s); }catch
 $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-sec]'); if(b) irA(b.dataset.sec); });
 $('#stats').addEventListener('click',e=>{ const b=e.target.closest('[data-sec]'); if(b) irA(b.dataset.sec); });
 $('#filtLinea').addEventListener('click',e=>{ const b=e.target.closest('[data-linea]'); if(!b) return; filtroLinea=b.dataset.linea; renderFilters(); renderList(); });
-$('#filters').addEventListener('click',e=>{ const b=e.target.closest('[data-marca]'); if(!b) return; filtroMarca=b.dataset.marca; renderFilters(); renderList(); });
+$('#filters').addEventListener('click',e=>{
+  if(e.target.closest('[data-rev]')){ filtroRevisar=!filtroRevisar; renderFilters(); renderList(); return; }
+  const b=e.target.closest('[data-marca]'); if(!b) return; filtroMarca=b.dataset.marca; renderFilters(); renderList(); });
 $('#q').addEventListener('input',renderList);
 $('#list').addEventListener('click',e=>{ const r=e.target.closest('.row'); if(!r) return;
   if(selMode){ const id=r.dataset.id; if(sel.has(id)) sel.delete(id); else sel.add(id); r.classList.toggle('on',sel.has(id)); pintarSel(); return; }
@@ -676,7 +702,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 $('#form').addEventListener('input',e=>{
   if(!cur) return;
   const f=e.target.dataset.f, b=e.target.dataset.b;
-  if(f){ cur[f]=e.target.value; if(f==='nombre'||f==='link') head(); if(['costoUsd','mult','marca','precioManual','oferta'].includes(f)) renderPrecio(); cambio(); }
+  if(f){ cur[f]=e.target.value; if(f==='nombre'||f==='link') head(); if(f==='nombre') renderCats(); if(['costoUsd','mult','marca','precioManual','oferta'].includes(f)) renderPrecio(); cambio(); }
   else if(b){ cur[b]=e.target.checked; cambio(); }
 });
 
@@ -686,7 +712,7 @@ function renderLineas(){
 }
 $('#lineas').addEventListener('click',e=>{ const b=e.target.closest('[data-lin]'); if(!b) return;
   cur.linea=cur.linea===b.dataset.lin?'':b.dataset.lin; if(cur.linea){ AJ.ultimaLinea=cur.linea; guardarAjustes(); }
-  renderLineas(); renderOfrecer(); cambio(); });
+  renderLineas(); renderCats(); renderOfrecer(); cambio(); });
 
 /* categorías y estados */
 function catsExtra(){ return Array.isArray(AJ.cats)?AJ.cats:(AJ.cats=[]); }
@@ -697,12 +723,16 @@ function renderCats(){
     '<button type="button" class="chip" id="catAdd">+ Otra categoría</button>';
   const ex=catsExtra().find(c=>c.nombre===cur.categoria);
   $('#catExtraOps').hidden=!ex; if(ex) $('#catDelName').textContent=ex.nombre;
+  // en la tienda manda el tipo que sale del nombre, salvo que tú lo elijas aquí
+  const auto=tipoPorNombre(cur.nombre,cur.linea);
+  $('#catAuto').textContent=cur.catManual&&cur.categoria?'Elegida por ti: así sale en la tienda.':auto?'En la tienda sale como “'+auto+'” (por el nombre). Toca otra solo si está mal.':'⚠️ Por el nombre no se sabe qué es: elige la categoría.';
+  $('#catAuto').style.color=!cur.catManual&&!auto?'var(--warn)':'var(--muted)';
 }
 let catParte='arriba';
 function renderParte(){ $('#catParte').innerHTML=[['arriba','Arriba (playeras)'],['abajo','Abajo (pants)'],['tenis','Tenis'],['ninguna','Ninguna']].map(x=>'<button type="button" class="chip'+(catParte===x[0]?' on':'')+'" data-parte="'+x[0]+'">'+x[1]+'</button>').join(''); }
 $('#cats').addEventListener('click',e=>{
   if(e.target.id==='catAdd'){ catParte='arriba'; $('#catNombre').value=''; $('#catErr').hidden=true; renderParte(); $('#catForm').hidden=false; setTimeout(()=>$('#catNombre').focus(),50); return; }
-  const b=e.target.closest('[data-cat]'); if(!b) return; cur.categoria=cur.categoria===b.dataset.cat?'':b.dataset.cat; renderCats(); renderOfrecer(); cambio();
+  const b=e.target.closest('[data-cat]'); if(!b) return; cur.categoria=cur.categoria===b.dataset.cat?'':b.dataset.cat; cur.catManual=!!cur.categoria; renderCats(); renderOfrecer(); cambio();
 });
 $('#catParte').addEventListener('click',e=>{ const b=e.target.closest('[data-parte]'); if(b){ catParte=b.dataset.parte; renderParte(); } });
 $('#catCancel').addEventListener('click',()=>{ $('#catForm').hidden=true; });
@@ -712,7 +742,7 @@ $('#catOk').addEventListener('click',()=>{
   if(!n){ $('#catErr').textContent='Escribe el nombre de la categoría.'; $('#catErr').hidden=false; return; }
   if(CATS.concat(catsExtra().map(c=>c.nombre)).some(c=>c.toLowerCase()===n.toLowerCase())){ $('#catErr').textContent='Esa categoría ya existe.'; $('#catErr').hidden=false; return; }
   catsExtra().push({nombre:n,parte:catParte}); guardarAjustes();
-  cur.categoria=n; $('#catForm').hidden=true; renderCats(); renderOfrecer(); cambio(); toast('Categoría “'+n+'” agregada');
+  cur.categoria=n; cur.catManual=true; $('#catForm').hidden=true; renderCats(); renderOfrecer(); cambio(); toast('Categoría “'+n+'” agregada');
 });
 $('#catDelX').addEventListener('click',()=>{
   const ex=catsExtra().find(c=>c.nombre===cur.categoria); if(!ex) return;
@@ -1132,7 +1162,7 @@ async function armarTienda(){
     const base=precioDe(p), venta=precioVenta(p);
     lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
-      precio:venta,precioBase:base,oferta:venta<base,destacado:!!p.destacado,creado:p.createdAt||0,colores});
+      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,creado:p.createdAt||0,colores});
   }
   // la tienda recibe el anticipo, el redondeo y los envíos (nunca costos ni multiplicadores)
   return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),productos:lista},fotos:usadas};
