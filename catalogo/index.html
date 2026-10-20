@@ -231,6 +231,8 @@ label>input,label>textarea,label>select{margin-top:6px}
         <label>Link de la tienda <span class="opt">(opcional)</span><input data-f="link" inputmode="url" placeholder="https://…" autocomplete="off"><a id="linkIr" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;color:var(--blue);font-size:14px">Ir a comprar ↗</a></label>
       </div>
       <datalist id="marcasList"></datalist>
+      <label>Colección <span class="opt">(opcional: sale en el inicio de tu tienda, ej. “Looney Tunes”)</span><input data-f="coleccion" list="colsList" placeholder="Sin colección" autocomplete="off"></label>
+      <datalist id="colsList"></datalist>
       <div class="blk"><p class="lbl">Línea</p><div class="chips" id="lineas"></div></div>
       <div class="blk"><p class="lbl">Categoría</p><p class="hint" id="catAuto" style="margin:-4px 0 8px;font-size:13px"></p><div class="chips" id="cats"></div>
         <div class="form-in" id="catForm" hidden>
@@ -347,6 +349,12 @@ label>input,label>textarea,label>select{margin-top:6px}
     <p>El tipo de cambio, los multiplicadores, el anticipo y los envíos se cambian en <a href="../cotizador/" style="color:inherit;font-weight:700">Cotizador › Ajustes</a>. Después regresa aquí y toca:</p>
     <button type="button" class="btn full" id="ajGuardar">Recalcular precios de todos los productos</button>
     <button type="button" class="btn ghost full" id="ajJuntar" style="margin-top:8px">Juntar prendas repetidas</button>
+    <h2 style="font-size:20px;margin-top:14px">Inicio de la tienda</h2>
+    <p>Los anuncios grandes de arriba (hasta 3). Pon foto, texto y a dónde lleva; luego toca <b>Publicar tienda</b>. Si no llenas ninguno, salen los de siempre.</p>
+    <div id="inBanners"></div>
+    <p class="lbl" style="margin-top:14px">Colecciones en el inicio</p>
+    <p class="note" style="margin-top:0">Salen solas con la “Colección” que escribes en cada prenda. Quita la palomita a las que no quieras mostrar.</p>
+    <div id="inCols"></div>
     <h2 style="font-size:20px;margin-top:14px">Tienda en internet</h2>
     <p>Publica tus productos (los que tienen “Mostrar en la tienda”) en tu página. Nunca se publican costos, márgenes, notas ni datos de tus clientes.</p>
     <div class="grid2">
@@ -562,6 +570,7 @@ function renderFilters(){
   $('#filters').innerHTML=(nRev?'<button type="button" class="chip'+(filtroRevisar?' on':'')+'" data-rev="1" style="border-color:var(--warn);color:'+(filtroRevisar?'':'var(--warn)')+'">Revisar tipo ('+nRev+')</button>':'')+
     (marcas.length>1?[''].concat(marcas).map(m=>'<button type="button" class="chip'+(filtroMarca===m?' on':'')+'" data-marca="'+esc(m)+'">'+(m?esc(m):'Todas')+'</button>').join(''):'');
   $('#marcasList').innerHTML=marcas.map(m=>'<option value="'+esc(m)+'">').join('');
+  $('#colsList').innerHTML=[...new Set(productos.map(p=>(p.coleccion||'').trim()).filter(Boolean))].sort().map(c=>'<option value="'+esc(c)+'">').join('');
 }
 function rowHTML(p){
   const u=p.portada&&thumbURL.get(p.portada), t=tallasCon(p), n=piezas(p);
@@ -1069,7 +1078,62 @@ $('#btnDel').addEventListener('click',async()=>{
 /* ---------- ajustes ---------- */
 function abrirAj(){ pintarGH(); const PR=PRECIOS.cargar();
   $('#ajResumen').textContent='Dólar $'+PR.tc+' · Anticipo '+PR.anticipo+' % · Envío gratis en compras mayores a $'+Number(PR.gratisMas).toLocaleString('en-US');
-  updateBackupWarn(); $('#aj').hidden=false; }
+  updateBackupWarn(); pintarInicio(); $('#aj').hidden=false; }
+
+/* ---------- inicio de la tienda: banners y colecciones (los escoges tú) ----------
+   Los textos y a dónde llevan se guardan en tus ajustes (AJ.inicio); las fotos, con las demás fotos del Catálogo. */
+const LINEA_TIPOS={hombre:['Compresión','Playeras','Tank tops','Shorts','Pants','Hoodies'],mujer:['Leggings','Tops deportivos','Crop tops','Playeras','Shorts','Pants','Hoodies','Conjuntos']};
+const MARCAS_TIENDA=['YoungLA','Gymshark','Breathedivinity','Darc Sport','Civil Régime','DFYNE','Controlled Insanity','AYBL'];
+function inicioAJ(){ AJ.inicio=AJ.inicio||{}; if(!Array.isArray(AJ.inicio.banners)) AJ.inicio.banners=[]; while(AJ.inicio.banners.length<3) AJ.inicio.banners.push({titulo:'',ir:'',foto:''}); if(!Array.isArray(AJ.inicio.colOcultas)) AJ.inicio.colOcultas=[]; return AJ.inicio; }
+function coleccionesCat(){ const m=new Map(); productos.forEach(p=>{ const c=(p.coleccion||'').trim(), mk=(p.marca||'').trim(); if(!c||!mk) return; const k=mk+'|'+c; m.set(k,(m.get(k)||0)+1); }); return [...m].sort((a,b)=>a[0].localeCompare(b[0],'es')); }
+function destinos(){
+  const o=[['','No lleva a ningún lado'],['drops','Preventas'],['disponibles','Entrega inmediata']];
+  ['hombre','mujer'].forEach(l=>{ const L=l==='hombre'?'Hombre':'Mujer'; o.push(['l:'+l+'|',L+' (todo)']); LINEA_TIPOS[l].forEach(t=>o.push(['l:'+l+'|'+t,L+' › '+t])); });
+  o.push(['acc','Accesorios']);
+  [...new Set(MARCAS_TIENDA.concat(productos.map(p=>(p.marca||'').trim()).filter(Boolean)))].forEach(m=>o.push(['m:'+m,'Marca › '+m]));
+  coleccionesCat().forEach(([k])=>o.push(['c:'+k,'Colección › '+k.replace('|',' · ')]));
+  return o;
+}
+const bnURL=new Map();
+async function pintarInicio(){
+  const ini=inicioAJ(), ops=destinos();
+  for(const b of ini.banners) if(b.foto&&!bnURL.has(b.foto)){ const f=await reqP(db.transaction('fotos').objectStore('fotos').get(b.foto)).catch(()=>null); if(f&&f.blob) bnURL.set(b.foto,URL.createObjectURL(f.blob)); else b.foto=''; }
+  $('#inBanners').innerHTML=ini.banners.map((b,i)=>{ const u=b.foto&&bnURL.get(b.foto);
+    return '<div style="border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 10px">'+
+      '<p class="lbl" style="margin:0 0 8px">Banner '+(i+1)+'</p>'+
+      '<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><div style="width:64px;height:80px;border-radius:8px;background:var(--pill);overflow:hidden;flex:none;display:grid;place-items:center;font-size:11px;color:var(--muted)">'+(u?'<img src="'+u+'" alt="" style="width:100%;height:100%;object-fit:cover">':'Sin foto')+'</div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px"><label class="btn ghost" style="margin:0">'+(u?'Cambiar foto':'Poner foto')+'<input type="file" accept="image/*" class="sr" data-bnfoto="'+i+'"></label>'+(u?'<button type="button" class="btn ghost" data-bnsinfoto="'+i+'" style="margin:0">Quitar foto</button>':'')+'</div></div>'+
+      '<label>Texto <span class="opt">(corto; vacío = solo la foto)</span><input data-bntit="'+i+'" value="'+esc(b.titulo||'')+'" placeholder="Ej. Nueva colección Looney Tunes" autocomplete="off"></label>'+
+      '<label>Al tocarlo lleva a<select data-bnir="'+i+'">'+ops.map(o=>'<option value="'+esc(o[0])+'"'+(b.ir===o[0]?' selected':'')+'>'+esc(o[1])+'</option>').join('')+(b.ir&&!ops.some(o=>o[0]===b.ir)?'<option value="'+esc(b.ir)+'" selected>'+esc(b.ir)+'</option>':'')+'</select></label>'+
+      ((b.titulo||b.foto)?'<button type="button" class="btn ghost full" data-bnborrar="'+i+'" style="margin-top:6px">Quitar este banner</button>':'')+'</div>'; }).join('');
+  const cols=coleccionesCat();
+  $('#inCols').innerHTML=cols.length?cols.map(([k,n])=>'<label class="check" style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-incol="'+esc(k)+'"'+(ini.colOcultas.includes(k)?'':' checked')+'> '+esc(k.replace('|',' · '))+' <span class="opt">('+n+(n===1?' prenda':' prendas')+')</span></label>').join('')
+    :'<p class="note">Todavía no hay prendas con colección. Escríbela en la ficha de la prenda (campo “Colección”) o súbela con la extensión.</p>';
+}
+$('#inBanners').addEventListener('input',e=>{ const t=e.target.closest('[data-bntit]'); if(!t) return; inicioAJ().banners[+t.dataset.bntit].titulo=t.value; guardarAjustes(); });
+$('#inBanners').addEventListener('change',async e=>{
+  const ini=inicioAJ(), s=e.target.closest('[data-bnir]');
+  if(s){ ini.banners[+s.dataset.bnir].ir=s.value; guardarAjustes(); return; }
+  const f=e.target.closest('[data-bnfoto]'); if(!f) return;
+  const file=f.files&&f.files[0]; f.value=''; if(!file) return;
+  const b=ini.banners[+f.dataset.bnfoto];
+  try{
+    const blob=await comprimir(file,1600,.85), id='bn'+uid();
+    await put('fotos',{id,productoId:'__inicio',colorK:'',fecha:Date.now(),blob});
+    if(b.foto){ await delFoto(b.foto).catch(()=>{}); bnURL.delete(b.foto); }
+    b.foto=id; guardarAjustes(); pintarInicio(); toast('Foto lista. Toca Publicar tienda para verla.');
+  }catch(err){ toast('No se pudo usar esa foto'); }
+});
+$('#inBanners').addEventListener('click',async e=>{
+  const ini=inicioAJ(), q=e.target.closest('[data-bnsinfoto]'), d=e.target.closest('[data-bnborrar]');
+  if(!q&&!d) return;
+  const b=ini.banners[+(q||d).dataset[q?'bnsinfoto':'bnborrar']];
+  if(b.foto){ await delFoto(b.foto).catch(()=>{}); bnURL.delete(b.foto); b.foto=''; }
+  if(d){ b.titulo=''; b.ir=''; }
+  guardarAjustes(); pintarInicio();
+});
+$('#inCols').addEventListener('change',e=>{ const c=e.target.closest('[data-incol]'); if(!c) return; const ini=inicioAJ(), k=c.dataset.incol;
+  ini.colOcultas=ini.colOcultas.filter(x=>x!==k); if(!c.checked) ini.colOcultas.push(k); guardarAjustes(); });
 $('#btnAjustes').addEventListener('click',abrirAj);
 $('#bkWarn').addEventListener('click',abrirAj);
 $('#ajClose').addEventListener('click',()=>{ $('#aj').hidden=true; });
@@ -1160,12 +1224,20 @@ async function armarTienda(){
       const path='fotos/'+f.id+'.jpg'; c.fotos.push(path); usadas.push({path,blob:f.blob});
     }
     const base=precioDe(p), venta=precioVenta(p);
-    lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
+    lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),coleccion:(p.coleccion||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
       precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,creado:p.createdAt||0,colores});
   }
+  // inicio: tus banners (foto, texto y a dónde llevan) y las colecciones que escondiste
+  const ini=inicioAJ(), banners=[];
+  for(const b of ini.banners){
+    if(!b||(!(b.titulo||'').trim()&&!b.foto)) continue;
+    let img=''; const f=b.foto&&fotos.find(x=>x.id===b.foto);
+    if(f){ img='fotos/'+f.id+'.jpg'; usadas.push({path:img,blob:f.blob}); }
+    banners.push({titulo:(b.titulo||'').trim(),ir:b.ir||'',img});
+  }
   // la tienda recibe el anticipo, el redondeo y los envíos (nunca costos ni multiplicadores)
-  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),productos:lista},fotos:usadas};
+  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),inicio:{banners,colOcultas:ini.colOcultas.slice()},productos:lista},fotos:usadas};
 }
 function estado(t){ $('#pubStatus').textContent=t; }
 $('#btnPublicar').addEventListener('click',async()=>{
