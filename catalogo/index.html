@@ -328,6 +328,7 @@ label>input,label>textarea,label>select{margin-top:6px}
     <p id="ajResumen" style="font-weight:600"></p>
     <p>El tipo de cambio, los multiplicadores, el anticipo y los envíos se cambian en <a href="../cotizador/" style="color:inherit;font-weight:700">Cotizador › Ajustes</a>. Después regresa aquí y toca:</p>
     <button type="button" class="btn full" id="ajGuardar">Recalcular precios de todos los productos</button>
+    <button type="button" class="btn ghost full" id="ajJuntar" style="margin-top:8px">Juntar prendas repetidas</button>
     <h2 style="font-size:20px;margin-top:14px">Tienda en internet</h2>
     <p>Publica tus productos (los que tienen “Mostrar en la tienda”) en tu página. Nunca se publican costos, márgenes, notas ni datos de tus clientes.</p>
     <div class="grid2">
@@ -1003,6 +1004,39 @@ $('#ajGuardar').addEventListener('click',async()=>{
   // recalcula y guarda el precio de todos los productos con los números del Cotizador
   for(const p of productos){ const nv=precioVenta(p); if(nv!==p.precio){ p.precio=nv; try{ await put('productos',p); }catch(e){} } }
   $('#aj').hidden=true; renderList(); toast('Precios actualizados');
+});
+
+/* Juntar prendas repetidas (mismo nombre y marca): quedan en una sola con todos sus colores y fotos.
+   Se queda la que tiene más colores; de las otras se pasan los colores que falten (con sus fotos) y luego se borran. */
+const normR=s=>String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+function gruposRepetidos(){
+  const g=new Map();
+  productos.forEach(p=>{ if(!normR(p.nombre)) return; const k=normR(p.nombre)+'|'+normR(p.marca); if(!g.has(k)) g.set(k,[]); g.get(k).push(p); });
+  return [...g.values()].filter(ps=>ps.length>1);
+}
+$('#ajJuntar').addEventListener('click',async()=>{
+  const gs=gruposRepetidos();
+  if(!gs.length){ toast('No hay prendas repetidas'); return; }
+  const b=$('#ajJuntar'); b.disabled=true; b.textContent='Juntando…';
+  let quitadas=0;
+  try{
+    for(const ps of gs){
+      ps.sort((a,b)=>(b.colores||[]).length-(a.colores||[]).length||(a.createdAt||0)-(b.createdAt||0));
+      const queda=ps[0]; queda.colores=queda.colores||[];
+      for(const otro of ps.slice(1)){
+        const fs=await fotosDe(otro.id);
+        for(const c of otro.colores||[]){
+          if(queda.colores.some(x=>normR(x.nombre)===normR(c.nombre))) continue;
+          queda.colores.push(c);
+          for(const f of fs.filter(f=>f.colorK===c.k)){ f.productoId=queda.id; await put('fotos',f); }
+        }
+        await delProducto(otro.id); quitadas++;
+      }
+      queda.updatedAt=Date.now(); await put('productos',queda);
+    }
+    toast('Listo: junté '+gs.length+(gs.length===1?' prenda':' prendas')+' repetida'+(gs.length===1?'':'s'));
+    setTimeout(()=>location.reload(),900);
+  }catch(e){ toast('No se pudo juntar: '+(e.message||e)); b.disabled=false; b.textContent='Juntar prendas repetidas'; }
 });
 
 /* ---------- publicar la tienda en GitHub ---------- */
