@@ -1054,7 +1054,7 @@ $('#ajGuardar').addEventListener('click',async()=>{
    Se queda la que tiene más colores; de las otras se pasan los colores que falten (con sus fotos) y luego se borran. */
 // el nombre cuenta igual aunque cambie un poco: "464 - Skyline Tees" = "Skyline Tee"
 const claveR=s=>String(s||'').split('|')[0].normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
-  .replace(/^\s*\d+\s*[-–—]?\s*/,'').replace(/[^a-z0-9]/g,'').replace(/s$/,'');
+  .replace(/^\s*[a-z]?\d+\s*[-–—]?\s*/,'').replace(/[^a-z0-9]/g,'').replace(/s$/,'');
 const normR=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 function gruposRepetidos(){
   const g=new Map();
