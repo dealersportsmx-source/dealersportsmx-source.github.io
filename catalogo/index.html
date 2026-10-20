@@ -1112,14 +1112,15 @@ async function pintarInicio(){
       slot(b,i,'videoPc','Video para PC (opcional)','Horizontal, MP4, máximo 20 MB.',96,40)+
       '<label>Texto <span class="opt">(corto; vacío si tu imagen ya trae letras)</span><input data-bntit="'+i+'" value="'+esc(b.titulo||'')+'" placeholder="Ej. Nueva colección Looney Tunes" autocomplete="off"></label>'+
       '<label>Botón <span class="opt">(opcional, ej. “Ver preventa”)</span><input data-bnbtn="'+i+'" value="'+esc(b.boton||'')+'" placeholder="Sin botón" autocomplete="off"></label>'+
+      '<label>Cuenta regresiva hasta <span class="opt">(opcional: fecha y hora de cierre. Si la dejas vacía y el banner lleva a Preventas, usa el cierre de tu preventa abierta)</span><input type="datetime-local" data-bncierre="'+i+'" value="'+esc(b.cierre||'')+'"></label>'+
       '<label>Al tocarlo lleva a<select data-bnir="'+i+'">'+ops.map(o=>'<option value="'+esc(o[0])+'"'+(b.ir===o[0]?' selected':'')+'>'+esc(o[1])+'</option>').join('')+(b.ir&&!ops.some(o=>o[0]===b.ir)?'<option value="'+esc(b.ir)+'" selected>'+esc(b.ir)+'</option>':'')+'</select></label>'+
-      ((b.titulo||b.foto||b.fotoPc||b.video||b.videoPc||b.boton)?'<button type="button" class="btn ghost full" data-bnborrar="'+i+'" style="margin-top:6px">Quitar este banner</button>':'')+'</div>').join('');
+      ((b.titulo||b.foto||b.fotoPc||b.video||b.videoPc||b.boton||b.cierre)?'<button type="button" class="btn ghost full" data-bnborrar="'+i+'" style="margin-top:6px">Quitar este banner</button>':'')+'</div>').join('');
   const cols=coleccionesCat();
   $('#inCols').innerHTML=cols.length?cols.map(([k,n])=>'<label class="check" style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-incol="'+esc(k)+'"'+(ini.colOcultas.includes(k)?'':' checked')+'> '+esc(k.replace('|',' · '))+' <span class="opt">('+n+(n===1?' prenda':' prendas')+')</span></label>').join('')
     :'<p class="note">Todavía no hay prendas con colección. Escríbela en la ficha de la prenda (campo “Colección”) o súbela con la extensión.</p>';
 }
-$('#inBanners').addEventListener('input',e=>{ const t=e.target.closest('[data-bntit],[data-bnbtn]'); if(!t) return; const b=inicioAJ().banners[+(t.dataset.bntit||t.dataset.bnbtn)];
-  if('bntit' in t.dataset) b.titulo=t.value; else b.boton=t.value; guardarAjustes(); });
+$('#inBanners').addEventListener('input',e=>{ const t=e.target.closest('[data-bntit],[data-bnbtn],[data-bncierre]'); if(!t) return; const b=inicioAJ().banners[+(t.dataset.bntit||t.dataset.bnbtn||t.dataset.bncierre)];
+  if('bntit' in t.dataset) b.titulo=t.value; else if('bnbtn' in t.dataset) b.boton=t.value; else b.cierre=t.value; guardarAjustes(); });
 async function quitarFotoBn(b,k){ if(b[k]){ await delFoto(b[k]).catch(()=>{}); bnURL.delete(b[k]); b[k]=''; } }
 $('#inBanners').addEventListener('change',async e=>{
   const ini=inicioAJ(), s=e.target.closest('[data-bnir]');
@@ -1141,7 +1142,7 @@ $('#inBanners').addEventListener('change',async e=>{
 $('#inBanners').addEventListener('click',async e=>{
   const ini=inicioAJ(), q=e.target.closest('[data-bnsinfoto]'), d=e.target.closest('[data-bnborrar]');
   if(q){ const [i,k]=q.dataset.bnsinfoto.split('|'); await quitarFotoBn(ini.banners[+i],k); }
-  else if(d){ const b=ini.banners[+d.dataset.bnborrar]; for(const k of ['foto','fotoPc','video','videoPc']) await quitarFotoBn(b,k); b.titulo=''; b.ir=''; b.boton=''; }
+  else if(d){ const b=ini.banners[+d.dataset.bnborrar]; for(const k of ['foto','fotoPc','video','videoPc']) await quitarFotoBn(b,k); b.titulo=''; b.ir=''; b.boton=''; b.cierre=''; }
   else return;
   guardarAjustes(); pintarInicio();
 });
@@ -1248,7 +1249,7 @@ async function armarTienda(){
     if(!b||(!(b.titulo||'').trim()&&!b.foto&&!b.fotoPc&&!b.video&&!b.videoPc)) continue;
     const img=fotoBn(b.foto), imgPc=fotoBn(b.fotoPc);
     // si solo hay foto para PC, en el teléfono también se usa esa
-    banners.push({titulo:(b.titulo||'').trim(),boton:(b.boton||'').trim(),ir:b.ir||'',img:img||imgPc,imgPc:img?imgPc:'',video:fotoBn(b.video),videoPc:fotoBn(b.videoPc)});
+    banners.push({titulo:(b.titulo||'').trim(),boton:(b.boton||'').trim(),cierre:b.cierre||'',ir:b.ir||'',img:img||imgPc,imgPc:img?imgPc:'',video:fotoBn(b.video),videoPc:fotoBn(b.videoPc)});
   }
   // la tienda recibe el anticipo, el redondeo y los envíos (nunca costos ni multiplicadores)
   return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),inicio:{banners,colOcultas:ini.colOcultas.slice()},productos:lista},fotos:usadas};
