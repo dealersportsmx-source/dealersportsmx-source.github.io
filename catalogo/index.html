@@ -1039,7 +1039,8 @@ async function armarTienda(){
   const fotos=await getAll('fotos');
   const lista=[], usadas=[];
   for(const p of pubs){
-    const colores=(p.colores||[]).map(c=>({k:c.k,nombre:c.nombre||'',tallas:Object.assign({},c.tallas||{}),fotos:[]}));
+    // link = página de la marca de ese color (lo usa el robot que revisa tallas); agotado = la marca ya no tiene ninguna talla
+    const colores=(p.colores||[]).map(c=>({k:c.k,nombre:c.nombre||'',tallas:Object.assign({},c.tallas||{}),link:c.link||p.link||'',agotado:!!c.agotado,fotos:[]}));
     const fs=fotos.filter(f=>f.productoId===p.id).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
     if(p.portada){ const i=fs.findIndex(f=>f.id===p.portada); if(i>0) fs.unshift(fs.splice(i,1)[0]); }
     for(const f of fs){
