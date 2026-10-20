@@ -1227,6 +1227,12 @@ function toast(s){ const el=$('#toast'); el.textContent=s; el.classList.add('on'
   if(typeof seedDemo==='function') await seedDemo(false);
   productos=await getAll('productos').catch(()=>[]);
   await refreshList();
+  // link con prendas ya marcadas (…/catalogo/#sel=id1,id2): abre Seleccionar con esas; tú decides si las eliminas
+  const m=/^#sel=([\w,]+)/.exec(location.hash);
+  if(m){ history.replaceState(null,'',location.pathname);
+    const ids=m[1].split(',').filter(id=>productos.some(p=>p.id===id));
+    if(ids.length){ irA('todos'); modoSel(true); ids.forEach(id=>sel.add(id)); renderList(); pintarSel(); toast((ids.length===1?'1 prenda marcada':ids.length+' prendas marcadas')+'. Revisa y dale Eliminar.'); }
+    else toast('Esas prendas ya no están en tu Catálogo'); }
 })();
 })();
 </script>
