@@ -74,6 +74,16 @@ input[type=date],input[type=datetime-local]{-webkit-appearance:none;appearance:n
 .sec-title h2{margin:0;font-size:22px;font-weight:700}
 .sec-title small{color:var(--muted);font-size:14px}
 .list{border-top:1px solid var(--line)}
+/* modo Seleccionar */
+.selbtn{margin-left:10px;background:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+.selbtn.on{background:var(--ink);color:var(--bg,#fff);border-color:var(--ink)}
+.row.pick{position:relative;padding-left:34px}
+.row.pick::before{content:"";position:absolute;left:4px;top:50%;width:20px;height:20px;margin-top:-10px;border:2px solid var(--line);border-radius:6px}
+.row.pick.on{background:rgba(196,64,47,.10)}
+.row.pick.on::before{background:var(--danger);border-color:var(--danger)}
+.row.pick.on::after{content:"✓";position:absolute;left:9px;top:50%;margin-top:-10px;color:#fff;font-weight:800;font-size:14px;line-height:20px}
+.selbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 12px;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.25)}
+.selbar span{font-weight:700;margin-right:6px}
 .row{all:unset;box-sizing:border-box;display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .row:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .th{width:56px;height:70px;border-radius:8px;background:var(--field);overflow:hidden;display:grid;place-items:center;color:var(--muted);font-size:11px}
@@ -181,11 +191,19 @@ label>input,label>textarea,label>select{margin-top:6px}
   
   <div id="fatal" class="fatal" hidden></div>
   <div class="stats" id="stats"></div>
-  <div class="sec-title"><h2 id="secName">Stock</h2><small id="secCount"></small></div>
+  <div class="sec-title"><h2 id="secName">Stock</h2><span><small id="secCount"></small><button type="button" class="selbtn" id="btnSel">Seleccionar</button></span></div>
   <div class="search"><input id="q" type="search" placeholder="Buscar por nombre, marca o color" aria-label="Buscar producto" autocomplete="off"></div>
   <div class="filters" id="filtLinea" role="group" aria-label="Filtrar por línea"></div>
   <div class="filters" id="filters" role="group" aria-label="Filtrar por marca"></div>
   <div class="list" id="list"></div>
+</div>
+
+<!-- modo Seleccionar: para eliminar varias prendas de un jalón -->
+<div class="selbar" id="selBar" hidden>
+  <span id="selN">0 seleccionadas</span>
+  <button type="button" class="btn ghost" id="selTodas">Todas</button>
+  <button type="button" class="btn danger" id="selDel" disabled>Eliminar</button>
+  <button type="button" class="btn ghost" id="selCancel">Cancelar</button>
 </div>
 
 <nav class="tabs" id="tabs" aria-label="Secciones"></nav>
@@ -535,7 +553,7 @@ function rowHTML(p){
   const sz=t.size?[...t].map(([k,v])=>k+(v>1?'·'+v:'')).join('  '):(['disponible','agotado'].includes(p.estado)?'Sin piezas':'');
   const precio=precioVenta(p), base=precioDe(p), of=has(p.oferta)&&num(p.oferta)>0&&num(p.oferta)<base;
   const colores=(p.colores||[]).filter(c=>c.nombre).length;
-  return '<button type="button" class="row" data-id="'+esc(p.id)+'"><div class="th">'+(u?'<img src="'+u+'" alt="">':'Sin foto')+'</div>'+
+  return '<button type="button" class="row'+(selMode?' pick'+(sel.has(p.id)?' on':''):'')+'" data-id="'+esc(p.id)+'"><div class="th">'+(u?'<img src="'+u+'" alt="">':'Sin foto')+'</div>'+
     '<div style="min-width:0"><b>'+esc((p.nombre||'').trim()||'Sin nombre')+'</b><small>'+esc([p.linea?LINEA_TXT[p.linea]:'',p.marca,colores>1?colores+' colores':(p.colores[0]&&p.colores[0].nombre)].filter(Boolean).join(' · '))+(sz?' · '+esc(sz):'')+'</small><div class="pills">'+pills.join('')+'</div></div>'+
     '<div class="pr">'+(precio?money(precio):'—')+(of?'<s>'+money(base)+'</s>':'')+'</div></button>';
 }
@@ -568,7 +586,33 @@ $('#stats').addEventListener('click',e=>{ const b=e.target.closest('[data-sec]')
 $('#filtLinea').addEventListener('click',e=>{ const b=e.target.closest('[data-linea]'); if(!b) return; filtroLinea=b.dataset.linea; renderFilters(); renderList(); });
 $('#filters').addEventListener('click',e=>{ const b=e.target.closest('[data-marca]'); if(!b) return; filtroMarca=b.dataset.marca; renderFilters(); renderList(); });
 $('#q').addEventListener('input',renderList);
-$('#list').addEventListener('click',e=>{ const r=e.target.closest('.row'); if(r) abrir(r.dataset.id); });
+$('#list').addEventListener('click',e=>{ const r=e.target.closest('.row'); if(!r) return;
+  if(selMode){ const id=r.dataset.id; if(sel.has(id)) sel.delete(id); else sel.add(id); r.classList.toggle('on',sel.has(id)); pintarSel(); return; }
+  abrir(r.dataset.id); });
+
+/* ---------- Seleccionar y eliminar varias prendas ---------- */
+var selMode=false, sel=new Set(), selArm=false, selTimer=null; // var: la lista se puede pintar antes de llegar aquí
+function pintarSel(){
+  const n=sel.size; $('#selN').textContent=n===1?'1 seleccionada':n+' seleccionadas';
+  selArm=false; clearTimeout(selTimer); $('#selDel').disabled=!n; $('#selDel').textContent='Eliminar';
+}
+function modoSel(on){
+  selMode=on; sel.clear(); $('#btnSel').classList.toggle('on',on); $('#btnSel').textContent=on?'Listo':'Seleccionar';
+  $('#selBar').hidden=!on; pintarSel(); renderList();
+}
+$('#btnSel').addEventListener('click',()=>modoSel(!selMode));
+$('#selCancel').addEventListener('click',()=>modoSel(false));
+// "Todas" = las que se ven ahora en la lista (con tu búsqueda y filtros)
+$('#selTodas').addEventListener('click',()=>{ document.querySelectorAll('#list .row').forEach(r=>sel.add(r.dataset.id)); renderList(); pintarSel(); });
+$('#selDel').addEventListener('click',async()=>{
+  const n=sel.size; if(!n) return;
+  if(!selArm){ selArm=true; $('#selDel').textContent='Toca otra vez para eliminar '+(n===1?'1 prenda':n+' prendas'); clearTimeout(selTimer); selTimer=setTimeout(pintarSel,4000); return; }
+  const b=$('#selDel'); b.disabled=true; b.textContent='Eliminando…';
+  let ok=0; for(const id of sel){ try{ await delProducto(id); ok++; }catch(e){} }
+  productos=productos.filter(p=>!sel.has(p.id));
+  modoSel(false); renderStats(); renderFilters(); renderList();
+  toast(ok===1?'Se eliminó 1 prenda':'Se eliminaron '+ok+' prendas');
+});
 
 /* ---------- ficha ---------- */
 const sheet=$('#sheet');
