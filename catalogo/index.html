@@ -1261,27 +1261,38 @@ $('#btnPublicar').addEventListener('click',async()=>{
   if(!GH.user||!GH.repo||!GH.token){ estado('Llena tu usuario, el repositorio y tu llave de GitHub.'); return; }
   const btn=$('#btnPublicar'); btn.disabled=true; btn.textContent='Publicando…';
   try{
-    estado('Revisando tu tienda en GitHub…');
-    const ref=await gh('/git/ref/heads/main');
-    const commit=await gh('/git/commits/'+ref.object.sha);
-    const tree=await gh('/git/trees/'+commit.tree.sha+'?recursive=1');
-    const remoto=new Map((tree.tree||[]).filter(e=>e.type==='blob').map(e=>[e.path,e]));
-    const {datos,fotos}=await armarTienda();
-    const entradas=[...remoto.values()].filter(e=>!e.path.startsWith('fotos/')&&e.path!=='datos.json').map(e=>({path:e.path,mode:e.mode,type:'blob',sha:e.sha}));
-    let n=0;
-    for(const f of fotos){
-      n++; estado('Subiendo fotos… '+n+' de '+fotos.length);
-      const ya=remoto.get(f.path);
-      let sha=ya&&ya.sha;
-      if(!sha){ // banners: se suben tal cual (ya vienen en buena calidad); fotos de productos: 1200 px
-        const bytes=f.path.startsWith('fotos/bn')?new Uint8Array(await f.blob.arrayBuffer()):await jpegTienda(f.blob); sha=(await gh('/git/blobs',{method:'POST',body:{content:b64(bytes),encoding:'base64'}})).sha; }
-      entradas.push({path:f.path,mode:'100644',type:'blob',sha});
+    // Si GitHub rechaza porque alguien guardó al mismo tiempo (el robot de tallas u otra publicación),
+    // se vuelve a intentar solo, sobre lo más nuevo. Las fotos ya subidas no se vuelven a subir.
+    const subidas=new Map(); let datos;
+    for(let intento=1;;intento++){
+      try{
+        estado('Revisando tu tienda en GitHub…');
+        const ref=await gh('/git/ref/heads/main');
+        const commit=await gh('/git/commits/'+ref.object.sha);
+        const tree=await gh('/git/trees/'+commit.tree.sha+'?recursive=1');
+        const remoto=new Map((tree.tree||[]).filter(e=>e.type==='blob').map(e=>[e.path,e]));
+        const armado=await armarTienda(); datos=armado.datos; const fotos=armado.fotos;
+        const entradas=[...remoto.values()].filter(e=>!e.path.startsWith('fotos/')&&e.path!=='datos.json').map(e=>({path:e.path,mode:e.mode,type:'blob',sha:e.sha}));
+        let n=0;
+        for(const f of fotos){
+          n++; estado('Subiendo fotos… '+n+' de '+fotos.length);
+          const ya=remoto.get(f.path);
+          let sha=(ya&&ya.sha)||subidas.get(f.path);
+          if(!sha){ // banners: se suben tal cual (ya vienen en buena calidad); fotos de productos: 1200 px
+            const bytes=f.path.startsWith('fotos/bn')?new Uint8Array(await f.blob.arrayBuffer()):await jpegTienda(f.blob); sha=(await gh('/git/blobs',{method:'POST',body:{content:b64(bytes),encoding:'base64'}})).sha; subidas.set(f.path,sha); }
+          entradas.push({path:f.path,mode:'100644',type:'blob',sha});
+        }
+        entradas.push({path:'datos.json',mode:'100644',type:'blob',content:JSON.stringify(datos)});
+        estado('Guardando cambios…');
+        const nuevo=await gh('/git/trees',{method:'POST',body:{tree:entradas}});
+        const c=await gh('/git/commits',{method:'POST',body:{message:'Actualizar tienda ('+datos.productos.length+' productos)',tree:nuevo.sha,parents:[ref.object.sha]}});
+        await gh('/git/refs/heads/main',{method:'PATCH',body:{sha:c.sha}});
+        break;
+      }catch(e){
+        if(intento<4&&e&&(e.status===422||e.status===409)){ estado('GitHub estaba ocupado, intento otra vez ('+(intento+1)+' de 4)…'); await new Promise(r=>setTimeout(r,2500*intento)); continue; }
+        throw e;
+      }
     }
-    entradas.push({path:'datos.json',mode:'100644',type:'blob',content:JSON.stringify(datos)});
-    estado('Guardando cambios…');
-    const nuevo=await gh('/git/trees',{method:'POST',body:{tree:entradas}});
-    const c=await gh('/git/commits',{method:'POST',body:{message:'Actualizar tienda ('+datos.productos.length+' productos)',tree:nuevo.sha,parents:[ref.object.sha]}});
-    await gh('/git/refs/heads/main',{method:'PATCH',body:{sha:c.sha}});
     estado('✅ Publicado: '+(datos.productos.length===1?'1 producto':datos.productos.length+' productos')+'. Tu tienda se actualiza en 1 o 2 minutos.');
     toast('Tienda publicada');
   }catch(e){
