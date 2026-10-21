@@ -354,6 +354,9 @@ label>input,label>textarea,label>select{margin-top:6px}
     <h2 style="font-size:20px;margin-top:14px">Inicio de la tienda</h2>
     <p>Los anuncios grandes de arriba (hasta 3). Pon foto, texto y a dónde lleva; luego toca <b>Publicar tienda</b>. Si no llenas ninguno, salen los de siempre.</p>
     <div id="inBanners"></div>
+    <p class="lbl" style="margin-top:14px">Fotos del mosaico de marcas</p>
+    <p class="note" style="margin-top:0">Opcional. Si no pones foto, se usa sola la de una prenda de esa marca. Vertical (como post) para YoungLA y Gymshark; cuadrada para las demás; horizontal para Accesorios.</p>
+    <div id="inMosaico"></div>
     <p class="lbl" style="margin-top:14px">Colecciones en el inicio</p>
     <p class="note" style="margin-top:0">Salen solas con la “Colección” que escribes en cada prenda. Quita la palomita a las que no quieras mostrar.</p>
     <div id="inCols"></div>
@@ -1128,6 +1131,12 @@ async function pintarInicio(){
       '<label>Cuenta regresiva hasta <span class="opt">(opcional: fecha y hora de cierre. Si la dejas vacía y el banner lleva a Preventas, usa el cierre de tu preventa abierta)</span><input type="datetime-local" data-bncierre="'+i+'" value="'+esc(b.cierre||'')+'"></label>'+
       '<label>Al tocarlo lleva a<select data-bnir="'+i+'">'+ops.map(o=>'<option value="'+esc(o[0])+'"'+(b.ir===o[0]?' selected':'')+'>'+esc(o[1])+'</option>').join('')+(b.ir&&!ops.some(o=>o[0]===b.ir)?'<option value="'+esc(b.ir)+'" selected>'+esc(b.ir)+'</option>':'')+'</select></label>'+
       ((b.titulo||b.foto||b.fotoPc||b.video||b.videoPc||b.boton||b.cierre)?'<button type="button" class="btn ghost full" data-bnborrar="'+i+'" style="margin-top:6px">Quitar este banner</button>':'')+'</div>').join('');
+  // mosaico de marcas: una foto por marca (y Accesorios)
+  ini.mosaico=ini.mosaico&&typeof ini.mosaico==='object'?ini.mosaico:{};
+  for(const id of Object.values(ini.mosaico)) if(id&&!bnURL.has(id)){ const f=await reqP(db.transaction('fotos').objectStore('fotos').get(id)).catch(()=>null); if(f&&f.blob) bnURL.set(id,URL.createObjectURL(f.blob)); }
+  $('#inMosaico').innerHTML=MARCAS_TIENDA.concat(['Accesorios']).map(m=>{ const id=ini.mosaico[m], u=id&&bnURL.get(id);
+    return '<div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><div style="width:52px;height:52px;border-radius:8px;background:var(--pill);overflow:hidden;flex:none;display:grid;place-items:center;font-size:10px;color:var(--muted);text-align:center">'+(u?'<img src="'+u+'" alt="" style="width:100%;height:100%;object-fit:cover">':'Auto')+'</div>'+
+      '<b style="flex:1;font-size:14px">'+esc(m)+'</b><label class="btn ghost" style="margin:0">'+(u?'Cambiar':'Poner foto')+'<input type="file" accept="image/*" class="sr" data-mzfoto="'+esc(m)+'"></label>'+(u?'<button type="button" class="btn ghost" data-mzquitar="'+esc(m)+'" style="margin:0">Quitar</button>':'')+'</div>'; }).join('');
   const cols=coleccionesCat();
   $('#inCols').innerHTML=cols.length?cols.map(([k,n])=>'<label class="check" style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-incol="'+esc(k)+'"'+(ini.colOcultas.includes(k)?'':' checked')+'> '+esc(k.replace('|',' · '))+' <span class="opt">('+n+(n===1?' prenda':' prendas')+')</span></label>').join('')
     :'<p class="note">Todavía no hay prendas con colección. Escríbela en la ficha de la prenda (campo “Colección”) o súbela con la extensión.</p>';
@@ -1158,6 +1167,20 @@ $('#inBanners').addEventListener('click',async e=>{
   else if(d){ const b=ini.banners[+d.dataset.bnborrar]; for(const k of ['foto','fotoPc','video','videoPc']) await quitarFotoBn(b,k); b.titulo=''; b.ir=''; b.boton=''; b.cierre=''; }
   else return;
   guardarAjustes(); pintarInicio();
+});
+$('#inMosaico').addEventListener('change',async e=>{
+  const f=e.target.closest('[data-mzfoto]'); if(!f) return; const file=f.files&&f.files[0]; f.value=''; if(!file) return;
+  const ini=inicioAJ(), m=f.dataset.mzfoto; ini.mosaico=ini.mosaico||{};
+  try{
+    const blob=await comprimir(file,1600,.88), id='bn'+uid();
+    await put('fotos',{id,productoId:'__inicio',colorK:'',fecha:Date.now(),blob});
+    if(ini.mosaico[m]){ await delFoto(ini.mosaico[m]).catch(()=>{}); bnURL.delete(ini.mosaico[m]); }
+    ini.mosaico[m]=id; guardarAjustes(); pintarInicio(); toast('Foto de '+m+' lista. Toca Publicar tienda para verla.');
+  }catch(err){ toast('No se pudo usar esa foto'); }
+});
+$('#inMosaico').addEventListener('click',async e=>{
+  const q=e.target.closest('[data-mzquitar]'); if(!q) return; const ini=inicioAJ(), m=q.dataset.mzquitar;
+  if(ini.mosaico&&ini.mosaico[m]){ await delFoto(ini.mosaico[m]).catch(()=>{}); bnURL.delete(ini.mosaico[m]); delete ini.mosaico[m]; guardarAjustes(); pintarInicio(); }
 });
 $('#inCols').addEventListener('change',e=>{ const c=e.target.closest('[data-incol]'); if(!c) return; const ini=inicioAJ(), k=c.dataset.incol;
   ini.colOcultas=ini.colOcultas.filter(x=>x!==k); if(!c.checked) ini.colOcultas.push(k); guardarAjustes(); });
@@ -1292,7 +1315,7 @@ async function armarTienda(){
     banners.push({titulo:(b.titulo||'').trim(),boton:(b.boton||'').trim(),cierre:b.cierre||'',ir:b.ir||'',img:img||imgPc,imgPc:img?imgPc:'',video:fotoBn(b.video),videoPc:fotoBn(b.videoPc)});
   }
   // la tienda recibe el anticipo, el redondeo y los envíos (nunca costos ni multiplicadores)
-  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),inicio:{banners,colOcultas:ini.colOcultas.slice()},productos:lista},fotos:usadas};
+  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),inicio:{banners,colOcultas:ini.colOcultas.slice(),mosaico:Object.fromEntries(Object.entries(ini.mosaico||{}).map(([m,id])=>[m,fotoBn(id)]).filter(x=>x[1]))},productos:lista},fotos:usadas};
 }
 function estado(t){ $('#pubStatus').textContent=t; }
 $('#btnPublicar').addEventListener('click',async()=>{
