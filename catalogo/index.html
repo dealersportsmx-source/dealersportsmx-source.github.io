@@ -202,6 +202,7 @@ label>input,label>textarea,label>select{margin-top:6px}
 <div class="selbar" id="selBar" hidden>
   <span id="selN">0 seleccionadas</span>
   <button type="button" class="btn ghost" id="selTodas">Todas</button>
+  <button type="button" class="btn ghost" id="selMv" disabled>🔥 Más vendido</button>
   <button type="button" class="btn danger" id="selDel" disabled>Eliminar</button>
   <button type="button" class="btn ghost" id="selCancel">Cancelar</button>
 </div>
@@ -317,6 +318,7 @@ label>input,label>textarea,label>select{margin-top:6px}
       <h3>Tienda</h3>
       <label class="switch">Mostrar en la tienda<input type="checkbox" data-b="enTienda"></label>
       <label class="switch">Destacado ⭐<input type="checkbox" data-b="destacado"></label>
+      <label class="switch">Más vendido 🔥 <span class="opt">(etiqueta dorada en la tienda)</span><input type="checkbox" data-b="masVendido"></label>
       <p class="note" style="margin-top:6px">Se usarán cuando hagamos tu página de tienda.</p>
     </section>
 
@@ -582,6 +584,7 @@ function rowHTML(p){
   if(int) pills.push('<span class="pill">'+int+(int===1?' interesado':' interesados')+'</span>');
   if(poco(p)) pills.push('<span class="pill low">Poco inventario</span>');
   if(p.destacado) pills.push('<span class="pill">⭐</span>');
+  if(p.masVendido) pills.push('<span class="pill" style="background:#e9c86a;color:#1a1300">🔥 Más vendido</span>');
   if(revisarTipo(p)) pills.push('<span class="pill low">Revisar tipo</span>');
   const sz=t.size?[...t].map(([k,v])=>k+(v>1?'·'+v:'')).join('  '):(['disponible','agotado'].includes(p.estado)?'Sin piezas':'');
   const precio=precioVenta(p), base=precioDe(p), of=has(p.oferta)&&num(p.oferta)>0&&num(p.oferta)<base;
@@ -630,7 +633,17 @@ var selMode=false, sel=new Set(), selArm=false, selTimer=null; // var: la lista 
 function pintarSel(){
   const n=sel.size; $('#selN').textContent=n===1?'1 seleccionada':n+' seleccionadas';
   selArm=false; clearTimeout(selTimer); $('#selDel').disabled=!n; $('#selDel').textContent='Eliminar';
+  // "Más vendido": si todas las elegidas ya lo tienen, se los quita; si no, se los pone a todas
+  const todas=n&&productos.filter(p=>sel.has(p.id)).every(p=>p.masVendido);
+  $('#selMv').disabled=!n; $('#selMv').textContent=todas?'Quitar Más vendido':'🔥 Más vendido';
 }
+$('#selMv').addEventListener('click',async()=>{
+  const ps=productos.filter(p=>sel.has(p.id)); if(!ps.length) return;
+  const poner=!ps.every(p=>p.masVendido);
+  for(const p of ps){ p.masVendido=poner; p.updatedAt=Date.now(); await put('productos',p); }
+  modoSel(false); renderList();
+  toast((poner?'Les puse “Más vendido” a ':'Les quité “Más vendido” a ')+(ps.length===1?'1 prenda':ps.length+' prendas')+'. Toca Publicar tienda para verlo.');
+});
 function modoSel(on){
   selMode=on; sel.clear(); $('#btnSel').classList.toggle('on',on); $('#btnSel').textContent=on?'Listo':'Seleccionar';
   $('#selBar').hidden=!on; pintarSel(); renderList();
@@ -1263,7 +1276,7 @@ async function armarTienda(){
     const base=precioDe(p), venta=precioVenta(p);
     lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),coleccion:(p.coleccion||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
-      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,creado:p.createdAt||0,colores});
+      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,colores});
   }
   // inicio: tus banners (foto, texto y a dónde llevan) y las colecciones que escondiste
   const ini=inicioAJ(), banners=[];
