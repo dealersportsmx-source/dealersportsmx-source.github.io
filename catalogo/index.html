@@ -1248,10 +1248,13 @@ async function gh(path,opt){
   for(let i=0,cortes=0;;i++){
     let r;
     // si se corta el internet o GitHub falla unos segundos, se espera y se vuelve a intentar (hasta 8 veces)
-    try{ r=await fetch('https://api.github.com/repos/'+encodeURIComponent(GH.user)+'/'+encodeURIComponent(GH.repo)+path,{method:opt.method||'GET',cache:'no-store',
+    // (si GitHub no contesta en 2 minutos, también se vuelve a intentar, en vez de quedarse pegado)
+    const ctl=new AbortController(), reloj=setTimeout(()=>ctl.abort(),120000);
+    try{ r=await fetch('https://api.github.com/repos/'+encodeURIComponent(GH.user)+'/'+encodeURIComponent(GH.repo)+path,{method:opt.method||'GET',cache:'no-store',signal:ctl.signal,
       headers:Object.assign({'Authorization':'Bearer '+GH.token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},opt.body?{'Content-Type':'application/json'}:{}),
       body:opt.body?JSON.stringify(opt.body):undefined}); }
-    catch(e){ if(++cortes<=8){ if(avisoCorte) avisoCorte(); await new Promise(res=>setTimeout(res,5000*Math.min(cortes,6))); continue; } throw {status:0,msg:'sin internet'}; }
+    catch(e){ clearTimeout(reloj); if(++cortes<=8){ if(avisoCorte) avisoCorte(); await new Promise(res=>setTimeout(res,5000*Math.min(cortes,6))); continue; } throw {status:0,msg:'sin internet'}; }
+    clearTimeout(reloj);
     if(r.status>=500&&++cortes<=8){ if(avisoCorte) avisoCorte(); await new Promise(res=>setTimeout(res,5000*Math.min(cortes,6))); continue; }
     if(r.ok) return r.status===204?null:r.json();
     let m=''; try{ m=(await r.json()).message||''; }catch(e){}
@@ -1335,7 +1338,8 @@ $('#btnPublicar').addEventListener('click',async()=>{
         const tree=await gh('/git/trees/'+commit.tree.sha+'?recursive=1');
         const remoto=new Map((tree.tree||[]).filter(e=>e.type==='blob').map(e=>[e.path,e]));
         const armado=await armarTienda(); datos=armado.datos; const fotos=armado.fotos;
-        const entradas=[...remoto.values()].filter(e=>!e.path.startsWith('fotos/')&&e.path!=='datos.json').map(e=>({path:e.path,mode:e.mode,type:'blob',sha:e.sha}));
+        // solo se manda lo que cambió (fotos nuevas, datos.json y las fotos que ya no se usan); lo demás se queda como está
+        const cambios=[], usadas=new Set(fotos.map(f=>f.path));
         // subidas grandes: se va despacio (para que GitHub no frene) y se guarda cada 100 fotos (así no se pierde nada si se corta)
         const faltan=fotos.filter(f=>!remoto.get(f.path)&&!subidas.get(f.path)).length, despacio=faltan>60;
         let n=0, nuevas=0, pendientes=[], hecho=0;
@@ -1352,12 +1356,16 @@ $('#btnPublicar').addEventListener('click',async()=>{
             if(pendientes.length>=100){ estado('Guardando fotos en GitHub ('+hecho+' de '+faltan+')…'); await guardarFotosParcial(pendientes); pendientes=[]; }
             if(despacio) await new Promise(r=>setTimeout(r,800));
           }
-          entradas.push({path:f.path,mode:'100644',type:'blob',sha});
+          if(!ya||ya.sha!==sha) cambios.push({path:f.path,mode:'100644',type:'blob',sha});
         }
-        entradas.push({path:'datos.json',mode:'100644',type:'blob',content:JSON.stringify(datos)});
         estado('Guardando cambios…');
-        const nuevo=await gh('/git/trees',{method:'POST',body:{tree:entradas}});
+        // fotos que ya no usa ninguna prenda: se quitan de la tienda
+        for(const p of remoto.keys()) if(p.startsWith('fotos/')&&!usadas.has(p)) cambios.push({path:p,mode:'100644',type:'blob',sha:null});
+        const blobDatos=(await gh('/git/blobs',{method:'POST',body:{content:b64(new TextEncoder().encode(JSON.stringify(datos))),encoding:'base64'}})).sha;
+        cambios.push({path:'datos.json',mode:'100644',type:'blob',sha:blobDatos});
         const cabeza=nuevas>=100?await gh('/git/ref/heads/main'):ref; // si se guardaron partes, se sigue desde ahí
+        const base=cabeza===ref?commit:await gh('/git/commits/'+cabeza.object.sha);
+        const nuevo=await gh('/git/trees',{method:'POST',body:{base_tree:base.tree.sha,tree:cambios}});
         const c=await gh('/git/commits',{method:'POST',body:{message:'Actualizar tienda ('+datos.productos.length+' productos)',tree:nuevo.sha,parents:[cabeza.object.sha]}});
         await gh('/git/refs/heads/main',{method:'PATCH',body:{sha:c.sha}});
         break;
