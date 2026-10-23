@@ -212,6 +212,8 @@ label>input,label>select{margin-top:6px}
     </div>
     <label>Redondear<select id="aRed"><option value="10">A la decena ($1,152 → $1,160)</option><option value="50">A $50 ($1,152 → $1,200)</option><option value="100">A $100 ($1,152 → $1,200)</option><option value="1">Sin redondeo</option></select></label>
     <button class="btn full" id="aGuardar">Guardar</button>
+    <div id="aCarpetaBox" hidden style="margin-top:14px"><p style="margin:0 0 6px">Carpeta donde se guardan tus historias en esta computadora: <b id="aCarpetaN"></b></p>
+      <button class="btn ghost full" id="aCarpeta" type="button">Cambiar carpeta</button></div>
     <button class="btn ghost full" id="aCerrar" style="margin-top:10px">Cerrar</button>
   </div>
 </div>
@@ -864,7 +866,7 @@ $('#cola').addEventListener('click',e=>{ const b=e.target.closest('[data-borrar]
 $('#btnAgregar').addEventListener('click',async()=>{
   if(!fotos.slice(0,n()).some(Boolean)){ toast('Primero pon al menos una foto'); return; }
   const c=document.createElement('canvas'); Historia.dibujar(c,opciones());
-  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.93));
+  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.95));
   cola.push({blob,url:URL.createObjectURL(blob),nombre:nombreArchivo(cola.length+1)});
   pintarCola(); toast('Agregada · '+cola.length+(cola.length===1?' historia lista':' historias listas'));
   window.scrollTo({top:0,behavior:'smooth'});
@@ -875,7 +877,36 @@ $('#btnNueva').addEventListener('click',()=>{
   ['tTitulo','tUsd','tMxn','tLink'].forEach(id=>$('#'+id).value=''); origen=null; notaCat();
   pintarSlots(); calcular(); previa(); toast('Lista para el siguiente producto');
 });
+/* En la PC: las historias se guardan directo en una carpeta que escoges una vez (sin WhatsApp ni compartir, tal cual salen).
+   En el teléfono sigue igual: se abre "Compartir" para guardarlas en tu carrete. */
+const ES_PC=!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)&&!(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
+let ULT_CARPETA='';
+function kvPC(k,v){ return new Promise((ok,no)=>{ const r=indexedDB.open('historias_pc',1); r.onupgradeneeded=()=>r.result.createObjectStore('k'); r.onerror=()=>no(r.error);
+  r.onsuccess=()=>{ const t=r.result.transaction('k',v===undefined?'readonly':'readwrite'), s=t.objectStore('k'), q=v===undefined?s.get(k):s.put(v,k); q.onsuccess=()=>ok(q.result); q.onerror=()=>no(q.error); }; }); }
+async function carpetaPC(cambiar){
+  let h=cambiar?null:await kvPC('carpeta').catch(()=>null);
+  if(h){ try{ let p=await h.queryPermission({mode:'readwrite'}); if(p!=='granted') p=await h.requestPermission({mode:'readwrite'}); if(p==='granted') return h; }catch(e){} }
+  h=await window.showDirectoryPicker({id:'historias',mode:'readwrite',startIn:'pictures'});
+  await kvPC('carpeta',h).catch(()=>{}); pintarCarpeta(); return h;
+}
+async function guardarEnCarpeta(files){
+  const dir=await carpetaPC();
+  for(const f of files){
+    // si ya hay una con ese nombre, no se borra: se guarda como "nombre (2).jpg"
+    let n=f.name, i=2; for(;;){ try{ await dir.getFileHandle(n); n=f.name.replace(/(\.\w+)$/,' ('+(i++)+')$1'); }catch(e){ break; } }
+    const w=await (await dir.getFileHandle(n,{create:true})).createWritable(); await w.write(f); await w.close();
+  }
+  return dir.name;
+}
+async function pintarCarpeta(){ const b=$('#aCarpetaBox'); if(!b) return; b.hidden=!(ES_PC&&window.showDirectoryPicker); if(b.hidden) return;
+  const h=await kvPC('carpeta').catch(()=>null); $('#aCarpetaN').textContent=h?h.name:'Todavía no escoges (te la pide la primera vez que guardes)'; }
 async function guardarArchivos(files){
+  ULT_CARPETA='';
+  if(ES_PC&&window.showDirectoryPicker){
+    try{ ULT_CARPETA=await guardarEnCarpeta(files); return true; }
+    catch(e){ if(e&&e.name==='AbortError') return false; } // si no se pudo, se bajan a Descargas
+  }
+  if(ES_PC){ for(const f of files){ const u=URL.createObjectURL(f), a=document.createElement('a'); a.href=u; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),5000); await new Promise(r=>setTimeout(r,350)); } ULT_CARPETA='Descargas'; return true; }
   try{ if(navigator.canShare&&navigator.canShare({files})){ await navigator.share({files}); return true; } }
   catch(e){ if(e&&e.name==='AbortError') return false; }
   for(const f of files){ const u=URL.createObjectURL(f), a=document.createElement('a'); a.href=u; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),5000); await new Promise(r=>setTimeout(r,350)); }
@@ -883,16 +914,17 @@ async function guardarArchivos(files){
 }
 $('#btnGuardar').addEventListener('click',async()=>{
   if(!cola.length) return;
-  const lote=cola.slice(0,10), files=lote.map(c=>new File([c.blob],c.nombre,{type:'image/jpeg'}));
+  const lote=cola.slice(0,ES_PC?cola.length:10), files=lote.map(c=>new File([c.blob],c.nombre,{type:'image/jpeg'}));
   if(await guardarArchivos(files)){
     lote.forEach(c=>URL.revokeObjectURL(c.url)); cola=cola.slice(lote.length); pintarCola();
-    toast(cola.length?('Guardadas 10 · faltan '+cola.length+', toca Guardar otra vez'):'Listo, ya están en tu carrete');
+    toast(cola.length?('Guardadas 10 · faltan '+cola.length+', toca Guardar otra vez'):ULT_CARPETA?'Listo, '+(lote.length===1?'1 guardada':lote.length+' guardadas')+' en la carpeta “'+ULT_CARPETA+'”':'Listo, ya están en tu carrete');
   }
 });
 window.addEventListener('beforeunload',e=>{ if(cola.length){ e.preventDefault(); e.returnValue=''; } });
 
 /* ajustes */
-$('#btnAj').addEventListener('click',()=>{ $('#aTc').value=AJ.tc; $('#aMargen').value=AJ.margen; $('#aRed').value=String(AJ.red); $('#aj').hidden=false; });
+$('#btnAj').addEventListener('click',()=>{ $('#aTc').value=AJ.tc; $('#aMargen').value=AJ.margen; $('#aRed').value=String(AJ.red); $('#aj').hidden=false; pintarCarpeta(); });
+$('#aCarpeta').addEventListener('click',async()=>{ try{ const h=await carpetaPC(true); toast('Tus historias se guardarán en “'+h.name+'”'); }catch(e){} });
 $('#aCerrar').addEventListener('click',()=>{ $('#aj').hidden=true; });
 $('#aj').addEventListener('click',e=>{ if(e.target.id==='aj') $('#aj').hidden=true; });
 $('#aGuardar').addEventListener('click',()=>{ const tc=num($('#aTc').value); if(!(tc>0)){ toast('Pon un tipo de cambio válido'); return; }
