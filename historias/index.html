@@ -138,6 +138,7 @@ label>input,label>select{margin-top:6px}
             <label>Precio en pesos<input id="tMxn" inputmode="decimal" placeholder="Se calcula solo" autocomplete="off"></label>
           </div>
           <p class="calc" id="calc"></p>
+          <label>Precio de antes en pesos <span class="opt">(opcional: sale tachado y el precio de rebaja en rojo)</span><input id="tAntes" inputmode="decimal" placeholder="Sin rebaja" autocomplete="off"></label>
           <label style="display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;margin:-4px 0 12px"><input type="checkbox" id="tSinPrecio" style="width:20px;height:20px;margin:0"> Ocultar el precio en esta historia</label>
           <label>Frase<input id="tDesc" placeholder="Aparta con $500" autocomplete="off"></label>
           <div class="chips frases" id="frases"></div>
@@ -528,14 +529,16 @@ function dibujarDealer(d,o,n,poner){
   }
   // la colección va chiquita arriba del nombre; si no hay nombre de producto (portada), la colección es el título
   let tit=(o.titulo||'').trim(); const pre=(o.precio||'').trim(), col=String(o.coleccion||'').trim().toUpperCase();
+  // rebaja: el precio de antes va tachado antes del de hoy (que sale en rojo)
+  const antes=pre&&(o.precioAntes||'').trim()?String(o.precioAntes).trim():'', preTodo=(antes?antes+'  ':'')+pre;
   if(col&&tit) filas.push({t:col,f:'600 '+Math.round(30*E.nom)+'px '+F.txt,h:Math.round(46*E.nom),color:alfa(C.titulo,.85),esp:true});
   else if(col) tit=col;
   if(tit||pre){
     const pesoN=F.titW, famN=F.tit, base=Math.round((F.base||60)*E.nom);
-    let z=base; const medir=()=>{ d.font=pesoN+' '+z+'px '+famN; return d.measureText(tit+(tit&&pre?'  ':'')+pre).width; };
+    let z=base; const medir=()=>{ d.font=pesoN+' '+z+'px '+famN; return d.measureText(tit+(tit&&pre?'  ':'')+preTodo).width; };
     while(z>40&&medir()>max) z-=2;
-    if(medir()<=max) filas.push({tit,pre,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo});
-    else { filas.push(...lineas(tit,pesoN,famN,z,C.titulo)); if(pre) filas.push({tit:'',pre,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo}); }
+    if(medir()<=max) filas.push({tit,pre,antes,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo});
+    else { filas.push(...lineas(tit,pesoN,famN,z,C.titulo)); if(pre) filas.push({tit:'',pre,antes,f:pesoN+' '+z+'px '+famN,h:z*1.15,color:C.titulo}); }
   }
   // el logo de la marca puede ir afuera de la caja, solo y sin fondo (así la caja queda chica, solo con las letras)
   if(o.logoFuera&&filas.length&&filas[0].logo) cajas.push({filas:[filas.shift()],px:0,py:6,libre:true});
@@ -552,7 +555,7 @@ function dibujarDealer(d,o,n,poner){
   if(sinCaja) cajas.forEach(c=>{ c.py=4; });
   // "una sola caja": cada grupo de cajas seguidas (sin el logo suelto en medio) se pinta como un solo bloque
   if(unaCaja) cajas.forEach((c,i)=>{ if(c.libre) return; c.py=(i===0||cajas[i-1].libre)?24:8; c.pyB=(i===cajas.length-1||cajas[i+1].libre)?24:8; });
-  cajas.forEach(c=>{ c.w=Math.max(...c.filas.map(f=>{ if(f.logo) return f.w; d.font=f.f; if(f.esp) esp('6px'); const w=d.measureText(f.t!=null?f.t:(f.tit+(f.tit&&f.pre?'  ':'')+f.pre)).width; esp(LS0); return w; }))+c.px*2;
+  cajas.forEach(c=>{ c.w=Math.max(...c.filas.map(f=>{ if(f.logo) return f.w; d.font=f.f; if(f.esp) esp('6px'); const w=d.measureText(f.t!=null?f.t:(f.tit+(f.tit&&f.pre?'  ':'')+(f.antes?f.antes+'  ':'')+f.pre)).width; esp(LS0); return w; }))+c.px*2;
     c.h=c.filas.reduce((a,f)=>a+f.h,0)+c.py+(c.pyB!=null?c.pyB:c.py); });
   if(unaCaja){ const wm=Math.max(...cajas.filter(c=>!c.libre).map(c=>c.w)); cajas.forEach(c=>{ if(!c.libre) c.w=wm; }); }
   if(completo) cajas.forEach(c=>{ if(!c.libre) c.w=W; }); // de orilla a orilla
@@ -583,8 +586,12 @@ function dibujarDealer(d,o,n,poner){
       if(f.logo){ d.drawImage(f.logo,(W-f.w)/2,cy+6,f.w,f.h-18); cy+=f.h; return; }
       d.font=f.f;
       if(f.t!=null){ if(f.esp) esp('6px'); d.fillStyle=f.color; d.fillText(f.t,W/2,mid); esp(LS0); }
-      else { const sep=f.tit&&f.pre?'  ':'', a=d.measureText(f.tit+sep).width, b=d.measureText(f.pre).width, x0=(W-a-b)/2;
-        d.textAlign='left'; d.fillStyle=f.color; d.fillText(f.tit+sep,x0,mid); d.fillStyle=C.precio; d.fillText(f.pre,x0+a,mid); d.textAlign='center'; }
+      else { const sep=f.tit&&f.pre?'  ':'', av=f.antes?f.antes+'  ':'', a=d.measureText(f.tit+sep).width, aa=d.measureText(av).width, b=d.measureText(f.pre).width, x0=(W-a-aa-b)/2;
+        d.textAlign='left'; d.fillStyle=f.color; d.fillText(f.tit+sep,x0,mid);
+        if(f.antes){ // precio de antes, más clarito y tachado
+          const wa=d.measureText(f.antes).width, z=parseFloat(String(f.f).split(' ')[1])||60;
+          d.fillStyle=alfa(f.color,.7); d.fillText(f.antes,x0+a,mid); d.fillRect(x0+a-4,mid-z*.06,wa+8,Math.max(3,z*.08)); }
+        d.fillStyle=f.antes?'#ff3b30':C.precio; d.fillText(f.pre,x0+a+aa,mid); d.textAlign='center'; }
       cy+=f.h; });
   });
   d.restore(); esp('0px');
@@ -777,12 +784,14 @@ function opciones(){
     linea1:st.estilo==='dealer'&&st.marcaEst==='no'?'':($('#tLinea1').value.trim()||marcaDeLink()),
     coleccion:m==='portada'?$('#tColeccion').value.trim():'',
     logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value||marcaDeLink(),st.fondoTexto==='blanco'||st.fondoTexto==='crema'?'#0b0b0c':(colores().titulo||'#ffffff')):null,
-    titulo:esProd?$('#tTitulo').value.trim().toUpperCase():'',precio:esProd?precioTxt():'',
+    titulo:esProd?$('#tTitulo').value.trim().toUpperCase():'',precio:esProd?precioTxt():'',precioAntes:esProd?antesTxt():'',
     linea3:esProd?$('#tDesc').value.trim():'',etiqueta:conEtq?$('#tEtiqueta').value.trim():'',fecha:conEtq?fechaHistoria():'',modo:m,anchoFondo:st.anchoFondo,logoFuera:st.logoFuera,logoMarcaColor:st.logoMarcaColor,logoMarcaTam:num(st.logoMarcaTam)||1.3,
     marca:st.marca?marca:null,marcaPos:st.marcaPos,marcaOpacidad:num(st.logoOp)||1,marcaColor:st.logoColor,etqEstilo:st.estilo==='factura'?st.etq:'rojo',colores:colores(),fuente:st.fuente,textoPos:st.textoPos,fondoTexto:st.fondoTexto,unaCaja:st.unaCaja,colorFrase:st.colorFrase,
     escalas:{tit:st.escalas.tit*num(st.tam),nom:st.escalas.nom*num(st.tam),fra:st.escalas.fra*num(st.tam)}};
 }
 function precioTxt(){ if($('#tSinPrecio').checked) return ''; const v=num($('#tMxn').value); return v?'$'+Math.round(v).toLocaleString('en-US'):''; }
+// precio de antes (rebaja): solo si es mayor que el precio de hoy
+function antesTxt(){ if($('#tSinPrecio').checked) return ''; const a=num($('#tAntes').value), v=num($('#tMxn').value); return a&&v&&a>v?'$'+Math.round(a).toLocaleString('en-US'):''; }
 let raf=0;
 function previa(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>Historia.dibujar($('#pv'),opciones())); }
 function calcular(){
@@ -855,6 +864,7 @@ $('#tFecha').addEventListener('change',previa);
 [['escTit','tit'],['escNom','nom'],['escFra','fra']].forEach(([id,k])=>$('#'+id).addEventListener('input',()=>{ st.escalas[k]=num($('#'+id).value)||1; LS.set('estilo',st); previa(); }));
 $('#escReset').addEventListener('click',()=>{ st.escalas={tit:1,nom:1,fra:1}; LS.set('estilo',st); pintarOpciones(); previa(); });
 $('#tMxn').addEventListener('input',()=>{ mxnManual=$('#tMxn').value.trim()!==''; calcular(); previa(); });
+$('#tAntes').addEventListener('input',()=>previa());
 
 /* lista y guardar */
 function nombreArchivo(i){ const t=($('#tTitulo').value||'historia').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'').slice(0,40); return (i!=null?String(i).padStart(2,'0')+'-':'')+t+'.jpg'; }
@@ -875,7 +885,7 @@ $('#btnAgregar').addEventListener('click',async()=>{
 });
 $('#btnNueva').addEventListener('click',()=>{
   fotos=vacias(); ajustes=ajVacios(); sel=-1; mxnManual=false; serieColores=null; notaSerie(''); $('#tSinPrecio').checked=false;
-  ['tTitulo','tUsd','tMxn','tLink'].forEach(id=>$('#'+id).value=''); origen=null; notaCat();
+  ['tTitulo','tUsd','tMxn','tAntes','tLink'].forEach(id=>$('#'+id).value=''); origen=null; notaCat();
   pintarSlots(); calcular(); previa(); toast('Lista para el siguiente producto');
 });
 /* En la PC: las historias se guardan directo en una carpeta que escoges una vez (sin WhatsApp ni compartir, tal cual salen).
@@ -1050,6 +1060,8 @@ async function recibirProducto(d){
   if(d.marca){ marcaOriginal=String(d.marca); $('#tLinea1').value=marcaOriginal.toLowerCase(); }
   if(d.nombre) $('#tTitulo').value=String(d.nombre).replace(/^\s*\d+\s*-\s*/,'').toUpperCase();
   if(d.precioUsd){ $('#tUsd').value=num(d.precioUsd); mxnManual=false; }
+  // en rebaja (la marca trae el precio de antes): sale tachado y el de hoy en rojo
+  $('#tAntes').value=num(d.precioAntesUsd)>num(d.precioUsd)?pesos(d.precioAntesUsd):'';
   if(d.url){ $('#tLink').value=d.url; const c=coleccionDeLink(d.url); if(c) $('#tColeccion').value=c; }
   origen=null; notaCat();
   calcular();
