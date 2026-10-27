@@ -78,7 +78,7 @@ label>input,label>select{margin-top:6px}
 .dock .btn{flex:1}
 .cola{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
 .cola .h{position:relative;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
-.cola img{width:100%;display:block;aspect-ratio:9/16;object-fit:cover}
+.cola img{width:100%;display:block;height:auto}
 .cola button{position:absolute;right:4px;top:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:14px;cursor:pointer}
 .note{font-size:13px;color:var(--muted);margin:6px 0 0}
 .drawer{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.45)}
@@ -101,6 +101,7 @@ label>input,label>select{margin-top:6px}
     <div style="display:grid;gap:14px">
       <section class="card">
         <h2>1. Fotos</h2>
+        <div class="chips" id="formato" style="margin-bottom:8px"></div>
         <div class="chips" id="disenos"></div>
         <div class="slots" id="slots"></div>
         <input type="file" id="fileIn" accept="image/*" multiple class="sr">
@@ -241,7 +242,8 @@ label>input,label>select{margin-top:6px}
    La franja de texto va en su propio espacio: nunca tapa la ropa. */
 (function(g){
 'use strict';
-const W=1080, H=1920, GAP=6;
+// historia 1080 × 1920; post 1080 × 1350 (se escoge en "Formato")
+const W=1080, GAP=6; let H=1920;
 const MONO='"Courier New", Courier, ui-monospace, monospace';
 const SANS='-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
 /* Paleta de tus facturas */
@@ -599,6 +601,7 @@ function dibujarDealer(d,o,n,poner){
 /* o = {diseno:'1'|'2'|'4'|'6'|'8', fotos:[Image], ajustes:[{zoom,x,y}], completa:bool,
         linea1, titulo, precio, linea3, etiqueta, estilo:'dealer'|'factura'|'negro'|'blanco', fuente, textoPos} */
 function dibujar(canvas,o){
+  H=+o.alto===1350?1350:1920;
   canvas.width=W; canvas.height=H;
   const d=canvas.getContext('2d'); d.imageSmoothingQuality='high';
   d.fillStyle='#ffffff'; d.fillRect(0,0,W,H);
@@ -638,7 +641,7 @@ function dibujar(canvas,o){
   marcaAgua(d,o);
   return canvas;
 }
-g.Historia={dibujar,W,H,FUENTES};
+g.Historia={dibujar,W,get H(){ return H; },FUENTES};
 })(window);
 
 </script>
@@ -739,6 +742,7 @@ function chipsPaleta(){
 }
 function chips(el,ops,val,key){ el.innerHTML=ops.map(o=>'<button type="button" class="chip'+(val===o[0]?' on':'')+'" data-'+key+'="'+esc(o[0])+'">'+esc(o[1])+'</button>').join(''); }
 function pintarOpciones(){
+  chips($('#formato'),[['1920','Historia (1080 × 1920)'],['1350','Post (1080 × 1350)']],String(st.formato||'1920'),'fmt');
   chips($('#disenos'),[['1','1 foto'],['2','2 fotos'],['4','4 fotos'],['5','5 fotos'],['6','6 fotos'],['7','7 fotos'],['8','8 fotos']],st.diseno,'dis');
   chips($('#estilos'),[['dealer','Dealer (cajas negras)'],['factura','Como mis facturas'],['blanco','Franja blanca'],['negro','Franja negra']],st.estilo,'est');
   $('#fuentes').innerHTML=Object.entries(Historia.FUENTES).map(([k,v])=>'<button type="button" class="chip'+(st.fuente===k?' on':'')+'" data-fte="'+k+'" style="font-family:'+esc(v.tit)+';font-weight:'+v.titW+'">'+esc(v.n)+'</button>').join('');
@@ -780,7 +784,7 @@ function opciones(){
   // Cada tipo de historia lleva solo sus textos: Portada (etiqueta, fecha, logo, colección),
   // Producto (logo, nombre, precio, frase) y Producto suelto (lo de Producto + etiqueta y fecha)
   const m=st.modo, conEtq=m!=='producto', esProd=m!=='portada';
-  return {diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
+  return {alto:+st.formato||1920,diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
     linea1:st.estilo==='dealer'&&st.marcaEst==='no'?'':($('#tLinea1').value.trim()||marcaDeLink()),
     coleccion:m==='portada'?$('#tColeccion').value.trim():'',
     logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value||marcaDeLink(),st.fondoTexto==='blanco'||st.fondoTexto==='crema'?'#0b0b0c':(colores().titulo||'#ffffff')):null,
@@ -821,6 +825,7 @@ $('#ajReset').addEventListener('click',()=>{ ajustes[sel]={}; pintarSlots(); pre
 
 /* opciones */
 document.addEventListener('click',e=>{
+  const fm=e.target.closest('[data-fmt]'); if(fm){ st.formato=fm.dataset.fmt; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const d=e.target.closest('[data-dis]'); if(d){ st.diseno=d.dataset.dis; sel=-1; LS.set('estilo',st); pintarOpciones(); pintarSlots(); previa(); return; }
   const es=e.target.closest('[data-est]'); if(es){ st.estilo=es.dataset.est; if(st.estilo==='dealer'&&st.paleta==='facturas') st.paleta='negro'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const mr=e.target.closest('[data-mrc]'); if(mr){ $('#tLinea1').value=mr.dataset.mrc; marcaOriginal=mr.dataset.mrc; previa(); return; }
