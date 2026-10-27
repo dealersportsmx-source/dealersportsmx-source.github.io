@@ -124,11 +124,18 @@ label>input,label>select{margin-top:6px}
         <div data-modos="anuncio">
           <label>Línea 1 <span class="opt">(chica y separada, ej. la marca)</span><input id="tA1" placeholder="GYMSHARK" autocomplete="off"></label>
           <div class="chips frases" id="fA1"></div>
+          <div class="chips frases" id="cA1"></div>
+          <label class="tamLinea">Tamaño de la línea 1<input type="range" min="0.5" max="1.8" step="0.05" id="sA1"></label>
           <label>Línea 2 <span class="opt">(la grande)</span><input id="tA2" placeholder="PREVENTA" autocomplete="off"></label>
           <div class="chips frases" id="fA2"></div>
+          <label class="tamLinea">Tamaño de la línea 2<input type="range" min="0.5" max="1.8" step="0.05" id="sA2"></label>
           <label>Línea 3 <span class="opt">(mediana)</span><input id="tA3" placeholder="COLECCIÓN VENGEANCE" autocomplete="off"></label>
           <div class="chips frases" id="fA3"></div>
+          <div class="chips frases" id="cA3"></div>
+          <label class="tamLinea">Tamaño de la línea 3<input type="range" min="0.5" max="1.8" step="0.05" id="sA3"></label>
           <label>Línea 4 <span class="opt">(chiquita, ej. tu @)</span><input id="tA4" placeholder="@dealersportsmx" autocomplete="off"></label>
+          <label class="tamLinea">Tamaño de la línea 4<input type="range" min="0.5" max="1.8" step="0.05" id="sA4"></label>
+          <p class="note" style="margin:6px 0 0">Para mover los textos arriba, al centro o abajo, y agrandar o achicar todo junto, usa <b>3. Estilo</b>.</p>
         </div>
         <label>Marca <span class="opt">(sale su logo; la extensión la llena sola)</span><input id="tLinea1" placeholder="Darc Sport" autocomplete="off"></label>
         <div class="chips frases" id="marcasRapidas"></div>
@@ -427,22 +434,34 @@ function marcaAgua(d,o){
   }
   d.save(); d.globalAlpha=o.marcaOpacidad||1; d.drawImage(im,x,y,w,h); d.restore();
 }
-/* Anuncio (flyer): foto grande, sombra abajo y 4 líneas centradas, cada una con su letra:
-   1) chica y separada (GYMSHARK), 2) enorme (PREVENTA), 3) mediana (COLECCIÓN VENGEANCE), 4) tu @ */
+/* Anuncio (flyer): foto grande, sombra donde van los textos y 4 líneas centradas, cada una con su letra:
+   1) chica y separada (GYMSHARK), 2) enorme (PREVENTA), 3) mediana (COLECCIÓN VENGEANCE), 4) tu @.
+   Cada línea tiene su tamaño (barrita) y color; "Tamaño de los textos" las agranda o achica todas;
+   "Dónde van los textos" las pone arriba, al centro o abajo. */
 function dibujarAnuncio(d,o){
   const A=o.anuncio||{}, L=[A.l1,A.l2,A.l3,A.l4].map(l=>l||{}), esp=v=>{ if('letterSpacing' in d) d.letterSpacing=v; };
-  const gr=d.createLinearGradient(0,H*.42,0,H); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,.72)');
-  d.fillStyle=gr; d.fillRect(0,H*.42,W,H*.58);
-  // tamaño de cada línea: el que quepa a lo ancho (sin pasarse de su tamaño máximo)
-  const medida=(l,max,ancho,sp)=>{ if(!l.t) return null; let z=max; const f=()=>{ d.font=(l.w||'700')+' '+z+'px '+(l.fam||'sans-serif'); esp(sp?Math.round(z*sp)+'px':'0px'); return d.measureText(l.t).width; };
-    while(z>18&&f()>ancho) z-=2; f(); return {l,z,sp,h:z*(l.alto||1.05)}; };
-  const filas=[medida(L[0],56,W*.8,.28),medida(L[1],300,W*.9,0),medida(L[2],84,W*.88,.02),medida(L[3],40,W*.8,0)];
-  const gaps=[10,14,22];
-  let y=H-Math.round(H*.055)-(filas[3]?filas[3].h:0)-(filas[3]?gaps[2]:0)-(filas[2]?filas[2].h:0)-(filas[2]?gaps[1]:0)-(filas[1]?filas[1].h:0)-(filas[1]?gaps[0]:0)-(filas[0]?filas[0].h:0);
-  d.save(); d.textAlign='center'; d.textBaseline='top'; d.fillStyle='#ffffff'; d.shadowColor='rgba(0,0,0,.55)'; d.shadowBlur=18; d.shadowOffsetY=3;
+  const g=A.g||1, pos=A.pos||'abajo';
+  // tamaño de cada línea: su tamaño elegido; si no cabe a lo ancho, se achica lo necesario
+  const medida=(l,max,ancho,sp)=>{ if(!l.t) return null; const s=(+l.s||1)*g; let z=Math.round(max*s);
+    const lim=Math.min(W*.96,ancho*Math.max(1,s));
+    const f=()=>{ d.font=(l.w||'700')+' '+z+'px '+(l.fam||'sans-serif'); esp(sp?Math.round(z*sp)+'px':'0px'); return d.measureText(l.t).width; };
+    while(z>14&&f()>lim) z-=2; f(); return {l,z,sp,h:z*1.05}; };
+  const filas=[medida(L[0],56,W*.8,.28),medida(L[1],250,W*.9,0),medida(L[2],76,W*.88,.02),medida(L[3],38,W*.8,0)];
+  const gaps=[10,14,22].map(x=>x*g);
+  let total=0; filas.forEach((f,i)=>{ if(!f) return; total+=f.h; if(filas.slice(i+1).some(Boolean)) total+=gaps[i]; });
+  const m=Math.round(H*.055), arriba=Math.round(H*.16);
+  let y=pos==='arriba'?arriba:pos==='centro'?Math.round((H-total)/2):H-m-total;
+  // sombra suave detrás de los textos para que se lean sobre cualquier foto
+  const y0=Math.max(0,y-H*.18), y1=Math.min(H,y+total+H*.18);
+  const gr=d.createLinearGradient(0,y0,0,y1);
+  if(pos==='abajo'){ gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,.72)'); d.fillStyle=gr; d.fillRect(0,y0,W,H-y0); }
+  else if(pos==='arriba'){ const gt=d.createLinearGradient(0,0,0,y1); gt.addColorStop(0,'rgba(0,0,0,.65)'); gt.addColorStop(1,'rgba(0,0,0,0)'); d.fillStyle=gt; d.fillRect(0,0,W,y1); }
+  else { gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(.5,'rgba(0,0,0,.5)'); gr.addColorStop(1,'rgba(0,0,0,0)'); d.fillStyle=gr; d.fillRect(0,y0,W,y1-y0); }
+  d.save(); d.textAlign='center'; d.textBaseline='top'; d.shadowColor='rgba(0,0,0,.55)'; d.shadowBlur=18; d.shadowOffsetY=3;
   filas.forEach((f,i)=>{ if(!f) return; d.font=(f.l.w||'700')+' '+f.z+'px '+(f.l.fam||'sans-serif'); esp(f.sp?Math.round(f.z*f.sp)+'px':'0px');
+    d.fillStyle=f.l.color||A.color||'#ffffff';
     // con espacio entre letras el texto se recorre a la derecha: se compensa
-    d.fillText(f.l.t,W/2+(f.sp?Math.round(f.z*f.sp)/2:0),y+(f.l.sube||0)*f.z); y+=f.h+(gaps[i]||0); });
+    d.fillText(f.l.t,W/2+(f.sp?Math.round(f.z*f.sp)/2:0),y); y+=f.h+(gaps[i]||0); });
   esp('0px'); d.restore();
 }
 /* Tipos de letra del estilo Dealer (se bajan de Google Fonts; sin internet se usa la letra del aparato) */
@@ -748,8 +767,10 @@ const LETRAS_ANUNCIO={anton:['Anton','Anton, Impact, sans-serif','400'],bebas:['
   poppins:['Poppins','Poppins, Arial, sans-serif','800'],teko:['Teko','Teko, "Arial Narrow", sans-serif','600'],russo:['Racing','"Russo One", Impact, sans-serif','400'],
   unbounded:['Ancha','Unbounded, Arial, sans-serif','800'],playfair:['Elegante','"Playfair Display", Georgia, serif','800']};
 const ANUNCIO=Object.assign({t1:'',t2:'PREVENTA',t3:'',t4:'@dealersportsmx',f1:'montserrat',f2:'anton',f3:'lato'},LS.get('anuncio',{}));
-function lineasAnuncio(){ const l=k=>{ const v=LETRAS_ANUNCIO[ANUNCIO['f'+k]]||LETRAS_ANUNCIO.lato; return {t:String(ANUNCIO['t'+k]||'').trim().toUpperCase(),fam:v[1],w:v[2]}; };
-  return {l1:l(1),l2:l(2),l3:l(3),l4:{t:String(ANUNCIO.t4||'').trim(),fam:LETRAS_ANUNCIO.lato[1],w:'700'}}; }
+function lineasAnuncio(){ const l=k=>{ const v=LETRAS_ANUNCIO[ANUNCIO['f'+k]]||LETRAS_ANUNCIO.lato; return {t:String(ANUNCIO['t'+k]||'').trim().toUpperCase(),fam:v[1],w:v[2],s:+ANUNCIO['s'+k]||1,color:ANUNCIO['c'+k]||''}; };
+  // "Tamaño de los textos" (Mediano = como viene) y "Dónde van los textos" de 3. Estilo
+  return {l1:l(1),l2:l(2),l3:l(3),l4:{t:String(ANUNCIO.t4||'').trim(),fam:LETRAS_ANUNCIO.lato[1],w:'700',s:+ANUNCIO.s4||1},
+    g:(parseFloat(st.tam)||0.85)/0.85,pos:st.textoPos||'abajo'}; }
 const NOTA_TIPO={portada:'Portada de la colección: etiqueta, fecha, logo de la marca y colección. Pon las mejores fotos del drop.',
   producto:'Cada modelo: logo de la marca, nombre, precio y frase (Aparta con $500).',
   suelto:'Un solo producto sin portada: lleva también la etiqueta (PREVENTA) y la fecha.',
@@ -812,6 +833,17 @@ function pintarOpciones(){
   chipsPaleta();
   $('#frases').innerHTML=FRASES.map(f=>'<button type="button" class="chip" data-frase="'+esc(f)+'">+ '+esc(f)+'</button>').join('');
   $('#etiquetas').innerHTML=ETIQ.map(f=>'<button type="button" class="chip" data-etq="'+esc(f)+'">'+esc(f)+'</button>').join('')+'<button type="button" class="chip" data-etq="">Sin etiqueta</button>';
+  pintarAnuncio();
+}
+/* Anuncio (flyer): color y tamaño de cada línea, y esconder los estilos que no aplican al flyer */
+const COLORES_LINEA=[['#ffffff','Blanco'],['#e0261b','Rojo'],['#8b5cf6','Morado'],['#d9b99b','Beige'],['#ffd21f','Amarillo'],['#3b82f6','Azul'],['#22c55e','Verde'],['#0b0b0c','Negro']];
+function pintarAnuncio(){
+  [1,3].forEach(k=>{ $('#cA'+k).innerHTML=COLORES_LINEA.map(([c,nom])=>'<button type="button" class="chip'+((ANUNCIO['c'+k]||'#ffffff')===c?' on':'')+'" data-acol="'+k+'|'+c+'"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:'+c+';border:1px solid #888;vertical-align:-2px;margin-right:6px"></span>'+nom+'</button>').join(''); });
+  [1,2,3,4].forEach(k=>{ $('#sA'+k).value=String(+ANUNCIO['s'+k]||1); });
+  const esA=st.modo==='anuncio';
+  ['fuentes','fondoTexto','cajasEst','anchoFondo','logoLugar','logoMarcaTam','colorFrase','marcaEst'].forEach(id=>{ const el=$('#'+id); if(!el) return; el.hidden=esA; const p=el.previousElementSibling; if(p&&p.classList.contains('note')) p.hidden=esA; });
+  const dt=document.querySelector('#dealerBox details'); if(dt) dt.hidden=esA;
+  if(esA&&$('#logoMarcaColorBox')) $('#logoMarcaColorBox').hidden=true;
 }
 function n(){ return +st.diseno; }
 function pintarSlots(){
@@ -1159,6 +1191,8 @@ Promise.all([marca.negro.decode().catch(()=>{}),marca.crema.decode().catch(()=>{
 document.fonts&&document.fonts.ready.then(previa);
 /* Anuncio (flyer): lo que escribes y la letra de cada línea se quedan guardados para la próxima */
 [1,2,3,4].forEach(k=>{ const el=$('#tA'+k); el.value=ANUNCIO['t'+k]||''; el.addEventListener('input',()=>{ ANUNCIO['t'+k]=el.value; LS.set('anuncio',ANUNCIO); previa(); }); });
+[1,2,3,4].forEach(k=>{ $('#sA'+k).addEventListener('input',e=>{ ANUNCIO['s'+k]=+e.target.value; LS.set('anuncio',ANUNCIO); previa(); }); });
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-acol]'); if(!b) return; const [k,c]=b.dataset.acol.split('|'); ANUNCIO['c'+k]=c; LS.set('anuncio',ANUNCIO); pintarAnuncio(); previa(); });
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-afnt]'); if(!b) return; const [k,id]=b.dataset.afnt.split('|'); ANUNCIO['f'+k]=id; LS.set('anuncio',ANUNCIO); pintarOpciones();
   const v=LETRAS_ANUNCIO[id]; if(document.fonts) document.fonts.load(v[2]+' 60px '+v[1]).then(previa,previa); else previa(); });
 // las letras del flyer se bajan antes de dibujar (si no, el primer dibujo sale con otra letra)
