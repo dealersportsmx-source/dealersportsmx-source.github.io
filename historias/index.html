@@ -259,7 +259,7 @@ label>input,label>select{margin-top:6px}
 (function(g){
 'use strict';
 // historia 1080 × 1920; post 1080 × 1350 (se escoge en "Formato")
-const W=1080, GAP=6; let H=1920;
+const W=1080, GAP=6; let H=1920, ACOMODO=""; // ACOMODO "grande": 4 fotos = 1 grande arriba + 3 abajo
 const MONO='"Courier New", Courier, ui-monospace, monospace';
 const SANS='-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
 /* Paleta de tus facturas */
@@ -480,6 +480,9 @@ const FUENTES={
 /* Cuántas columnas y filas lleva cada diseño */
 function rejilla(n){ return {1:[1,1],2:[1,2],4:[2,2],6:[2,3],8:[2,4]}[n]||[2,2]; }
 function ponerRejilla(poner,n,x0,y0,w,h,gap){
+  if((n===3||n===4)&&ACOMODO==="grande"){ // 1 grande arriba (poco más de la mitad) + 2 o 3 chicas en fila abajo
+    const k=n-1, hb=Math.round((h-gap)*.58), cw=(w-gap*(k-1))/k, y2=y0+hb+gap, h2=h-hb-gap;
+    poner(0,x0,y0,w,hb); for(let i=1;i<=k;i++) poner(i,x0+(i-1)*(cw+gap),y2,cw,h2); return; }
   if(n===5){ // 5 fotos: 2 arriba, 1 ancha en medio, 2 abajo
     const rh=(h-gap*2)/3, cw=(w-gap)/2;
     poner(0,x0,y0,cw,rh); poner(1,x0+cw+gap,y0,cw,rh);
@@ -653,7 +656,7 @@ function dibujar(canvas,o){
   const d=canvas.getContext('2d'); d.imageSmoothingQuality='high';
   d.fillStyle='#ffffff'; d.fillRect(0,0,W,H);
   const fotos=(o.fotos||[]).filter(Boolean), aj=o.ajustes||[];
-  const n=+o.diseno||1;
+  const n=parseInt(o.diseno)||1; ACOMODO=/g$/.test(o.diseno||"")?"grande":"";
   const poner=(i,x,y,w,h)=>{ const im=fotos[i];
     if(!im){
       if(o.estilo!=='dealer'){ d.fillStyle='#e5e5e5'; d.fillRect(x,y,w,h); return; }
@@ -807,7 +810,7 @@ function chips(el,ops,val,key){ el.innerHTML=ops.map(o=>'<button type="button" c
 function pintarOpciones(){
   [1,2,3].forEach(k=>{ $('#fA'+k).innerHTML=Object.entries(LETRAS_ANUNCIO).map(([id,v])=>'<button type="button" class="chip'+(ANUNCIO['f'+k]===id?' on':'')+'" data-afnt="'+k+'|'+id+'" style="font-family:'+esc(v[1])+';font-weight:'+v[2]+'">'+esc(v[0])+'</button>').join(''); });
   chips($('#formato'),[['1920','Historia (1080 × 1920)'],['1350','Post (1080 × 1350)'],['1080','Cuadrado (1080 × 1080)']],String(st.formato||'1920'),'fmt');
-  chips($('#disenos'),[['1','1 foto'],['2','2 fotos'],['4','4 fotos'],['5','5 fotos'],['6','6 fotos'],['7','7 fotos'],['8','8 fotos']],st.diseno,'dis');
+  chips($('#disenos'),[['1','1 foto'],['2','2 fotos'],['3g','3 fotos (1 grande + 2)'],['4','4 fotos'],['4g','4 fotos (1 grande + 3)'],['5','5 fotos'],['6','6 fotos'],['7','7 fotos'],['8','8 fotos']],st.diseno,'dis');
   chips($('#estilos'),[['dealer','Dealer (cajas negras)'],['factura','Como mis facturas'],['blanco','Franja blanca'],['negro','Franja negra']],st.estilo,'est');
   $('#fuentes').innerHTML=Object.entries(Historia.FUENTES).map(([k,v])=>'<button type="button" class="chip'+(st.fuente===k?' on':'')+'" data-fte="'+k+'" style="font-family:'+esc(v.tit)+';font-weight:'+v.titW+'">'+esc(v.n)+'</button>').join('');
   chips($('#cajasEst'),[['separadas','Separadas'],['una','Una sola']],st.unaCaja?'una':'separadas','caj');
@@ -846,7 +849,7 @@ function pintarAnuncio(){
   const dt=document.querySelector('#dealerBox details'); if(dt) dt.hidden=esA;
   if(esA&&$('#logoMarcaColorBox')) $('#logoMarcaColorBox').hidden=true;
 }
-function n(){ return +st.diseno; }
+function n(){ return parseInt(st.diseno)||1; }
 function pintarSlots(){
   let h=''; for(let i=0;i<n();i++){ const f=fotos[i];
     h+='<button type="button" class="slot'+(sel===i?' sel':'')+'" data-slot="'+i+'" aria-label="Foto '+(i+1)+'">'+(f?'<img src="'+f.src+'" alt=""><span class="n">'+(i+1)+'</span>':'<span><b>+</b>Foto '+(i+1)+'</span>')+'</button>'; }
