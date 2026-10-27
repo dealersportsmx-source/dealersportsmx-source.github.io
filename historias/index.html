@@ -201,6 +201,7 @@ label>input,label>select{margin-top:6px}
         <p class="note" style="margin:14px 0 6px">Tu logo</p><div class="chips" id="logos"></div>
         <p class="note" style="margin:14px 0 6px">Qué tan fuerte se ve tu logo</p><div class="chips" id="logoOp"></div>
         <p class="note" style="margin:14px 0 6px">Color de tu logo</p><div class="chips" id="logoCol"></div>
+        <p class="note" style="margin:14px 0 6px">Línea entre fotos</p><div class="chips" id="lineaFotos"></div>
       </section>
 
       <section class="card" id="colaBox" hidden>
@@ -500,7 +501,7 @@ function ponerRejilla(poner,n,x0,y0,w,h,gap){
 }
 /* Estilo Dealer: fotos de orilla a orilla y los textos en cajas negras encimadas, como en tus historias de Instagram */
 function dibujarDealer(d,o,n,poner){
-  d.fillStyle='#000000'; d.fillRect(0,0,W,H);
+  d.fillStyle=o.linea==='blanca'?'#ffffff':'#000000'; d.fillRect(0,0,W,H); // la línea entre fotos: negra o blanca
   ponerRejilla(poner,n,0,0,W,H,n>1?4:0);
   const F=FUENTES[o.fuente]||FUENTES.deportiva;
   // Fondo de los textos: negro, translúcido, blanco, crema (el de tu logo) o sin fondo con sombra
@@ -675,6 +676,7 @@ function dibujar(canvas,o){
     const ponerA=(i,x,y,w,h)=>{ const im=fotos[i]; if(!im){ d.fillStyle='#16161a'; d.fillRect(x,y,w,h); return; } const a=aj[i]||{};
       if(a.modo==='completa') contain(d,im,x,y,w,h,colorFondo(im)); else cover(d,im,x,y,w,h,a); };
     // el logo escoge solo blanco o negro según lo que tenga atrás (sobre fotos oscuras, claro)
+    d.fillStyle=o.linea==='blanca'?'#ffffff':'#000000'; d.fillRect(0,0,W,H); // la línea entre fotos: negra o blanca (3. Estilo)
     ponerRejilla(ponerA,n,0,0,W,H,n>1?GAP:0); dibujarAnuncio(d,o); marcaAgua(d,Object.assign({},o,{marcaColor:'auto'})); return canvas; }
   if(o.estilo==='dealer'){ dibujarDealer(d,o,n,poner); marcaAgua(d,o); return canvas; }
   const fr=o.estilo==='factura'?franjaFactura(d,o):armarFranja(d,o);
@@ -834,6 +836,7 @@ function pintarOpciones(){
   chips($('#logos'),[['arriba-der','Arriba derecha'],['arriba-izq','Arriba izquierda'],['abajo-der','Abajo derecha'],['abajo-izq','Abajo izquierda'],['no','Sin logo']],st.marca?st.marcaPos:'no','logo');
   chips($('#logoOp'),[['0.45','Suave'],['0.7','Medio'],['1','Sólido']],st.logoOp,'lop');
   chips($('#logoCol'),[['auto','Automático'],['negro','Negro'],['blanco','Blanco']],st.logoColor,'lcol');
+  chips($('#lineaFotos'),[['negra','Negra'],['blanca','Blanca']],st.linea||'negra','lfot');
   chipsPaleta();
   $('#frases').innerHTML=FRASES.map(f=>'<button type="button" class="chip" data-frase="'+esc(f)+'">+ '+esc(f)+'</button>').join('');
   $('#etiquetas').innerHTML=ETIQ.map(f=>'<button type="button" class="chip" data-etq="'+esc(f)+'">'+esc(f)+'</button>').join('')+'<button type="button" class="chip" data-etq="">Sin etiqueta</button>';
@@ -862,7 +865,7 @@ function opciones(){
   // Cada tipo de historia lleva solo sus textos: Portada (etiqueta, fecha, logo, colección),
   // Producto (logo, nombre, precio, frase) y Producto suelto (lo de Producto + etiqueta y fecha)
   const m=st.modo, conEtq=m!=='producto', esProd=m!=='portada';
-  return {alto:+st.formato||1920,anuncio:m==='anuncio'?lineasAnuncio():null,diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
+  return {alto:+st.formato||1920,linea:st.linea||'negra',anuncio:m==='anuncio'?lineasAnuncio():null,diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
     linea1:st.estilo==='dealer'&&st.marcaEst==='no'?'':($('#tLinea1').value.trim()||marcaDeLink()),
     coleccion:m==='portada'?$('#tColeccion').value.trim():'',
     logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value||marcaDeLink(),st.fondoTexto==='blanco'||st.fondoTexto==='crema'?'#0b0b0c':(colores().titulo||'#ffffff')):null,
@@ -925,6 +928,7 @@ document.addEventListener('click',e=>{
   const lg=e.target.closest('[data-logo]'); if(lg){ if(lg.dataset.logo==='no') st.marca=false; else { st.marca=true; st.marcaPos=lg.dataset.logo; } LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lo=e.target.closest('[data-lop]'); if(lo){ st.logoOp=lo.dataset.lop; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lc=e.target.closest('[data-lcol]'); if(lc){ st.logoColor=lc.dataset.lcol; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const lf=e.target.closest('[data-lfot]'); if(lf){ st.linea=lf.dataset.lfot; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const fr=e.target.closest('[data-frase]'); if(fr){ const t=$('#tDesc'), nueva=fr.dataset.frase;
     // "Aparta/Encarga con $…" reemplaza al que ya estaba (no se juntan dos montos); las demás frases se agregan con " · "
     let partes=t.value.split('·').map(s=>s.trim()).filter(Boolean);
