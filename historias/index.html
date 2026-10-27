@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@500;600;700&family=Montserrat:wght@500;600;700;800;900&family=Oswald:wght@700&family=Archivo+Black&family=Archivo:wght@600&family=Poppins:wght@600;800&family=Teko:wght@600&family=Russo+One&family=Unbounded:wght@800&family=Playfair+Display:wght@800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@500;600;700&family=Montserrat:wght@500;600;700;800;900&family=Oswald:wght@700&family=Archivo+Black&family=Archivo:wght@600&family=Poppins:wght@600;800&family=Teko:wght@600&family=Russo+One&family=Unbounded:wght@800&family=Playfair+Display:wght@800&family=Lato:wght@700;900&display=swap">
 
 <style>
 :root{
@@ -121,6 +121,15 @@ label>input,label>select{margin-top:6px}
         <h2>2. Texto</h2>
         <p class="note" style="margin:0 0 6px">Tipo de historia</p><div class="chips" id="tipoHistoria" style="margin-bottom:6px"></div>
         <p class="note" id="modoNota" style="margin:0 0 12px"></p>
+        <div data-modos="anuncio">
+          <label>Línea 1 <span class="opt">(chica y separada, ej. la marca)</span><input id="tA1" placeholder="GYMSHARK" autocomplete="off"></label>
+          <div class="chips frases" id="fA1"></div>
+          <label>Línea 2 <span class="opt">(la grande)</span><input id="tA2" placeholder="PREVENTA" autocomplete="off"></label>
+          <div class="chips frases" id="fA2"></div>
+          <label>Línea 3 <span class="opt">(mediana)</span><input id="tA3" placeholder="COLECCIÓN VENGEANCE" autocomplete="off"></label>
+          <div class="chips frases" id="fA3"></div>
+          <label>Línea 4 <span class="opt">(chiquita, ej. tu @)</span><input id="tA4" placeholder="@dealersportsmx" autocomplete="off"></label>
+        </div>
         <label>Marca <span class="opt">(sale su logo; la extensión la llena sola)</span><input id="tLinea1" placeholder="Darc Sport" autocomplete="off"></label>
         <div class="chips frases" id="marcasRapidas"></div>
         <div data-modos="portada suelto">
@@ -418,6 +427,24 @@ function marcaAgua(d,o){
   }
   d.save(); d.globalAlpha=o.marcaOpacidad||1; d.drawImage(im,x,y,w,h); d.restore();
 }
+/* Anuncio (flyer): foto grande, sombra abajo y 4 líneas centradas, cada una con su letra:
+   1) chica y separada (GYMSHARK), 2) enorme (PREVENTA), 3) mediana (COLECCIÓN VENGEANCE), 4) tu @ */
+function dibujarAnuncio(d,o){
+  const A=o.anuncio||{}, L=[A.l1,A.l2,A.l3,A.l4].map(l=>l||{}), esp=v=>{ if('letterSpacing' in d) d.letterSpacing=v; };
+  const gr=d.createLinearGradient(0,H*.42,0,H); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,.72)');
+  d.fillStyle=gr; d.fillRect(0,H*.42,W,H*.58);
+  // tamaño de cada línea: el que quepa a lo ancho (sin pasarse de su tamaño máximo)
+  const medida=(l,max,ancho,sp)=>{ if(!l.t) return null; let z=max; const f=()=>{ d.font=(l.w||'700')+' '+z+'px '+(l.fam||'sans-serif'); esp(sp?Math.round(z*sp)+'px':'0px'); return d.measureText(l.t).width; };
+    while(z>18&&f()>ancho) z-=2; f(); return {l,z,sp,h:z*(l.alto||1.05)}; };
+  const filas=[medida(L[0],56,W*.8,.28),medida(L[1],300,W*.9,0),medida(L[2],84,W*.88,.02),medida(L[3],40,W*.8,0)];
+  const gaps=[10,14,22];
+  let y=H-Math.round(H*.055)-(filas[3]?filas[3].h:0)-(filas[3]?gaps[2]:0)-(filas[2]?filas[2].h:0)-(filas[2]?gaps[1]:0)-(filas[1]?filas[1].h:0)-(filas[1]?gaps[0]:0)-(filas[0]?filas[0].h:0);
+  d.save(); d.textAlign='center'; d.textBaseline='top'; d.fillStyle='#ffffff'; d.shadowColor='rgba(0,0,0,.55)'; d.shadowBlur=18; d.shadowOffsetY=3;
+  filas.forEach((f,i)=>{ if(!f) return; d.font=(f.l.w||'700')+' '+f.z+'px '+(f.l.fam||'sans-serif'); esp(f.sp?Math.round(f.z*f.sp)+'px':'0px');
+    // con espacio entre letras el texto se recorre a la derecha: se compensa
+    d.fillText(f.l.t,W/2+(f.sp?Math.round(f.z*f.sp)/2:0),y+(f.l.sube||0)*f.z); y+=f.h+(gaps[i]||0); });
+  esp('0px'); d.restore();
+}
 /* Tipos de letra del estilo Dealer (se bajan de Google Fonts; sin internet se usa la letra del aparato) */
 const FUENTES={
   // tit = letra de los títulos, del nombre y de la frase; base = tamaño del nombre; txt = letra del nombre de la marca escrito
@@ -601,7 +628,7 @@ function dibujarDealer(d,o,n,poner){
 /* o = {diseno:'1'|'2'|'4'|'6'|'8', fotos:[Image], ajustes:[{zoom,x,y}], completa:bool,
         linea1, titulo, precio, linea3, etiqueta, estilo:'dealer'|'factura'|'negro'|'blanco', fuente, textoPos} */
 function dibujar(canvas,o){
-  H=+o.alto===1350?1350:1920;
+  H=+o.alto===1350?1350:+o.alto===1080?1080:1920;
   canvas.width=W; canvas.height=H;
   const d=canvas.getContext('2d'); d.imageSmoothingQuality='high';
   d.fillStyle='#ffffff'; d.fillRect(0,0,W,H);
@@ -621,6 +648,11 @@ function dibujar(canvas,o){
     // si no: si llenar el espacio cortaría más de un tercio de la foto, se muestra completa
     const completa=a.modo==='completa'||(a.modo!=='llenar'&&(o.completa||recorte(im,w,h)>.33));
     if(completa) contain(d,im,x,y,w,h,colorFondo(im)); else cover(d,im,x,y,w,h,a); };
+  if(o.modo==='anuncio'){ // flyer: las fotos llenan todo (sin recorte inteligente), con las 4 líneas encima
+    const ponerA=(i,x,y,w,h)=>{ const im=fotos[i]; if(!im){ d.fillStyle='#16161a'; d.fillRect(x,y,w,h); return; } const a=aj[i]||{};
+      if(a.modo==='completa') contain(d,im,x,y,w,h,colorFondo(im)); else cover(d,im,x,y,w,h,a); };
+    // el logo escoge solo blanco o negro según lo que tenga atrás (sobre fotos oscuras, claro)
+    ponerRejilla(ponerA,n,0,0,W,H,n>1?GAP:0); dibujarAnuncio(d,o); marcaAgua(d,Object.assign({},o,{marcaColor:'auto'})); return canvas; }
   if(o.estilo==='dealer'){ dibujarDealer(d,o,n,poner); marcaAgua(d,o); return canvas; }
   const fr=o.estilo==='factura'?franjaFactura(d,o):armarFranja(d,o);
   if(n>4){
@@ -709,10 +741,19 @@ const TAMANOS=[['0.65','Muy chico'],['0.75','Chico'],['0.85','Mediano'],['1','Gr
 const COLORES_FRASE=[['','Igual'],['#E0261B','Rojo'],['#FFD400','Amarillo'],['#22C55E','Verde'],['#3B82F6','Azul'],['#FF7A00','Naranja'],['#FF4FA3','Rosa'],['#EFE6D4','Crema']];
 const ETIQ=['PREVENTA','PREVENTA ABIERTA','RESTOCK','NUEVO DROP','NUEVA COLECCIÓN','REBAJA','COLORES DISPONIBLES','PREVIEW'];
 /* Tipos de historia: qué textos lleva cada una */
-const TIPOS=[['portada','Portada'],['producto','Producto'],['suelto','Producto suelto']];
+const TIPOS=[['portada','Portada'],['producto','Producto'],['suelto','Producto suelto'],['anuncio','Anuncio (flyer)']];
+/* Anuncio (flyer): cada línea con su propia letra. [nombre, letra, grosor] */
+const LETRAS_ANUNCIO={anton:['Anton','Anton, Impact, sans-serif','400'],bebas:['Bebas','"Bebas Neue", Impact, sans-serif','400'],oswald:['Oswald','Oswald, "Arial Narrow", sans-serif','700'],
+  archivo:['Archivo Black','"Archivo Black", Impact, sans-serif','400'],montserrat:['Montserrat','Montserrat, Arial, sans-serif','800'],lato:['Lato','Lato, Arial, sans-serif','900'],
+  poppins:['Poppins','Poppins, Arial, sans-serif','800'],teko:['Teko','Teko, "Arial Narrow", sans-serif','600'],russo:['Racing','"Russo One", Impact, sans-serif','400'],
+  unbounded:['Ancha','Unbounded, Arial, sans-serif','800'],playfair:['Elegante','"Playfair Display", Georgia, serif','800']};
+const ANUNCIO=Object.assign({t1:'',t2:'PREVENTA',t3:'',t4:'@dealersportsmx',f1:'montserrat',f2:'anton',f3:'lato'},LS.get('anuncio',{}));
+function lineasAnuncio(){ const l=k=>{ const v=LETRAS_ANUNCIO[ANUNCIO['f'+k]]||LETRAS_ANUNCIO.lato; return {t:String(ANUNCIO['t'+k]||'').trim().toUpperCase(),fam:v[1],w:v[2]}; };
+  return {l1:l(1),l2:l(2),l3:l(3),l4:{t:String(ANUNCIO.t4||'').trim(),fam:LETRAS_ANUNCIO.lato[1],w:'700'}}; }
 const NOTA_TIPO={portada:'Portada de la colección: etiqueta, fecha, logo de la marca y colección. Pon las mejores fotos del drop.',
   producto:'Cada modelo: logo de la marca, nombre, precio y frase (Aparta con $500).',
-  suelto:'Un solo producto sin portada: lleva también la etiqueta (PREVENTA) y la fecha.'};
+  suelto:'Un solo producto sin portada: lleva también la etiqueta (PREVENTA) y la fecha.',
+  anuncio:'Flyer: una foto grande, tu logo y 4 líneas de texto. Escoge la letra de cada línea. Para post escoge "Post" arriba en Fotos.'};
 /* Fecha: cuándo lanza, cuándo cierran pedidos o cuándo llega */
 const TIPOS_FECHA=[['cierra','Cierra el'],['lanza','Lanzamiento el'],['llega','Llega aprox.']];
 const DIAS=['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
@@ -742,7 +783,8 @@ function chipsPaleta(){
 }
 function chips(el,ops,val,key){ el.innerHTML=ops.map(o=>'<button type="button" class="chip'+(val===o[0]?' on':'')+'" data-'+key+'="'+esc(o[0])+'">'+esc(o[1])+'</button>').join(''); }
 function pintarOpciones(){
-  chips($('#formato'),[['1920','Historia (1080 × 1920)'],['1350','Post (1080 × 1350)']],String(st.formato||'1920'),'fmt');
+  [1,2,3].forEach(k=>{ $('#fA'+k).innerHTML=Object.entries(LETRAS_ANUNCIO).map(([id,v])=>'<button type="button" class="chip'+(ANUNCIO['f'+k]===id?' on':'')+'" data-afnt="'+k+'|'+id+'" style="font-family:'+esc(v[1])+';font-weight:'+v[2]+'">'+esc(v[0])+'</button>').join(''); });
+  chips($('#formato'),[['1920','Historia (1080 × 1920)'],['1350','Post (1080 × 1350)'],['1080','Cuadrado (1080 × 1080)']],String(st.formato||'1920'),'fmt');
   chips($('#disenos'),[['1','1 foto'],['2','2 fotos'],['4','4 fotos'],['5','5 fotos'],['6','6 fotos'],['7','7 fotos'],['8','8 fotos']],st.diseno,'dis');
   chips($('#estilos'),[['dealer','Dealer (cajas negras)'],['factura','Como mis facturas'],['blanco','Franja blanca'],['negro','Franja negra']],st.estilo,'est');
   $('#fuentes').innerHTML=Object.entries(Historia.FUENTES).map(([k,v])=>'<button type="button" class="chip'+(st.fuente===k?' on':'')+'" data-fte="'+k+'" style="font-family:'+esc(v.tit)+';font-weight:'+v.titW+'">'+esc(v.n)+'</button>').join('');
@@ -784,7 +826,7 @@ function opciones(){
   // Cada tipo de historia lleva solo sus textos: Portada (etiqueta, fecha, logo, colección),
   // Producto (logo, nombre, precio, frase) y Producto suelto (lo de Producto + etiqueta y fecha)
   const m=st.modo, conEtq=m!=='producto', esProd=m!=='portada';
-  return {alto:+st.formato||1920,diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
+  return {alto:+st.formato||1920,anuncio:m==='anuncio'?lineasAnuncio():null,diseno:st.diseno,fotos:fotos.slice(0,n()),ajustes:ajustes.slice(0,n()),estilo:st.estilo,
     linea1:st.estilo==='dealer'&&st.marcaEst==='no'?'':($('#tLinea1').value.trim()||marcaDeLink()),
     coleccion:m==='portada'?$('#tColeccion').value.trim():'',
     logoMarca:st.estilo==='dealer'&&st.marcaEst==='logo'?logoMarcaPara($('#tLinea1').value||marcaDeLink(),st.fondoTexto==='blanco'||st.fondoTexto==='crema'?'#0b0b0c':(colores().titulo||'#ffffff')):null,
@@ -1115,6 +1157,12 @@ function logoBlanco(im){ const c=document.createElement('canvas'); c.width=im.na
   c.naturalWidth=c.width; c.naturalHeight=c.height; return c; }
 Promise.all([marca.negro.decode().catch(()=>{}),marca.crema.decode().catch(()=>{})]).then(()=>{ try{ if(marca.negro.naturalWidth) marca.blanco=logoBlanco(marca.negro); }catch(e){} previa(); });
 document.fonts&&document.fonts.ready.then(previa);
+/* Anuncio (flyer): lo que escribes y la letra de cada línea se quedan guardados para la próxima */
+[1,2,3,4].forEach(k=>{ const el=$('#tA'+k); el.value=ANUNCIO['t'+k]||''; el.addEventListener('input',()=>{ ANUNCIO['t'+k]=el.value; LS.set('anuncio',ANUNCIO); previa(); }); });
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-afnt]'); if(!b) return; const [k,id]=b.dataset.afnt.split('|'); ANUNCIO['f'+k]=id; LS.set('anuncio',ANUNCIO); pintarOpciones();
+  const v=LETRAS_ANUNCIO[id]; if(document.fonts) document.fonts.load(v[2]+' 60px '+v[1]).then(previa,previa); else previa(); });
+// las letras del flyer se bajan antes de dibujar (si no, el primer dibujo sale con otra letra)
+if(document.fonts) Promise.all(Object.values(LETRAS_ANUNCIO).map(v=>document.fonts.load(v[2]+' 60px '+v[1]).catch(()=>{}))).then(previa);
 // Las letras del estilo Dealer solo se usan en el dibujo, así que hay que pedirlas para que estén listas
 if(document.fonts&&document.fonts.load) Promise.all(['400 60px Anton','400 60px "Bebas Neue"','600 40px Montserrat','800 40px Montserrat','900 40px Montserrat','600 40px Inter','700 40px Oswald','400 40px "Archivo Black"','800 40px Poppins','600 40px Teko','400 40px "Russo One"','800 40px Unbounded','800 40px "Playfair Display"'].map(f=>document.fonts.load(f).catch(()=>{}))).then(previa);
 leerHash(); leerCatHash();
