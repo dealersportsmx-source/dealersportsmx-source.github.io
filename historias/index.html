@@ -449,6 +449,7 @@ function dibujarAnuncio(d,o){
   const filas=[medida(L[0],56,W*.8,.28),medida(L[1],250,W*.9,0),medida(L[2],76,W*.88,.02),medida(L[3],38,W*.8,0)];
   const gaps=[10,14,22].map(x=>x*g);
   let total=0; filas.forEach((f,i)=>{ if(!f) return; total+=f.h; if(filas.slice(i+1).some(Boolean)) total+=gaps[i]; });
+  if(!total) return; // sin textos: solo la foto y tu logo (sin sombra)
   const m=Math.round(H*.055), arriba=Math.round(H*.16);
   let y=pos==='arriba'?arriba:pos==='centro'?Math.round((H-total)/2):H-m-total;
   // sombra suave detrás de los textos para que se lean sobre cualquier foto
