@@ -8,7 +8,7 @@ const DEF={
   tc:18,          // tipo de cambio (MXN por dólar)
   red:50,         // redondear al múltiplo de $50 más cercano (justo a la mitad, hacia arriba)
   anticipo:30,    // % de las prendas que se paga para apartar (el envío va aparte)
-  envioMty:80,    // envío en Monterrey
+  envioMty:100,   // envío en Monterrey y área metropolitana
   envioNac:150,   // envío nacional
   gratisMas:3000, // envío gratis en compras MAYORES a esta cantidad
   // [marca, multiplicador]; vacío (null) = variable: se pide cada vez
