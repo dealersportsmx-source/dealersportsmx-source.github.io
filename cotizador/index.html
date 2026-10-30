@@ -57,6 +57,17 @@ h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em;text-transform:
 .mrow{display:grid;grid-template-columns:minmax(0,1fr) 110px 34px;gap:8px;align-items:center;margin-bottom:8px}
 .mrow input{min-height:42px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--field);font-size:15px;width:100%}
 .mrow .x{background:none;border:0;color:#c4402f;font-size:20px;cursor:pointer}
+/* descuentos por sección */
+.dsc{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.dsc.on{border-color:#E0243F}
+.dsc-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.dsc-h b{font-size:15px}
+.sw{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;cursor:pointer}
+.sw input{width:22px;height:22px;accent-color:#E0243F;margin:0}
+.dsc .chips{margin-bottom:10px}
+.dsc .chip{min-height:38px}
+.dsc .f{margin-bottom:8px}
+.dsc select,.dsc input[type="datetime-local"],.dsc .otro{display:block;width:100%;margin-top:5px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--field);font-size:16px;color:inherit}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.on{opacity:1}
 </style>
@@ -99,7 +110,7 @@ h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em;text-transform:
   <div class="pn-b">
     <div class="g2">
       <label class="f">Tipo de cambio<input id="aTc" inputmode="decimal"></label>
-      <label class="f">Redondear a múltiplos de $<input id="aRed" inputmode="numeric"></label>
+      <label class="f">Redondear<select id="aRed" style="display:block;width:100%;margin-top:5px;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--field);font-size:15px;color:inherit"></select></label>
       <label class="f">Anticipo (% de las prendas)<input id="aAnt" inputmode="decimal"></label>
       <label class="f">Envío gratis en compras mayores a $<input id="aGratis" inputmode="numeric"></label>
       <label class="f">Envío Monterrey $<input id="aMty" inputmode="numeric"></label>
@@ -109,7 +120,10 @@ h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em;text-transform:
     <p class="note" style="margin:0 0 10px">Déjalo vacío si la marca es variable (te lo pide cada vez).</p>
     <div id="aMarcas"></div>
     <button class="btn o full" id="aAdd" type="button" style="margin-top:4px">Agregar marca</button>
-    <p class="note">El Catálogo usa estos mismos números. A la tienda le llegan el anticipo, el redondeo y los envíos cuando das "Publicar tienda".</p>
+    <p class="note">Son los mismos de Historias › Ajustes. Los precios de la tienda no cambian al moverlos: cambian cuando das "Recalcular precios de la tienda" en Historias › Ajustes. El anticipo, los envíos y los descuentos le llegan a la tienda cuando das "Publicar tienda" en el Catálogo.</p>
+    <span class="lbl" style="margin-top:22px">Descuentos de la tienda</span>
+    <p class="note" style="margin:0 0 10px">Uno por sección. Se aplica al precio de venta redondeando siempre hacia abajo, y no se suma a las prendas que ya están en Rebajas. Llega a la tienda cuando das "Publicar tienda" en el Catálogo.</p>
+    <div id="aDesc"></div>
   </div>
   <div class="pn-f"><button class="btn full" id="aGuardar" type="button">Guardar ajustes</button></div>
 </div></div>
@@ -155,10 +169,39 @@ $('#mult').addEventListener('input',calcular);
 /* ajustes */
 function filaMarca(m){ return '<div class="mrow"><input data-k="n" value="'+esc(m[0])+'" placeholder="Marca" aria-label="Marca"><input data-k="v" value="'+(P.n(m[1])>0?m[1]:'')+'" inputmode="decimal" placeholder="variable" aria-label="Multiplicador de '+esc(m[0])+'"><button type="button" class="x" aria-label="Quitar marca">×</button></div>'; }
 function abrirAj(){
-  $('#aTc').value=C.tc; $('#aRed').value=C.red; $('#aAnt').value=C.anticipo; $('#aGratis').value=C.gratisMas; $('#aMty').value=C.envioMty; $('#aNac').value=C.envioNac;
+  $('#aRed').innerHTML=P.REDONDEOS.map(r=>'<option value="'+r[0]+'">'+esc(r[3])+'</option>').join('');
+  $('#aTc').value=C.tc; $('#aRed').value=C.redondeo||'50c'; $('#aAnt').value=C.anticipo; $('#aGratis').value=C.gratisMas; $('#aMty').value=C.envioMty; $('#aNac').value=C.envioNac;
   $('#aMarcas').innerHTML=C.marcas.map(filaMarca).join('');
+  $('#aDesc').innerHTML=SECCIONES.map(s=>bloqueDesc(s,(C.descuentos||{})[s[0]]||{})).join('');
   $('#ov').hidden=false; document.body.style.overflow='hidden';
 }
+/* descuentos por sección: activo, % (10, 15, 20, 25 u otro), marca y fecha de fin (opcional, se apaga sola) */
+const SECCIONES=[['pedido','Sobre pedido'],['preventa','Preventa'],['inmediata','Entrega inmediata']];
+const PCTS=[10,15,20,25];
+// la fecha se guarda completa (con zona horaria) y aquí se muestra en la hora de este aparato
+const aLocal=iso=>{ const d=iso?new Date(iso):null; if(!d||isNaN(d)) return ''; const z=new Date(d-d.getTimezoneOffset()*6e4); return z.toISOString().slice(0,16); };
+function bloqueDesc(s,x){
+  const pct=P.n(x.pct), otro=pct&&!PCTS.includes(pct)?pct:'';
+  return '<div class="dsc'+(x.on?' on':'')+'" data-s="'+s[0]+'"><div class="dsc-h"><b>'+s[1]+'</b><label class="sw"><input type="checkbox" data-k="on"'+(x.on?' checked':'')+'> Activo</label></div>'+
+    '<div class="chips">'+PCTS.map(v=>'<button type="button" class="chip'+(pct===v?' on':'')+'" data-pct="'+v+'">'+v+'%</button>').join('')+'</div>'+
+    '<label class="f">Otro porcentaje<input class="otro" data-k="otro" inputmode="decimal" placeholder="Ej. 30" value="'+esc(otro)+'"></label>'+
+    '<label class="f">Marca<select data-k="marca"><option value="">Todas las marcas</option>'+C.marcas.map(m=>'<option'+(m[0]===x.marca?' selected':'')+'>'+esc(m[0])+'</option>').join('')+'</select></label>'+
+    '<label class="f">Termina (opcional)<input type="datetime-local" data-k="fin" value="'+aLocal(x.fin)+'"></label></div>';
+}
+function leerDesc(){
+  const out={};
+  document.querySelectorAll('#aDesc .dsc').forEach(b=>{
+    const otro=P.n(b.querySelector('[data-k="otro"]').value), ch=b.querySelector('.chip.on'), pct=otro>0?otro:ch?P.n(ch.dataset.pct):0;
+    const f=b.querySelector('[data-k="fin"]').value, d=f?new Date(f):null;
+    out[b.dataset.s]={on:b.querySelector('[data-k="on"]').checked&&pct>0,pct,marca:b.querySelector('[data-k="marca"]').value,fin:d&&!isNaN(d)?d.toISOString():''};
+  });
+  return out;
+}
+$('#aDesc').addEventListener('click',e=>{ const c=e.target.closest('[data-pct]'); if(!c) return; const b=c.closest('.dsc');
+  b.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); b.querySelector('[data-k="otro"]').value=''; });
+$('#aDesc').addEventListener('input',e=>{ const b=e.target.closest('.dsc'); if(!b) return;
+  if(e.target.dataset.k==='otro'&&e.target.value) b.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  if(e.target.dataset.k==='on') b.classList.toggle('on',e.target.checked); });
 function cerrarAj(){ $('#ov').hidden=true; document.body.style.overflow=''; }
 $('#btnAj').addEventListener('click',abrirAj);
 $('#ajCerrar').addEventListener('click',cerrarAj);
@@ -169,7 +212,10 @@ $('#aGuardar').addEventListener('click',()=>{
   const tc=P.n($('#aTc').value);
   if(!(tc>0)){ toast('Pon un tipo de cambio válido'); return; }
   const marcas=[...document.querySelectorAll('#aMarcas .mrow')].map(r=>{ const nm=r.querySelector('[data-k="n"]').value.trim(), v=P.n(r.querySelector('[data-k="v"]').value); return nm?[nm,v>0?v:null]:null; }).filter(Boolean);
-  C={tc,red:P.n($('#aRed').value)||50,anticipo:P.n($('#aAnt').value),gratisMas:P.n($('#aGratis').value),envioMty:P.n($('#aMty').value),envioNac:P.n($('#aNac').value),marcas};
+  // se conservan los demás ajustes (precios de la tienda, otras marcas…)
+  C=Object.assign({},C,{tc,redondeo:$('#aRed').value,anticipo:P.n($('#aAnt').value),gratisMas:P.n($('#aGratis').value),envioMty:P.n($('#aMty').value),envioNac:P.n($('#aNac').value),marcas,descuentos:leerDesc()});
+  const sinPct=SECCIONES.find(s=>document.querySelector('#aDesc [data-s="'+s[0]+'"] [data-k="on"]').checked&&!(C.descuentos[s[0]].pct>0));
+  if(sinPct){ toast('Elige el % del descuento de '+sinPct[1]); return; }
   if(!P.guardar(C)){ toast('No se pudo guardar'); return; }
   if(!C.marcas.some(m=>m[0]===sel)) sel=C.marcas[0]?C.marcas[0][0]:null;
   pintarMarcas(); calcular(); cerrarAj(); toast('Ajustes guardados');

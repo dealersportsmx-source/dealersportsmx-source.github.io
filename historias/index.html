@@ -52,6 +52,17 @@ label{display:block;font-size:13px;color:var(--muted);margin-bottom:12px}
 label>input,label>select{margin-top:6px}
 .opt{font-size:12px;opacity:.8}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+/* ajustes de precio: margen por marca y precios de la tienda */
+.mg{display:grid;grid-template-columns:minmax(0,1fr) 92px 36px;gap:8px;align-items:center;margin-bottom:8px}
+.mg input{margin:0}
+.mg .x{all:unset;cursor:pointer;color:#c4402f;font-size:22px;text-align:center;line-height:44px}
+.lbl{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.aj-tienda{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.pv-t{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;font-variant-numeric:tabular-nums}
+.pv-t th,.pv-t td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right}
+.pv-t th:first-child,.pv-t td:first-child{text-align:left}
+.pv-t th{font-weight:700;color:var(--muted)}
+.pv-t .sube{color:#16A34A;font-weight:700}.pv-t .baja{color:#E0243F;font-weight:700}
 .lay{display:grid;gap:18px}
 @media (min-width:900px){.lay{grid-template-columns:minmax(0,1fr) 380px;align-items:start}.prev{position:sticky;top:16px}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
@@ -224,13 +235,20 @@ label>input,label>select{margin-top:6px}
 <div class="drawer" id="aj" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="ajTitle">
     <h2 id="ajTitle">Ajustes</h2>
-    <p>Precio en pesos = dólares × tipo de cambio × (1 + margen). Son los mismos de tu Catálogo; si los cambias aquí, se usan en tus historias.</p>
-    <div class="grid2">
-      <label>Tipo de cambio<input id="aTc" inputmode="decimal" autocomplete="off"></label>
-      <label>Margen %<input id="aMargen" inputmode="decimal" autocomplete="off"></label>
-    </div>
-    <label>Redondear<select id="aRed"><option value="90">Que termine en 90, hacia abajo ($1,010 → $990 · $1,310 → $1,290)</option><option value="10">A la decena ($1,152 → $1,160)</option><option value="50">A $50 ($1,152 → $1,200)</option><option value="100">A $100 ($1,152 → $1,200)</option><option value="1">Sin redondeo</option></select></label>
+    <p>Precio en pesos = dólares × tipo de cambio × (1 + margen de la marca). Se usan en tus historias y en la tienda.</p>
+    <label>Tipo de cambio<input id="aTc" inputmode="decimal" autocomplete="off"></label>
+    <p class="lbl" style="margin:4px 0 8px">Margen por marca</p>
+    <div id="aMargenes"></div>
+    <button class="btn ghost full" id="aAddMarca" type="button" style="margin:0 0 12px">Agregar marca</button>
+    <label>Otras marcas (las que no están en la lista) %<input id="aOtras" inputmode="decimal" autocomplete="off"></label>
+    <label>Redondear<select id="aRed"></select></label>
     <button class="btn full" id="aGuardar">Guardar</button>
+    <div class="aj-tienda">
+      <p class="lbl" style="margin:0 0 6px">Precios de la tienda</p>
+      <p id="aTiendaInfo" style="margin:0 0 10px"></p>
+      <button class="btn ghost full" id="aRecalc" type="button">Recalcular precios de la tienda</button>
+      <div id="aPrevia" hidden></div>
+    </div>
     <div id="aCarpetaBox" hidden style="margin-top:14px"><p style="margin:0 0 6px">Carpeta donde se guardan tus historias en esta computadora: <b id="aCarpetaN"></b></p>
       <button class="btn ghost full" id="aCarpeta" type="button">Cambiar carpeta</button></div>
     <button class="btn ghost full" id="aCerrar" style="margin-top:10px">Cerrar</button>
@@ -702,6 +720,7 @@ g.Historia={dibujar,W,get H(){ return H; },FUENTES};
 })(window);
 
 </script>
+<script src="/precios.js"></script>
 <script>
 (function(){
 'use strict';
@@ -712,11 +731,12 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const LS={get(k,d){try{const v=localStorage.getItem('historias_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('historias_'+k,JSON.stringify(v));}catch(e){}}};
 
-/* ajustes: si no hay propios, toma los del Catálogo */
-let AJ=LS.get('ajustes',null);
-if(!AJ){ AJ={tc:18,margen:60,red:10}; try{ Object.assign(AJ,JSON.parse(localStorage.getItem('catalogo_db_ajustes')||'{}')); }catch(e){} }
-// "Que termine en 90": baja al precio anterior que termina en 90 ($1,010 → $990, $1,300 → $1,290, $1,310 → $1,290)
-function pesos(usd){ const v=num(usd)*num(AJ.tc)*(1+num(AJ.margen)/100), r=num(AJ.red)||1; if(!v) return 0; if(r===90) return Math.max(90,Math.floor((v+10)/100)*100-10); return Math.ceil(v/r-1e-9)*r; }
+/* ajustes de precio: los mismos para Historias, el Cotizador y la tienda (precios.js).
+   Pesos = dólares × tipo de cambio × (1 + margen de la marca), con el redondeo que elijas. */
+const PR=window.PRECIOS;
+function marcaActual(){ let m=''; try{ m=marcaOriginal; }catch(e){} return m||$('#tLinea1').value||''; }
+function multActual(){ const C=PR.cargar(); return PR.multMarca(marcaActual(),C)||(1+num(C.margenOtras)/100); } // marca variable: el de otras marcas
+function pesos(usd){ const C=PR.cargar(), v=num(usd)*num(C.tc)*multActual(); return v?PR.redondear(v,C):0; }
 
 /* estado de la historia actual */
 const st=Object.assign({diseno:'4',estilo:'dealer',etq:'franja',marcaPos:'arriba-der',marca:true,logoOp:'1',logoColor:'negro',paleta:'negro',fuente:'deportiva',textoPos:'centro',marcaEst:'logo',fondoTexto:'negro',unaCaja:false,tam:'0.85',colorFrase:'',modo:'producto',fechaTipo:'cierra',anchoFondo:'ajustado',logoFuera:true,logoMarcaColor:'auto',logoMarcaTam:'1.3'},LS.get('estilo',{}));
@@ -882,7 +902,7 @@ function previa(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>Hist
 function calcular(){
   const usd=num($('#tUsd').value);
   if(!mxnManual) $('#tMxn').value=usd?pesos(usd):'';
-  $('#calc').textContent=usd?('$'+usd+' × '+num(AJ.tc)+' × '+(1+num(AJ.margen)/100).toFixed(2)+' = $'+pesos(usd)+(mxnManual?' · usando tu precio':'')):'Escribe el precio en dólares y se calcula en pesos con tu tabulador.';
+  $('#calc').textContent=usd?('$'+usd+' × '+num(PR.cargar().tc)+' × '+multActual().toFixed(2)+' = $'+pesos(usd)+(mxnManual?' · usando tu precio':'')):'Escribe el precio en dólares y se calcula en pesos con tu tabulador.';
 }
 
 /* fotos */
@@ -909,7 +929,7 @@ document.addEventListener('click',e=>{
   const fm=e.target.closest('[data-fmt]'); if(fm){ st.formato=fm.dataset.fmt; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const d=e.target.closest('[data-dis]'); if(d){ st.diseno=d.dataset.dis; sel=-1; LS.set('estilo',st); pintarOpciones(); pintarSlots(); previa(); return; }
   const es=e.target.closest('[data-est]'); if(es){ st.estilo=es.dataset.est; if(st.estilo==='dealer'&&st.paleta==='facturas') st.paleta='negro'; LS.set('estilo',st); pintarOpciones(); previa(); return; }
-  const mr=e.target.closest('[data-mrc]'); if(mr){ $('#tLinea1').value=mr.dataset.mrc; marcaOriginal=mr.dataset.mrc; previa(); return; }
+  const mr=e.target.closest('[data-mrc]'); if(mr){ $('#tLinea1').value=mr.dataset.mrc; marcaOriginal=mr.dataset.mrc; calcular(); previa(); return; } // cada marca con su margen
   const lt=e.target.closest('[data-lmt]'); if(lt){ st.logoMarcaTam=lt.dataset.lmt; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lm=e.target.closest('[data-lmc]'); if(lm){ st.logoMarcaColor=lm.dataset.lmc; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const an=e.target.closest('[data-anch]'); if(an){ st.anchoFondo=an.dataset.anch; LS.set('estilo',st); pintarOpciones(); previa(); return; }
@@ -1021,12 +1041,49 @@ $('#btnGuardar').addEventListener('click',async()=>{
 window.addEventListener('beforeunload',e=>{ if(cola.length){ e.preventDefault(); e.returnValue=''; } });
 
 /* ajustes */
-$('#btnAj').addEventListener('click',()=>{ $('#aTc').value=AJ.tc; $('#aMargen').value=AJ.margen; $('#aRed').value=String(AJ.red); $('#aj').hidden=false; pintarCarpeta(); });
+/* Ajustes: tipo de cambio, margen por marca (65 % = ×1.65) y redondeo. Son los mismos del Cotizador y de la tienda. */
+const pctDe=m=>num(m)>0?String(Math.round((num(m)-1)*1000)/10):''; // ×1.65 → 65
+function filaMargen(m){ return '<div class="mg"><input data-k="n" value="'+esc(m[0])+'" placeholder="Marca" aria-label="Marca"><input data-k="v" value="'+pctDe(m[1])+'" inputmode="decimal" placeholder="variable" aria-label="Margen % de '+esc(m[0])+'"><button type="button" class="x" aria-label="Quitar marca">×</button></div>'; }
+function fechaHora(iso){ const d=new Date(iso); if(!iso||isNaN(d)) return ''; return d.getDate()+' de '+MESES_C[d.getMonth()]+' '+d.getFullYear()+', '+d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit'}); }
+function pintarTiendaInfo(){ const C=PR.cargar(), t=C.tienda||{}, r=PR.REDONDEOS.find(x=>x[0]===t.redondeo);
+  $('#aTiendaInfo').innerHTML='Calculados con dólar a <b>$'+num(t.tc)+'</b>'+(r?' · '+esc(r[3].split(' (')[0].toLowerCase()):' · a $50, al más cercano')+'<br>'+(t.fecha?'Última vez que recalculaste: <b>'+fechaHora(t.fecha)+'</b>':'Todavía no has recalculado desde aquí.'); }
+$('#btnAj').addEventListener('click',()=>{ const C=PR.cargar();
+  $('#aTc').value=C.tc; $('#aOtras').value=num(C.margenOtras);
+  $('#aMargenes').innerHTML=C.marcas.map(filaMargen).join('');
+  $('#aRed').innerHTML=PR.REDONDEOS.map(r=>'<option value="'+r[0]+'">'+esc(r[3])+'</option>').join(''); $('#aRed').value=C.redondeo||'50c';
+  $('#aPrevia').hidden=true; $('#aRecalc').hidden=false; pintarTiendaInfo();
+  $('#aj').hidden=false; pintarCarpeta(); });
+$('#aAddMarca').addEventListener('click',()=>{ $('#aMargenes').insertAdjacentHTML('beforeend',filaMargen(['',''])); $('#aMargenes .mg:last-child input').focus(); });
+$('#aMargenes').addEventListener('click',e=>{ if(e.target.closest('.x')) e.target.closest('.mg').remove(); });
+// lee el panel; null si el tipo de cambio no sirve
+function leerAjustes(){ const tc=num($('#aTc').value); if(!(tc>0)){ toast('Pon un tipo de cambio válido'); return null; }
+  const marcas=[...document.querySelectorAll('#aMargenes .mg')].map(r=>{ const nm=r.querySelector('[data-k="n"]').value.trim(), v=num(r.querySelector('[data-k="v"]').value); return nm?[nm,v>0?Math.round((1+v/100)*1000)/1000:null]:null; }).filter(Boolean);
+  return Object.assign(PR.cargar(),{tc,marcas,margenOtras:num($('#aOtras').value),redondeo:$('#aRed').value}); }
+/* Recalcular precios de la tienda: primero una vista previa con el precio de hoy y el nuevo; solo cambian si das "Aplicar". */
+$('#aRecalc').addEventListener('click',async()=>{
+  const C=leerAjustes(); if(!C) return;
+  const d=await abrirCatalogo(false); const prods=d?await reqP(d.transaction('productos').objectStore('productos').getAll()):[]; if(d) d.close();
+  const T=PR.tiendaCfg(C), N=Object.assign({},C,PR.foto(C,'')), calc=prods.filter(p=>(p.nombre||'').trim()&&num(p.costoUsd)>0&&!String(p.precioManual||'').trim());
+  const filas=calc.map(p=>({p,hoy:PR.precioProducto(p,T),nuevo:PR.precioProducto(p,N)})), cambian=filas.filter(f=>f.hoy!==f.nuevo);
+  // ejemplos: uno o dos de cada marca, primero los que cambian
+  const vistos={}, ej=[]; cambian.concat(filas).forEach(f=>{ const k=f.p.marca||''; if(ej.includes(f)||(vistos[k]||0)>=2||ej.length>=10) return; vistos[k]=(vistos[k]||0)+1; ej.push(f); });
+  $('#aPrevia').innerHTML=(calc.length?'<p style="margin:12px 0 0"><b>'+cambian.length+' de '+calc.length+' prendas</b> cambian de precio. Algunos ejemplos:</p>'+
+    '<table class="pv-t"><tr><th>Prenda</th><th>Hoy</th><th>Nuevo</th></tr>'+ej.map(f=>'<tr><td>'+esc(f.p.nombre)+'<br><small style="color:var(--muted)">'+esc(f.p.marca||'')+'</small></td><td>$'+f.hoy.toLocaleString('en-US')+'</td><td class="'+(f.nuevo>f.hoy?'sube':f.nuevo<f.hoy?'baja':'')+'">$'+f.nuevo.toLocaleString('en-US')+'</td></tr>').join('')+'</table>'+
+    '<p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Las prendas con precio a mano no cambian. "Aparta con" y los descuentos se calculan solos con el precio nuevo.</p>':
+    '<p style="margin:12px 0 10px">No encontré prendas en tu Catálogo en este aparato.</p>')+
+    '<div class="grid2"><button class="btn ghost" type="button" id="aRecalcNo">Cancelar</button><button class="btn" type="button" id="aRecalcSi"'+(calc.length?'':' disabled')+'>Aplicar</button></div>';
+  $('#aPrevia').hidden=false; $('#aRecalc').hidden=true;
+  $('#aRecalcNo').onclick=()=>{ $('#aPrevia').hidden=true; $('#aRecalc').hidden=false; };
+  $('#aRecalcSi').onclick=()=>{ C.tienda=PR.foto(C,new Date().toISOString()); if(!PR.guardar(C)){ toast('No se pudo guardar'); return; }
+    $('#aPrevia').hidden=true; $('#aRecalc').hidden=false; pintarTiendaInfo(); calcular(); previa();
+    toast('Precios recalculados. Para que se vean en la tienda, abre el Catálogo y da "Publicar tienda".'); };
+});
 $('#aCarpeta').addEventListener('click',async()=>{ try{ const h=await carpetaPC(true); toast('Tus historias se guardarán en “'+h.name+'”'); }catch(e){} });
 $('#aCerrar').addEventListener('click',()=>{ $('#aj').hidden=true; });
 $('#aj').addEventListener('click',e=>{ if(e.target.id==='aj') $('#aj').hidden=true; });
-$('#aGuardar').addEventListener('click',()=>{ const tc=num($('#aTc').value); if(!(tc>0)){ toast('Pon un tipo de cambio válido'); return; }
-  AJ={tc,margen:num($('#aMargen').value),red:num($('#aRed').value)||1}; LS.set('ajustes',AJ); $('#aj').hidden=true; calcular(); previa(); toast('Ajustes guardados'); });
+// Guardar: se usa de inmediato en Historias y el Cotizador; la tienda sigue igual hasta "Recalcular precios de la tienda"
+$('#aGuardar').addEventListener('click',()=>{ const C=leerAjustes(); if(!C) return; if(!PR.guardar(C)){ toast('No se pudo guardar'); return; }
+  $('#aj').hidden=true; calcular(); previa(); toast('Ajustes guardados. La tienda cambia solo si das "Recalcular precios de la tienda".'); });
 
 /* ---------- conexión con tu Catálogo (misma app FITWEARMX) ---------- */
 const CATDB='catalogo_db';
