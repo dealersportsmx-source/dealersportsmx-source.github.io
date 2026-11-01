@@ -103,7 +103,20 @@ input[type=date],input[type=datetime-local]{-webkit-appearance:none;appearance:n
 .empty{color:var(--muted);padding:32px 0;text-align:center}
 .fatal{margin:16px 0;padding:14px 16px;border:2px solid var(--danger);border-radius:12px;color:var(--danger)}
 
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--surface);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+/* ordenar productos por marca */
+.ord{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;background:var(--bg);padding-top:env(safe-area-inset-top,0px)}
+.ord-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.ord-h h2{margin:0;font-size:20px}
+.ord-m{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;border-bottom:1px solid var(--line)}
+.ord-l{flex:1;overflow-y:auto;padding:0 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.ord-r{display:grid;grid-template-columns:44px 48px minmax(0,1fr);gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);background:var(--bg)}
+.ord-r.mov{opacity:.55}
+.ord-r .asa{display:grid;place-items:center;height:48px;font-size:22px;color:var(--muted);cursor:grab;touch-action:none;user-select:none}
+.ord-r .th{width:48px;height:60px;border-radius:6px;overflow:hidden;background:var(--field);display:grid;place-items:center;font-size:10px;color:var(--muted)}
+.ord-r .th img{width:100%;height:100%;object-fit:cover}
+.ord-r b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.ord-r small{color:var(--muted);font-size:12px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:var(--surface);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
 .tab{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px;color:var(--muted);font-size:11px;cursor:pointer;text-align:center}
 .tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tab.on{color:var(--ink);font-weight:700}
@@ -191,7 +204,7 @@ label>input,label>textarea,label>select{margin-top:6px}
   
   <div id="fatal" class="fatal" hidden></div>
   <div class="stats" id="stats"></div>
-  <div class="sec-title"><h2 id="secName">Stock</h2><span><small id="secCount"></small><button type="button" class="selbtn" id="btnSel">Seleccionar</button></span></div>
+  <div class="sec-title"><h2 id="secName">Stock</h2><span><small id="secCount"></small><button type="button" class="selbtn" id="btnOrden">Ordenar</button><button type="button" class="selbtn" id="btnSel">Seleccionar</button></span></div>
   <div class="search"><input id="q" type="search" placeholder="Buscar por nombre, marca o color" aria-label="Buscar producto" autocomplete="off"></div>
   <div class="filters" id="filtLinea" role="group" aria-label="Filtrar por línea"></div>
   <div class="filters" id="filters" role="group" aria-label="Filtrar por marca"></div>
@@ -203,11 +216,19 @@ label>input,label>textarea,label>select{margin-top:6px}
   <span id="selN">0 seleccionadas</span>
   <button type="button" class="btn ghost" id="selTodas">Todas</button>
   <button type="button" class="btn ghost" id="selMv" disabled>🔥 Más vendido</button>
+  <button type="button" class="btn ghost" id="selOcultar" disabled>Ocultar</button>
   <button type="button" class="btn danger" id="selDel" disabled>Eliminar</button>
   <button type="button" class="btn ghost" id="selCancel">Cancelar</button>
 </div>
 
 <nav class="tabs" id="tabs" aria-label="Secciones"></nav>
+
+<!-- Ordenar: arrastra las prendas de cada marca; ese orden es el que se ve en la tienda -->
+<div class="ord" id="ord" hidden role="dialog" aria-modal="true" aria-labelledby="ordT">
+  <div class="ord-h"><h2 id="ordT">Ordenar productos</h2><button type="button" class="btn ghost" id="ordCerrar" style="margin:0">Listo</button></div>
+  <div class="ord-m" id="ordMarcas"></div>
+  <div class="ord-l" id="ordLista"></div>
+</div>
 
 <!-- Ficha del producto -->
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="barName">
@@ -441,9 +462,10 @@ const ICON={
   preventas:'<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg>',
   drops:'<svg viewBox="0 0 24 24"><path d="M12 3c3 2 5 5.5 5 9.5L15 16H9l-2-3.5C7 8.5 9 5 12 3z"/><circle cx="12" cy="10" r="1.6"/><path d="M9 16l-2 4 3.5-1.5M15 16l2 4-3.5-1.5"/></svg>',
   camino:'<svg viewBox="0 0 24 24"><path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
-  todos:'<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>'
+  todos:'<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+  ocultos:'<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.7a2 2 0 002.8 2.8M9.4 5.3A10 10 0 0121.5 12a15 15 0 01-2.9 3.6M6.3 6.4A15 15 0 002.5 12 10 10 0 0014.6 18.7"/></svg>'
 };
-const SECCIONES=[['stock','Stock'],['preventas','Sobre pedido'],['drops','Preventas'],['camino','En camino'],['todos','Todos']];
+const SECCIONES=[['stock','Stock'],['preventas','Sobre pedido'],['drops','Preventas'],['camino','En camino'],['todos','Todos'],['ocultos','Ocultos']];
 
 /* ---------- ajustes (tipo de cambio, margen, redondeo) ---------- */
 const AJ_KEY=CFG.db+'_ajustes';
@@ -543,7 +565,38 @@ async function cargarPortadas(){
   const st=db.transaction('fotos').objectStore('fotos');
   await Promise.all(ids.map(async id=>{ const f=await reqP(st.get(id)).catch(()=>null); if(f&&f.blob) thumbURL.set(id,URL.createObjectURL(f.blob)); }));
 }
+/* Ocultos: por qué una prenda no sale en la tienda. Las tallas se toman de lo publicado, porque el bot las actualiza ahí.
+   Sigue la misma regla que la tienda: hasta 2XL y al menos un color con 3 tallas entre XS y 2XL. */
+let VIVO=new Map(), NO_EXISTE={};
+async function cargarVivo(){
+  const leer=u=>fetch(u+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
+  const [d,n]=await Promise.all([leer('/tienda/datos.json'),leer('/tienda/no-existen.json')]);
+  VIVO=new Map(((d&&d.productos)||[]).map(p=>[p.id,p])); NO_EXISTE=n&&typeof n==='object'?n:{};
+  renderTabs(); renderList();
+}
+const T_MIN=['XS','S','M','L','XL','2XL'];
+function coloresActivos(cols){ return (cols||[]).filter(c=>{ if(c.agotado) return false; const k=Object.keys(c.tallas||{}); return !k.length||k.some(t=>!/^(?:[3-9]XL|X{3,}L?)$/i.test(String(t).trim())); }); }
+function pocasTallas(p,cols){
+  const cat=(p.catManual&&p.categoria)||tipoPorNombre(p.nombre,p.linea)||p.categoria||''; if(/^accesorio/i.test(cat)) return false;
+  let letras=false;
+  for(const c of cols){ const s=new Set(); Object.keys(c.tallas||{}).forEach(t=>String(t).toUpperCase().replace(/\s+/g,'').split('/').forEach(x=>{ x=x==='XXL'?'2XL':x; if(T_MIN.includes(x)) s.add(x); if(/^(XS|S|M|L|XL|XXL|\dXL)$/.test(x)) letras=true; }));
+    if(s.size>=3) return false; }
+  return letras;
+}
+function motivoOculto(p){
+  if(!(p.nombre||'').trim()) return 'Sin nombre';
+  if(p.enTienda===false) return 'Ocultado por mí';
+  if(B(p)==='agotado') return 'Agotado';
+  const v=VIVO.get(p.id);
+  if(!p.forzar&&NO_EXISTE[p.id]) return 'Ya no existe en la página de la marca';
+  if(VIVO.size&&!v) return 'Falta publicar';
+  if(B(p)==='disponible') return '';
+  const cols=coloresActivos((v||p).colores);
+  if((v||p).colores&&(v||p).colores.length&&!cols.length) return 'Agotado en la marca';
+  return !p.forzar&&pocasTallas(p,cols)?'Pocas tallas':'';
+}
 function enSeccion(p,s){
+  if(s==='ocultos') return !!motivoOculto(p);
   if(s==='todos') return true;
   if(s==='stock') return B(p)==='disponible';
   if(s==='preventas') return B(p)==='preventa'||apartados(p).length>0;
@@ -587,6 +640,7 @@ function rowHTML(p){
   if(p.destacado) pills.push('<span class="pill">⭐</span>');
   if(p.masVendido) pills.push('<span class="pill" style="background:#e9c86a;color:#1a1300">🔥 Más vendido</span>');
   if(revisarTipo(p)) pills.push('<span class="pill low">Revisar tipo</span>');
+  const mot=motivoOculto(p); if(mot) pills.unshift('<span class="pill low">'+esc(mot)+'</span>');
   const sz=t.size?[...t].map(([k,v])=>k+(v>1?'·'+v:'')).join('  '):(['disponible','agotado'].includes(p.estado)?'Sin piezas':'');
   const precio=precioVenta(p), base=precioDe(p), of=has(p.oferta)&&num(p.oferta)>0&&num(p.oferta)<base;
   const colores=(p.colores||[]).filter(c=>c.nombre).length;
@@ -606,10 +660,10 @@ function renderList(){
   $('#secCount').textContent=rows.length===1?'1 producto':rows.length+' productos';
   $('#subInfo').textContent='Dólar $'+num(PRECIOS.tiendaCfg().tc).toFixed(2)+' · '+(productos.length===1?'1 producto':productos.length+' productos');
   if(!rows.length){
-    const vacio={stock:'Aquí aparece lo que tienes disponible para vender.',preventas:'Aquí aparece lo que vendes sobre pedido y lo que te apartan.',drops:'Aquí aparecen tus preventas con su fecha de cierre.',camino:'Aquí aparece lo que ya pediste y viene en camino.',todos:'Todavía no tienes productos. Toca “Nuevo producto”.'};
+    const vacio={stock:'Aquí aparece lo que tienes disponible para vender.',preventas:'Aquí aparece lo que vendes sobre pedido y lo que te apartan.',drops:'Aquí aparecen tus preventas con su fecha de cierre.',camino:'Aquí aparece lo que ya pediste y viene en camino.',ocultos:'Todo lo que tienes está saliendo en tu tienda.',todos:'Todavía no tienes productos. Toca “Nuevo producto”.'};
     $('#list').innerHTML='<p class="empty">'+((q||filtroMarca||filtroLinea)?'Ningún producto coincide con la búsqueda.':vacio[seccion])+'</p>'; return;
   }
-  $('#list').innerHTML=rows.map(rowHTML).join('');
+  $('#list').innerHTML=(seccion==='ocultos'?'<p class="empty" style="margin:8px 0;text-align:left">No salen en la tienda. Toca <b>Seleccionar</b> para volver a mostrar o eliminar uno o varios. Eliminar solo lo haces tú; el bot nunca borra.</p>':'')+rows.map(rowHTML).join('');
 }
 function updateBackupWarn(){
   let last=0; try{ last=+localStorage.getItem(CFG.db+'_ultimoRespaldo')||0; }catch(e){}
@@ -637,7 +691,53 @@ function pintarSel(){
   // "Más vendido": si todas las elegidas ya lo tienen, se los quita; si no, se los pone a todas
   const todas=n&&productos.filter(p=>sel.has(p.id)).every(p=>p.masVendido);
   $('#selMv').disabled=!n; $('#selMv').textContent=todas?'Quitar Más vendido':'🔥 Más vendido';
+  // si todas están ocultas se vuelven a mostrar; si no, se ocultan
+  const ocultas=n&&productos.filter(p=>sel.has(p.id)).every(p=>{ const m=motivoOculto(p); return m&&m!=='Falta publicar'; });
+  $('#selOcultar').disabled=!n; $('#selOcultar').textContent=ocultas?'Volver a mostrar':'Ocultar';
 }
+$('#selOcultar').addEventListener('click',async()=>{
+  const ps=productos.filter(p=>sel.has(p.id)); if(!ps.length) return;
+  const mostrar=ps.every(p=>{ const m=motivoOculto(p); return m&&m!=='Falta publicar'; });
+  for(const p of ps){
+    if(mostrar){ p.enTienda=true; p.forzar=false; const m=motivoOculto(p); if(m==='Pocas tallas'||m==='Ya no existe en la página de la marca') p.forzar=true; } // tú decides: sale aunque la regla la esconda
+    else { p.enTienda=false; p.forzar=false; }
+    p.updatedAt=Date.now(); await put('productos',p);
+  }
+  modoSel(false); renderTabs(); renderList();
+  toast((mostrar?'Se volverá a mostrar: ':'Se ocultará: ')+(ps.length===1?'1 prenda':ps.length+' prendas')+'. Toca Publicar tienda para verlo.');
+});
+
+/* ---------- Ordenar por marca ----------
+   Arrastra desde ≡. Las prendas nuevas no tienen número de orden y salen al principio de su marca hasta que las muevas. */
+let ordMarca='';
+// "gymshark" y "Gymshark" son la misma marca: se ordenan juntas
+function ordMarcas(){ const m=new Map(); productos.forEach(p=>{ const n=(p.marca||'').trim(), k=PRECIOS.norm(n); if(n&&(!m.has(k)||/^[A-Z]/.test(n))) m.set(k,n); }); return [...m.values()].sort((a,b)=>a.localeCompare(b,'es')); }
+function ordCmp(a,b){ const x=+a.orden||0, y=+b.orden||0; if(!x&&!y) return (b.createdAt||0)-(a.createdAt||0); if(!x) return -1; if(!y) return 1; return x-y; }
+function pintarOrden(){
+  const ms=ordMarcas(); if(!ms.includes(ordMarca)) ordMarca=ms.includes(filtroMarca)?filtroMarca:(ms.find(m=>/youngla/i.test(m))||ms[0]||'');
+  $('#ordMarcas').innerHTML=ms.map(m=>'<button type="button" class="chip'+(m===ordMarca?' on':'')+'" data-om="'+esc(m)+'" style="flex:none">'+esc(m)+'</button>').join('');
+  const rows=productos.filter(p=>PRECIOS.norm(p.marca)===PRECIOS.norm(ordMarca)&&(!motivoOculto(p)||motivoOculto(p)==='Falta publicar')).sort(ordCmp);
+  $('#ordLista').innerHTML=rows.map(p=>{ const u=p.portada&&thumbURL.get(p.portada); return '<div class="ord-r" data-id="'+esc(p.id)+'"><div class="asa" aria-label="Arrastrar">≡</div><div class="th">'+(u?'<img src="'+u+'" alt="" draggable="false">':'Sin foto')+'</div><div style="min-width:0"><b>'+esc(p.nombre)+'</b><small>'+esc(estTxt(p.estado))+'</small></div></div>'; }).join('')||'<p class="empty">Esta marca no tiene prendas visibles.</p>';
+}
+async function guardarOrden(){
+  const ids=[...document.querySelectorAll('#ordLista .ord-r')].map(r=>r.dataset.id);
+  for(let i=0;i<ids.length;i++){ const p=productos.find(x=>x.id===ids[i]); if(p&&p.orden!==i+1){ p.orden=i+1; await put('productos',p); } }
+  toast('Orden guardado. Toca Publicar tienda para verlo.');
+}
+$('#btnOrden').addEventListener('click',()=>{ pintarOrden(); $('#ord').hidden=false; document.body.style.overflow='hidden'; });
+$('#ordCerrar').addEventListener('click',()=>{ $('#ord').hidden=true; document.body.style.overflow=''; });
+$('#ordMarcas').addEventListener('click',e=>{ const b=e.target.closest('[data-om]'); if(b){ ordMarca=b.dataset.om; pintarOrden(); $('#ordLista').scrollTop=0; } });
+$('#ordLista').addEventListener('pointerdown',e=>{
+  const asa=e.target.closest('.asa'); if(!asa) return; e.preventDefault();
+  const lista=$('#ordLista'), fila=asa.closest('.ord-r'); fila.classList.add('mov');
+  const mover=ev=>{ const r=lista.getBoundingClientRect();
+    if(ev.clientY<r.top+50) lista.scrollTop-=14; else if(ev.clientY>r.bottom-50) lista.scrollTop+=14;
+    const otra=[...lista.querySelectorAll('.ord-r')].find(x=>{ if(x===fila) return false; const q=x.getBoundingClientRect(); return ev.clientY>=q.top&&ev.clientY<=q.bottom; });
+    if(otra){ const q=otra.getBoundingClientRect(); lista.insertBefore(fila,ev.clientY<q.top+q.height/2?otra:otra.nextSibling); } };
+  // en document: al mover la fila en la lista, la flecha seguiría perdiendo el arrastre si se escuchara solo en ella
+  const soltar=()=>{ fila.classList.remove('mov'); document.removeEventListener('pointermove',mover); document.removeEventListener('pointerup',soltar); document.removeEventListener('pointercancel',soltar); guardarOrden(); };
+  document.addEventListener('pointermove',mover); document.addEventListener('pointerup',soltar); document.addEventListener('pointercancel',soltar);
+});
 $('#selMv').addEventListener('click',async()=>{
   const ps=productos.filter(p=>sel.has(p.id)); if(!ps.length) return;
   const poner=!ps.every(p=>p.masVendido);
@@ -1304,7 +1404,7 @@ async function armarTienda(){
     const base=precioDe(p), venta=precioVenta(p);
     lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),coleccion:(p.coleccion||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
-      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,colores});
+      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,forzar:!!p.forzar,colores});
   }
   // inicio: tus banners (foto, texto y a dónde llevan) y las colecciones que escondiste
   const ini=inicioAJ(), banners=[];
@@ -1435,6 +1535,7 @@ function toast(s){ const el=$('#toast'); el.textContent=s; el.classList.add('on'
   if(typeof seedDemo==='function') await seedDemo(false);
   productos=await getAll('productos').catch(()=>[]);
   await refreshList();
+  cargarVivo(); // lo publicado y lo que el bot marcó: para la pestaña Ocultos
   // link con prendas ya marcadas (…/catalogo/#sel=id1,id2): abre Seleccionar con esas; tú decides si las eliminas
   const m=/^#sel=([\w,]+)/.exec(location.hash);
   if(m){ history.replaceState(null,'',location.pathname);
