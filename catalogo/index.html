@@ -100,6 +100,11 @@ input[type=date],input[type=datetime-local]{-webkit-appearance:none;appearance:n
 .pill.disp{background:transparent;border:1px solid var(--green);color:var(--green)}
 .pill.ago{background:transparent;border:1px solid var(--danger);color:var(--danger)}
 .pill.low{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.pill.auto{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.ra-h{margin:18px 0 0;font-size:15px;font-weight:700;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ra-h small{font-weight:400;color:var(--muted);font-size:13px}
+.row.ra{cursor:default}
+.row.ra .pr .btn{margin-top:6px}
 .empty{color:var(--muted);padding:32px 0;text-align:center}
 .fatal{margin:16px 0;padding:14px 16px;border:2px solid var(--danger);border-radius:12px;color:var(--danger)}
 
@@ -174,7 +179,13 @@ label>input,label>textarea,label>select{margin-top:6px}
 .viewer{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.92);display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
 .viewer .vi{flex:1;min-height:0;display:grid;place-items:center;padding:12px}
 .viewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
-.viewer .va{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px}
+.viewer .va{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px 16px}
+.viewer .va .btn{padding:0 8px;white-space:normal;line-height:1.1}
+.rep{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 8px;font-size:13px}
+.rep summary{cursor:pointer;font-weight:600}
+.rep ul{margin:6px 0 0;padding-left:18px;color:var(--muted)}
+.rep b{display:block;margin-top:8px}
+.rep .err{color:var(--danger)}
 .viewer .btn.ghost{color:#fff;border-color:rgba(255,255,255,.35)}
 .viewer .btn.danger{color:#FF6B57;border-color:#FF6B57}
 .drawer{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.45)}
@@ -194,7 +205,7 @@ label>input,label>textarea,label>select{margin-top:6px}
   <header class="top">
     <div>
       <h1>Catálogo</h1>
-      <p class="sub"><span id="subInfo">Cargando…</span><button type="button" class="warn" id="bkWarn" hidden>Haz un respaldo</button></p>
+      <p class="sub"><span id="subInfo">Cargando…</span><span id="dolarHoy" hidden></span><button type="button" class="warn" id="repWarn" hidden></button><button type="button" class="warn" id="bkWarn" hidden>Haz un respaldo</button></p>
     </div>
     <div class="top-actions">
       <button type="button" class="btn ghost" id="btnAjustes">Ajustes</button>
@@ -359,6 +370,7 @@ label>input,label>textarea,label>select{margin-top:6px}
   <div class="vi"><img id="vImg" alt=""></div>
   <div class="va">
     <button type="button" class="btn ghost" id="vClose">Cerrar</button>
+    <button type="button" class="btn ghost" id="vPortada">Usar como portada</button>
     <button type="button" class="btn danger" id="vDel">Borrar</button>
   </div>
 </div>
@@ -370,14 +382,19 @@ label>input,label>textarea,label>select{margin-top:6px}
     <p>Precio = costo USD × multiplicador de la marca × tipo de cambio, redondeado a $50.</p>
     <p id="ajResumen" style="font-weight:600"></p>
     <p>El tipo de cambio, los multiplicadores, el anticipo y los envíos se cambian en <a href="../cotizador/" style="color:inherit;font-weight:700">Cotizador › Ajustes</a>. Después regresa aquí y toca:</p>
-    <button type="button" class="btn full" id="ajGuardar">Recalcular precios de todos los productos</button>
+    <button type="button" class="btn full" id="ajGuardar">Recalcular precios (Sobre pedido y Preventa)</button>
+    <p class="note" style="margin-top:6px">Entrega inmediata queda fija: solo cambia si la editas a mano en esa prenda.</p>
     <button type="button" class="btn ghost full" id="ajJuntar" style="margin-top:8px">Juntar prendas repetidas</button>
     <h2 style="font-size:20px;margin-top:14px">Inicio de la tienda</h2>
     <p>Los anuncios grandes de arriba (hasta 3). Pon foto, texto y a dónde lleva; luego toca <b>Publicar tienda</b>. Si no llenas ninguno, salen los de siempre.</p>
     <div id="inBanners"></div>
+    <label class="switch" style="margin:10px 0 0">Mostrar “Lo más vendido” en el inicio<input type="checkbox" id="inMasVendido"></label>
     <p class="lbl" style="margin-top:14px">Fotos del mosaico de marcas</p>
     <p class="note" style="margin-top:0">Opcional. Si no pones foto, se usa sola la de una prenda de esa marca. Vertical (como post) para YoungLA y Gymshark; cuadrada para las demás; horizontal para Accesorios.</p>
     <div id="inMosaico"></div>
+    <p class="lbl" style="margin-top:14px">Pestaña al entrar a cada marca</p>
+    <p class="note" style="margin-top:0">Automática: la primera con productos (Sobre pedido → Preventa → Entrega inmediata).</p>
+    <div id="inPestana"></div>
     <p class="lbl" style="margin-top:14px">Colecciones en el inicio</p>
     <p class="note" style="margin-top:0">Salen solas con la “Colección” que escribes en cada prenda. Quita la palomita a las que no quieras mostrar.</p>
     <div id="inCols"></div>
@@ -391,6 +408,19 @@ label>input,label>textarea,label>select{margin-top:6px}
     <button type="button" class="btn full" id="btnPublicar">Publicar tienda</button>
     <p class="note" id="pubStatus" style="margin-top:8px"></p>
     <p class="note"><a id="pubLink" target="_blank" rel="noopener" style="color:var(--blue)"></a></p>
+    <h2 style="font-size:20px;margin-top:14px">Rebajas automáticas de Gymshark</h2>
+    <p>Pega ligas de la sección de rebajas de Gymshark con tus filtros ya puestos. El robot las lee tal cual cada hora y sube lo que salga: colores con alguna talla de XS a XL, un solo descuento por modelo (el más bajo) y el aviso “Sujeto a confirmación”. Salen solo en Rebajas. Toca <b>Publicar tienda</b> después de cambiarlas.</p>
+    <div id="ligasReb"></div>
+    <div class="chips" style="margin:6px 0 10px"><input id="ligaNueva" inputmode="url" placeholder="https://www.gymshark.com/collections/…" autocomplete="off" style="flex:1;min-width:200px"><button type="button" class="btn ghost sm" id="ligaAdd">Agregar</button></div>
+    <p class="lbl" style="margin-top:12px">Ganancia mínima en rebajas</p>
+    <p class="note" style="margin-top:0">El precio en rebaja nunca baja de lo que te cuesta la pieza (precio de la marca en rebaja × dólar del día) + tu costo extra + tu ganancia mínima. Si para llegar ahí queda en precio normal, la prenda sale de Rebajas.</p>
+    <div class="grid2"><label>Costo extra por pieza <span class="opt">(envío a México, casillero…)</span><input id="costoPieza" inputmode="decimal" placeholder="0" autocomplete="off"></label>
+      <label>Ganancia mínima por pieza <span class="opt">(0 = apagado)</span><input id="gananciaMin" inputmode="decimal" placeholder="0" autocomplete="off"></label></div>
+    <details class="rep" id="ganBox"><summary id="ganSum">Costo y ganancia de cada rebaja</summary><div id="ganLista"></div></details>
+    <p class="lbl">Lo que subió el robot <span class="opt">(oculta lo que no quieras; no lo vuelve a subir)</span></p>
+    <div id="rebRobot"></div>
+    <h2 style="font-size:20px;margin-top:14px">Reporte del robot</h2>
+    <div id="repRobot"></div>
     <h2 style="font-size:20px;margin-top:14px">Respaldo</h2>
     <p id="bkLast"></p>
     <button type="button" class="btn ghost full" id="bkExport">Guardar respaldo</button>
@@ -486,7 +516,8 @@ function multDe(p){
   if(mb) return mb.mult||0; // marca variable sin multiplicador: no hay precio hasta que lo escribas
   return 1+(has(p.margen)?num(p.margen):num(T.margenOtras))/100;
 }
-function precioCalc(p){ return PRECIOS.precioProducto(p,PRECIOS.tiendaCfg()); }
+// Entrega inmediata queda fija: no la cambian Recalcular, el tipo de cambio ni el robot; solo si editas a mano esa prenda
+function precioCalc(p){ if(B(p)==='disponible'&&num(p.precioEI)>0) return num(p.precioEI); return PRECIOS.precioProducto(p,PRECIOS.tiendaCfg()); }
 function precioDe(p){ return has(p.precioManual)?num(p.precioManual):precioCalc(p); }
 function precioVenta(p){ return has(p.oferta)&&num(p.oferta)>0?num(p.oferta):precioDe(p); }
 
@@ -567,11 +598,29 @@ async function cargarPortadas(){
 }
 /* Ocultos: por qué una prenda no sale en la tienda. Las tallas se toman de lo publicado, porque el bot las actualiza ahí.
    Sigue la misma regla que la tienda: hasta 2XL y al menos un color con 3 tallas entre XS y 2XL. */
-let VIVO=new Map(), NO_EXISTE={};
+let VIVO=new Map(), NO_EXISTE={}, REPORTE=[];
+/* Reporte del robot: qué hizo en cada corrida. Fuera del Catálogo solo te avisa GitHub si hay errores. */
+function pintarReporte(){
+  const li=(t,xs,cl)=>(xs&&xs.length)?'<b'+(cl?' class="'+cl+'"':'')+'>'+t+' ('+xs.length+')</b><ul>'+xs.slice(0,60).map(x=>'<li>'+esc(x)+'</li>').join('')+(xs.length>60?'<li>…y '+(xs.length-60)+' más</li>':'')+'</ul>':'';
+  const box=$('#repRobot'); if(box) box.innerHTML=REPORTE.slice(0,15).map((r,i)=>{ const d=new Date(r.fecha), er=(r.errores||[]).length;
+    return '<details class="rep"'+(i?'':' open')+'><summary>'+d.getDate()+' '+MESES[d.getMonth()]+', '+hora(d)+(er?' · <span class="err">'+er+(er===1?' error':' errores')+'</span>':'')+'</summary>'+
+      (r.limpieza?li('Limpieza semanal',r.limpieza):'')+li('Prendas que ya no existen en la marca hace más de 30 días (quítalas tú en Ocultos)',r.paraQuitar)+li('Subidas a tu ganancia mínima',r.alMinimo)+li('Sin ganancia mínima: salieron de Rebajas',r.sinGanancia)+
+      li('Errores (no se publicaron)',r.errores,'err')+li('Colores agregados',r.agregados)+li('Cambios de precio',r.precios)+li('Entraron a Rebajas',r.entraron)+li('Salieron de Rebajas',r.salieron)+li('Colores y tallas reactivados',r.reactivados)+li('Prendas repetidas',r.duplicadas)+'</details>'; }).join('')||'<p class="note">Todavía no hay corridas con cambios.</p>';
+  const w=$('#repWarn'), n=((REPORTE[0]||{}).errores||[]).length; if(w){ w.hidden=!n; w.textContent='Robot: '+n+(n===1?' error':' errores'); }
+}
+/* Dólar del día junto a tu tipo de cambio; si la diferencia pasa de 2 % te avisa. Nunca cambia nada solo. */
+let DOLAR_HOY=0;
+function pintarDolar(){ const mi=num(PRECIOS.tiendaCfg().tc), el=$('#dolarHoy'); if(!el) return; if(!DOLAR_HOY||!mi){ el.hidden=true; return; }
+  const dif=Math.abs(DOLAR_HOY-mi)/mi*100; el.hidden=false; el.textContent='Hoy $'+DOLAR_HOY.toFixed(2)+(dif>2?' · ⚠️ '+dif.toFixed(1)+'% de diferencia con el tuyo; tú decides si recalculas':''); el.style.color=dif>2?'var(--warn)':''; el.style.fontWeight=dif>2?'600':''; }
+async function cargarDolar(){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD',{cache:'no-store'}); if(r.ok){ const j=await r.json(); DOLAR_HOY=+(j.rates||{}).MXN||0; } }catch(e){} pintarDolar(); }
 async function cargarVivo(){
   const leer=u=>fetch(u+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-  const [d,n]=await Promise.all([leer('/tienda/datos.json'),leer('/tienda/no-existen.json')]);
+  const [d,n,rep,sx]=await Promise.all([leer('/tienda/datos.json'),leer('/tienda/no-existen.json'),leer('/tienda/reporte.json'),leer('/tienda/sincro.json')]);
+  if(sx){ SINCRO_VIVO=sx; REB_ROBOT=sx.rebajas||[]; }
   VIVO=new Map(((d&&d.productos)||[]).map(p=>[p.id,p])); NO_EXISTE=n&&typeof n==='object'?n:{};
+  REPORTE=(rep&&rep.corridas)||[]; pintarReporte();
+  // la primera vez: la entrega inmediata se queda con el precio que hoy tiene publicado
+  if(d) for(const p of productos){ if(B(p)!=='disponible'||num(p.precioEI)>0) continue; const v=VIVO.get(p.id), x=(v&&num(v.precioBase))||PRECIOS.precioProducto(p,PRECIOS.tiendaCfg()); if(x>0){ p.precioEI=x; await put('productos',p).catch(()=>{}); } }
   renderTabs(); renderList();
 }
 const T_MIN=['XS','S','M','L','XL','2XL'];
@@ -658,12 +707,25 @@ function renderList(){
   const sec=SECCIONES.find(s=>s[0]===seccion);
   $('#secName').textContent=sec?sec[1]:'';
   $('#secCount').textContent=rows.length===1?'1 producto':rows.length+' productos';
-  $('#subInfo').textContent='Dólar $'+num(PRECIOS.tiendaCfg().tc).toFixed(2)+' · '+(productos.length===1?'1 producto':productos.length+' productos');
+  $('#subInfo').textContent='Tu dólar $'+num(PRECIOS.tiendaCfg().tc).toFixed(2)+' · '+(productos.length===1?'1 producto':productos.length+' productos'); pintarDolar();
   if(!rows.length){
     const vacio={stock:'Aquí aparece lo que tienes disponible para vender.',preventas:'Aquí aparece lo que vendes sobre pedido y lo que te apartan.',drops:'Aquí aparecen tus preventas con su fecha de cierre.',camino:'Aquí aparece lo que ya pediste y viene en camino.',ocultos:'Todo lo que tienes está saliendo en tu tienda.',todos:'Todavía no tienes productos. Toca “Nuevo producto”.'};
-    $('#list').innerHTML='<p class="empty">'+((q||filtroMarca||filtroLinea)?'Ningún producto coincide con la búsqueda.':vacio[seccion])+'</p>'; return;
+    $('#list').innerHTML='<p class="empty">'+((q||filtroMarca||filtroLinea)?'Ningún producto coincide con la búsqueda.':vacio[seccion])+'</p>'+autoHTML(q); return;
   }
-  $('#list').innerHTML=(seccion==='ocultos'?'<p class="empty" style="margin:8px 0;text-align:left">No salen en la tienda. Toca <b>Seleccionar</b> para volver a mostrar o eliminar uno o varios. Eliminar solo lo haces tú; el bot nunca borra.</p>':'')+rows.map(rowHTML).join('');
+  $('#list').innerHTML=(seccion==='ocultos'?'<p class="empty" style="margin:8px 0;text-align:left">No salen en la tienda. Toca <b>Seleccionar</b> para volver a mostrar o eliminar uno o varios. Eliminar solo lo haces tú; el bot nunca borra.</p>':'')+rows.map(rowHTML).join('')+autoHTML(q);
+}
+/* Rebajas automáticas (las sube el robot desde tus ligas de Gymshark): salen en Sobre pedido y Todos con su etiqueta,
+   y en Ocultos las que ocultaste. "Ocultar" aquí mismo: no vuelven a subir (después de Publicar tienda). */
+function autoHTML(q){
+  if(filtroRevisar||!['preventas','todos','ocultos'].includes(seccion)||!(REB_ROBOT||[]).length) return '';
+  const oc=new Set(AJ.rebajasOcultas||[]), mano=AJ.preciosLiga||{};
+  const xs=REB_ROBOT.filter(x=>(seccion==='ocultos')===oc.has(x.id)&&(!filtroMarca||PRECIOS.norm(filtroMarca)===PRECIOS.norm(x.marca||'Gymshark'))&&(!filtroLinea||x.linea===filtroLinea||x.linea==='unisex')&&
+    (!q||[x.nombre,x.marca,(x.colores||[]).map(c=>c.nombre).join(' ')].join(' ').toLowerCase().includes(q)));
+  if(!xs.length) return '';
+  return '<p class="ra-h">Rebajas automáticas <small>'+xs.length+(xs.length===1?' prenda':' prendas')+' · las sube el robot de tus ligas</small></p>'+xs.map(x=>{ const c=(x.colores||[])[0]||{}, pm=num(mano[x.id]);
+    return '<div class="row ra" data-auto="'+esc(x.id)+'"><div class="th">'+(c.fotos&&c.fotos[0]?'<img src="'+esc(c.fotos[0])+'" alt="" loading="lazy">':'Sin foto')+'</div>'+
+      '<div style="min-width:0"><b>'+esc(x.nombre)+'</b><small>'+esc((x.marca||'Gymshark')+' · '+(x.colores||[]).map(c=>c.nombre).join(', '))+'</small><div class="pills"><span class="pill auto">Rebaja automática</span>'+(pm?'<span class="pill">Precio a mano</span>':'')+'</div></div>'+
+      '<div class="pr">'+money(pm||c.precio)+(c.antes?'<s>'+money(c.antes)+'</s>':'')+'<button type="button" class="btn ghost sm" data-autoo="'+esc(x.id)+'">'+(oc.has(x.id)?'Mostrar':'Ocultar')+'</button></div></div>'; }).join('');
 }
 function updateBackupWarn(){
   let last=0; try{ last=+localStorage.getItem(CFG.db+'_ultimoRespaldo')||0; }catch(e){}
@@ -679,7 +741,9 @@ $('#filters').addEventListener('click',e=>{
   if(e.target.closest('[data-rev]')){ filtroRevisar=!filtroRevisar; renderFilters(); renderList(); return; }
   const b=e.target.closest('[data-marca]'); if(!b) return; filtroMarca=b.dataset.marca; renderFilters(); renderList(); });
 $('#q').addEventListener('input',renderList);
-$('#list').addEventListener('click',e=>{ const r=e.target.closest('.row'); if(!r) return;
+$('#list').addEventListener('click',e=>{ const ao=e.target.closest('[data-autoo]');
+  if(ao){ const s=new Set(AJ.rebajasOcultas||[]), id=ao.dataset.autoo, oc=s.has(id); if(oc) s.delete(id); else s.add(id); AJ.rebajasOcultas=[...s]; guardarAjustes(); renderList(); toast((oc?'Se volverá a mostrar':'Oculta: no vuelve a subir')+'. Toca Publicar tienda.'); return; }
+  const r=e.target.closest('.row'); if(!r||r.dataset.auto) return;
   if(selMode){ const id=r.dataset.id; if(sel.has(id)) sel.delete(id); else sel.add(id); r.classList.toggle('on',sel.has(id)); pintarSel(); return; }
   abrir(r.dataset.id); });
 
@@ -708,22 +772,25 @@ $('#selOcultar').addEventListener('click',async()=>{
 });
 
 /* ---------- Ordenar por marca ----------
-   Arrastra desde ≡. Las prendas nuevas no tienen número de orden y salen al principio de su marca hasta que las muevas. */
+   Arrastra desde ≡: la prenda queda fija arriba. Las demás siguen el orden automático (la más nueva primero). */
 let ordMarca='';
 // "gymshark" y "Gymshark" son la misma marca: se ordenan juntas
 function ordMarcas(){ const m=new Map(); productos.forEach(p=>{ const n=(p.marca||'').trim(), k=PRECIOS.norm(n); if(n&&(!m.has(k)||/^[A-Z]/.test(n))) m.set(k,n); }); return [...m.values()].sort((a,b)=>a.localeCompare(b,'es')); }
-function ordCmp(a,b){ const x=+a.orden||0, y=+b.orden||0; if(!x&&!y) return (b.createdAt||0)-(a.createdAt||0); if(!x) return -1; if(!y) return 1; return x-y; }
+function ordCmp(a,b){ if(!!a.fijo!==!!b.fijo) return a.fijo?-1:1; return a.fijo?(+a.orden||0)-(+b.orden||0):(b.createdAt||0)-(a.createdAt||0); }
 function pintarOrden(){
   const ms=ordMarcas(); if(!ms.includes(ordMarca)) ordMarca=ms.includes(filtroMarca)?filtroMarca:(ms.find(m=>/youngla/i.test(m))||ms[0]||'');
   $('#ordMarcas').innerHTML=ms.map(m=>'<button type="button" class="chip'+(m===ordMarca?' on':'')+'" data-om="'+esc(m)+'" style="flex:none">'+esc(m)+'</button>').join('');
   const rows=productos.filter(p=>PRECIOS.norm(p.marca)===PRECIOS.norm(ordMarca)&&(!motivoOculto(p)||motivoOculto(p)==='Falta publicar')).sort(ordCmp);
-  $('#ordLista').innerHTML=rows.map(p=>{ const u=p.portada&&thumbURL.get(p.portada); return '<div class="ord-r" data-id="'+esc(p.id)+'"><div class="asa" aria-label="Arrastrar">≡</div><div class="th">'+(u?'<img src="'+u+'" alt="" draggable="false">':'Sin foto')+'</div><div style="min-width:0"><b>'+esc(p.nombre)+'</b><small>'+esc(estTxt(p.estado))+'</small></div></div>'; }).join('')||'<p class="empty">Esta marca no tiene prendas visibles.</p>';
+  $('#ordLista').innerHTML=rows.map(p=>{ const u=p.portada&&thumbURL.get(p.portada); return '<div class="ord-r" data-id="'+esc(p.id)+'"><div class="asa" aria-label="Arrastrar">≡</div><div class="th">'+(u?'<img src="'+u+'" alt="" draggable="false">':'Sin foto')+'</div><div style="min-width:0"><b>'+esc(p.nombre)+'</b><small>'+esc(estTxt(p.estado))+'</small>'+(p.fijo?'<button type="button" class="chip" data-suelta style="display:block;margin-top:4px">Fijada · quitar</button>':'')+'</div></div>'; }).join('')||'<p class="empty">Esta marca no tiene prendas visibles.</p>';
 }
 async function guardarOrden(){
   const ids=[...document.querySelectorAll('#ordLista .ord-r')].map(r=>r.dataset.id);
   for(let i=0;i<ids.length;i++){ const p=productos.find(x=>x.id===ids[i]); if(p&&p.orden!==i+1){ p.orden=i+1; await put('productos',p); } }
   toast('Orden guardado. Toca Publicar tienda para verlo.');
 }
+// la que quitas de "Fijada" regresa al orden automático
+$('#ordLista').addEventListener('click',async e=>{ const b=e.target.closest('[data-suelta]'); if(!b) return; const p=productos.find(x=>x.id===b.closest('.ord-r').dataset.id); if(!p) return;
+  p.fijo=false; await put('productos',p); pintarOrden(); toast('Regresó al orden automático. Toca Publicar tienda para verlo.'); });
 $('#btnOrden').addEventListener('click',()=>{ pintarOrden(); $('#ord').hidden=false; document.body.style.overflow='hidden'; });
 $('#ordCerrar').addEventListener('click',()=>{ $('#ord').hidden=true; document.body.style.overflow=''; });
 $('#ordMarcas').addEventListener('click',e=>{ const b=e.target.closest('[data-om]'); if(b){ ordMarca=b.dataset.om; pintarOrden(); $('#ordLista').scrollTop=0; } });
@@ -735,7 +802,8 @@ $('#ordLista').addEventListener('pointerdown',e=>{
     const otra=[...lista.querySelectorAll('.ord-r')].find(x=>{ if(x===fila) return false; const q=x.getBoundingClientRect(); return ev.clientY>=q.top&&ev.clientY<=q.bottom; });
     if(otra){ const q=otra.getBoundingClientRect(); lista.insertBefore(fila,ev.clientY<q.top+q.height/2?otra:otra.nextSibling); } };
   // en document: al mover la fila en la lista, la flecha seguiría perdiendo el arrastre si se escuchara solo en ella
-  const soltar=()=>{ fila.classList.remove('mov'); document.removeEventListener('pointermove',mover); document.removeEventListener('pointerup',soltar); document.removeEventListener('pointercancel',soltar); guardarOrden(); };
+  const soltar=async()=>{ fila.classList.remove('mov'); document.removeEventListener('pointermove',mover); document.removeEventListener('pointerup',soltar); document.removeEventListener('pointercancel',soltar);
+    const p=productos.find(x=>x.id===fila.dataset.id); if(p) p.fijo=true; await guardarOrden(); if(p) await put('productos',p); pintarOrden(); };
   document.addEventListener('pointermove',mover); document.addEventListener('pointerup',soltar); document.addEventListener('pointercancel',soltar);
 });
 $('#selMv').addEventListener('click',async()=>{
@@ -825,7 +893,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 $('#form').addEventListener('input',e=>{
   if(!cur) return;
   const f=e.target.dataset.f, b=e.target.dataset.b;
-  if(f){ cur[f]=e.target.value; if(f==='nombre'||f==='link') head(); if(f==='nombre') renderCats(); if(['costoUsd','mult','marca','precioManual','oferta'].includes(f)) renderPrecio(); cambio(); }
+  if(f){ cur[f]=e.target.value; if((f==='costoUsd'||f==='mult')&&B(cur)==='disponible') cur.precioEI=PRECIOS.precioProducto(cur,PRECIOS.tiendaCfg()); if(f==='nombre'||f==='link') head(); if(f==='nombre') renderCats(); if(['costoUsd','mult','marca','precioManual','oferta'].includes(f)) renderPrecio(); cambio(); }
   else if(b){ cur[b]=e.target.checked; cambio(); }
 });
 
@@ -889,7 +957,7 @@ function abrirEstForm(edit){
 }
 $('#estados').addEventListener('click',e=>{
   if(e.target.id==='estAdd'){ abrirEstForm(null); return; }
-  const b=e.target.closest('[data-est]'); if(!b) return; cur.estado=b.dataset.est; renderEstados(); cambio();
+  const b=e.target.closest('[data-est]'); if(!b) return; const eraEI=B(cur)==='disponible', precioYa=precioDe(cur); cur.estado=b.dataset.est; if(!eraEI&&B(cur)==='disponible') cur.precioEI=precioYa; renderEstados(); cambio();
 });
 $('#estComo').addEventListener('click',e=>{ const b=e.target.closest('[data-como]'); if(b){ estComo=b.dataset.como; renderComo(); } });
 $('#estCancel').addEventListener('click',()=>{ $('#estForm').hidden=true; });
@@ -947,6 +1015,7 @@ $('#colores').addEventListener('click',async e=>{
   if(e.target.id==='delColor'){
     const col=cur.colores.find(x=>x.k===curColor); if(!col) return;
     if(!confirm('¿Quitar el color “'+(col.nombre||'Sin color')+'” con sus tallas y fotos?')) return;
+    if(col.nombre) cur.coloresNo=[...new Set((cur.coloresNo||[]).concat(col.nombre))]; // el robot no lo vuelve a agregar
     for(const f of curFotos.filter(f=>f.colorK===col.k)){ try{ await delFoto(f.id); }catch(err){} }
     curFotos=curFotos.filter(f=>f.colorK!==col.k);
     cur.colores=cur.colores.filter(x=>x.k!==col.k); curColor=cur.colores[0].k;
@@ -988,7 +1057,8 @@ function fotosColor(){ return curFotos.filter(f=>f.colorK===curColor||(!cur.colo
 function renderFotos(){
   const fs=fotosColor();
   $('#fotoCount').textContent=curFotos.length?(curFotos.length===1?'1 foto':curFotos.length+' fotos'):'';
-  $('#fotos').innerHTML=fs.map(f=>'<button type="button" class="ft" data-foto="'+esc(f.id)+'" aria-label="Ver foto"><img src="'+fotoURL(f)+'" alt="" loading="lazy">'+(f.id===cur.portada?'<span class="pill" style="position:absolute;left:6px;top:6px">Portada</span>':'')+'</button>').join('')+
+  const colAct=cur.colores.find(c=>c.k===curColor)||{}, esPortada=(f,i)=>colAct.portada?f.id===colAct.portada:(f.id===cur.portada||(!fs.some(x=>x.id===cur.portada)&&!i));
+  $('#fotos').innerHTML=fs.map((f,i)=>'<button type="button" class="ft" data-foto="'+esc(f.id)+'" aria-label="Ver foto"><img src="'+fotoURL(f)+'" alt="" loading="lazy">'+(esPortada(f,i)?'<span class="pill" style="position:absolute;left:6px;top:6px">Portada</span>':'')+'</button>').join('')+
     '<label class="addf"><span><b>+</b>Agregar fotos</span><input type="file" class="sr" id="fotoIn" accept="image/*" multiple></label>';
 }
 function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src;});}
@@ -1021,13 +1091,19 @@ $('#fotos').addEventListener('click',e=>{
   const b=e.target.closest('[data-foto]'); if(!b) return;
   vFoto=curFotos.find(f=>f.id===b.dataset.foto); if(!vFoto) return;
   $('#vImg').src=fotoURL(vFoto); vArm=false; $('#vDel').textContent='Borrar'; $('#viewer').hidden=false;
+  const c=colorDeFoto(vFoto); $('#vPortada').textContent=c&&c.portada===vFoto.id?'Quitar portada':'Usar como portada';
 });
+// portada por color: la que elijas sale primero; si no eliges, la primera foto. El robot no la cambia.
+function colorDeFoto(f){ return cur.colores.find(c=>c.k===f.colorK)||cur.colores[0]; }
+$('#vPortada').addEventListener('click',async()=>{ if(!vFoto) return; const c=colorDeFoto(vFoto), quita=c.portada===vFoto.id;
+  c.portada=quita?'':vFoto.id; if(c===cur.colores[0]&&!quita) cur.portada=vFoto.id;
+  dirty=true; await guardar(true); $('#viewer').hidden=true; vFoto=null; renderFotos(); toast(quita?'Portada quitada: se usa la primera foto':'Portada lista. Toca Publicar tienda para verla.'); });
 $('#vClose').addEventListener('click',()=>{ $('#viewer').hidden=true; vFoto=null; });
 $('#vDel').addEventListener('click',async()=>{
   if(!vFoto) return;
   if(!vArm){ vArm=true; $('#vDel').textContent='¿Seguro?'; setTimeout(()=>{ vArm=false; if(vFoto) $('#vDel').textContent='Borrar'; },3500); return; }
   try{ await delFoto(vFoto.id); }catch(e){ toast('No se pudo borrar'); return; }
-  curFotos=curFotos.filter(f=>f.id!==vFoto.id);
+  curFotos=curFotos.filter(f=>f.id!==vFoto.id); cur.colores.forEach(c=>{ if(c.portada===vFoto.id) c.portada=''; });
   if(cur.portada===vFoto.id){ cur.portada=curFotos[0]?curFotos[0].id:null; }
   dirty=true; await guardar(true);
   $('#viewer').hidden=true; vFoto=null; renderFotos(); toast('Foto borrada');
@@ -1190,14 +1266,60 @@ $('#btnDel').addEventListener('click',async()=>{
 });
 
 /* ---------- ajustes ---------- */
-function abrirAj(){ pintarGH(); const PR=PRECIOS.cargar();
+/* Rebajas automáticas: tus ligas y lo que subió el robot (de /tienda/sincro.json). Se mandan a la tienda al publicar. */
+var REB_ROBOT=null, SINCRO_VIVO=null; // var: la lista se puede pintar antes de llegar aquí
+// ganancia mínima por pieza (pesos): costo extra + ganancia; el robot la usa para no bajar de ahí
+const pisoPieza=()=>num(AJ.costoPieza)+num(AJ.gananciaMin); // 0 = apagado: las rebajas salen con la proporción de siempre
+function pintarGanancias(){
+  $('#costoPieza').value=num(AJ.costoPieza); $('#gananciaMin').value=num(AJ.gananciaMin);
+  const tc=num(PRECIOS.tiendaCfg().tc), extra=num(AJ.costoPieza), min=num(AJ.gananciaMin), filas=[], manoL=AJ.preciosLiga||{};
+  // rebajas por liga (con tu precio a mano si lo pusiste)
+  (REB_ROBOT||[]).forEach(x=>(x.colores||[]).forEach(c=>{ if(c.usd>0) filas.push({n:x.nombre+' · '+c.nombre,precio:num(manoL[x.id])||c.precio,costo:Math.round(c.usd*tc+extra)}); }));
+  // tus prendas con colores en rebaja
+  const s=(SINCRO_VIVO&&SINCRO_VIVO.prendas)||{};
+  VIVO.forEach(p=>{ const e=s[p.id]; if(!e||p.estado==='disponible') return; const base=num(p.precioBase), u=num(p.usd)>0?num(p.usd):(e.b===base?num(e.u):0); if(!u||!base) return;
+    const cols=(p.colores||[]).map(c=>[c.nombre,(e.colores||{})[c.k]]).concat((e.nuevos||[]).map(n=>[n.nombre,n]));
+    cols.forEach(([nom,x])=>{ if(!x||!(x.d>0)||!(x.v>0)) return; const normal=PRECIOS.redondear(base*x.n/u), venta=Math.max(PRECIOS.redondearAbajo(normal*(1-x.d/100)),num(x.m)); if(venta>=normal) return;
+      filas.push({n:p.nombre+' · '+nom,precio:venta,costo:Math.round(x.v*tc+extra)}); }); });
+  filas.forEach(f=>{ f.gana=f.precio-f.costo; }); filas.sort((a,b)=>a.gana-b.gana);
+  const bajas=filas.filter(f=>f.gana<min).length;
+  $('#ganSum').textContent='Costo y ganancia de cada rebaja ('+filas.length+(bajas?' · '+bajas+' abajo de tu mínimo':'')+')';
+  $('#ganLista').innerHTML='<p class="note" style="margin:6px 0">Costo = precio de la marca en rebaja × tu dólar ($'+tc.toFixed(2)+')'+(extra?' + $'+extra+' extra':'')+'. Ordenadas de menor a mayor ganancia. Las que quedan abajo las sube el robot en su siguiente revisión.</p>'+
+    filas.map(f=>'<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(f.n)+'</span><span style="text-align:right;font-variant-numeric:tabular-nums'+(f.gana<min?';color:var(--danger);font-weight:700':'')+'">'+money(f.precio)+' − '+money(f.costo)+' = '+money(f.gana)+'</span></div>').join('')||'<p class="note">Sin datos todavía.</p>';
+}
+['costoPieza','gananciaMin'].forEach(id=>$('#'+id).addEventListener('change',e=>{ const v=e.target.value.trim(); AJ[id]=v===''?null:num(v); guardarAjustes(); pintarGanancias(); toast('Guardado. Toca Publicar tienda para que lo use el robot.'); }));
+async function pintarLigas(){
+  if(!Array.isArray(AJ.ligasRebajas)){ // la primera vez: las que ya usa el robot
+    try{ const r=await fetch('/tienda/ligas-rebajas.json?v='+Date.now(),{cache:'no-store'}); const l=r.ok?await r.json():null; if(Array.isArray(l)){ AJ.ligasRebajas=l; guardarAjustes(); } }catch(e){}
+    if(!Array.isArray(AJ.ligasRebajas)){ $('#ligasReb').innerHTML='<p class="note">No pude leer tus ligas. Revisa tu internet y vuelve a abrir Ajustes.</p>'; return; } }
+  const corta=l=>{ try{ const u=new URL(l); return u.pathname.replace(/^\/collections\//,'')+(u.search?' · con filtros':''); }catch(e){ return l; } };
+  $('#ligasReb').innerHTML=AJ.ligasRebajas.map((l,i)=>'<div class="ppl"><div style="min-width:0"><b>'+esc(corta(l))+'</b><small style="word-break:break-all">'+esc(l)+'</small></div><div class="acts"><a class="btn ghost sm" href="'+esc(l)+'" target="_blank" rel="noopener">Ver</a><button type="button" class="x" data-ligaq="'+i+'">Quitar</button></div></div>').join('')||'<p class="note">No tienes ligas. El robot no sube rebajas por liga.</p>';
+  if(!REB_ROBOT){ try{ const r=await fetch('/tienda/sincro.json?v='+Date.now(),{cache:'no-store'}); SINCRO_VIVO=r.ok?await r.json():{}; REB_ROBOT=SINCRO_VIVO.rebajas||[]; }catch(e){ REB_ROBOT=[]; } }
+  pintarGanancias();
+  const oc=new Set(AJ.rebajasOcultas||[]);
+  $('#rebRobot').innerHTML=REB_ROBOT.map(x=>{ const c=(x.colores||[])[0]||{}, pct=c.antes?Math.round((1-c.precio/c.antes)*100):0, o=oc.has(x.id);
+    const mano=num((AJ.preciosLiga||{})[x.id]);
+    return '<div class="ppl"'+(o?' style="opacity:.55"':'')+'><div style="display:flex;gap:10px;align-items:center;min-width:0"><img src="'+esc((c.fotos||[])[0]||'')+'" alt="" style="width:40px;height:50px;object-fit:cover;border-radius:6px;flex:none"><div style="min-width:0"><b>'+esc(x.nombre)+'</b><small>'+(x.colores||[]).length+((x.colores||[]).length===1?' color':' colores')+' · -'+pct+'% · '+money(c.precio)+' (antes '+money(c.antes)+')'+(mano?' · tuyo '+money(mano):'')+(o?' · Oculta':'')+'</small></div></div>'+
+      '<div class="acts"><input data-recprecio="'+esc(x.id)+'" inputmode="decimal" placeholder="Precio a mano" value="'+(mano||'')+'" aria-label="Precio a mano de '+esc(x.nombre)+'" style="width:110px;min-height:36px;padding:6px 8px"><button type="button" class="btn ghost sm" data-rebo="'+esc(x.id)+'">'+(o?'Mostrar':'Ocultar')+'</button></div></div>'; }).join('')||'<p class="note">Todavía no sube nada (corre cada hora).</p>';
+}
+$('#ligaAdd').addEventListener('click',()=>{ const v=$('#ligaNueva').value.trim(); let u; try{ u=new URL(v); }catch(e){ toast('Pega una liga completa (https://…)'); return; }
+  if(!/(^|\.)gymshark\.com$/.test(u.hostname)||!/\/collections\//.test(u.pathname)){ toast('Por ahora solo ligas de colecciones de Gymshark'); return; }
+  AJ.ligasRebajas=[...new Set((AJ.ligasRebajas||[]).concat(u.href))]; guardarAjustes(); $('#ligaNueva').value=''; pintarLigas(); toast('Liga guardada. Toca Publicar tienda.'); });
+$('#ligasReb').addEventListener('click',e=>{ const b=e.target.closest('[data-ligaq]'); if(!b) return; AJ.ligasRebajas.splice(+b.dataset.ligaq,1); guardarAjustes(); pintarLigas(); toast('Liga quitada. Toca Publicar tienda.'); });
+// precio a mano de una prenda de rebajas por liga: el robot no lo cambia; vacío = el precio de la marca
+$('#rebRobot').addEventListener('change',e=>{ const i=e.target.closest('[data-recprecio]'); if(!i) return; AJ.preciosLiga=AJ.preciosLiga||{}; const v=num(i.value); if(v>0) AJ.preciosLiga[i.dataset.recprecio]=v; else delete AJ.preciosLiga[i.dataset.recprecio]; guardarAjustes(); pintarLigas(); toast(v>0?'Precio guardado. Toca Publicar tienda.':'Regresa al precio de la marca. Toca Publicar tienda.'); });
+$('#rebRobot').addEventListener('click',e=>{ const b=e.target.closest('[data-rebo]'); if(!b) return; const s=new Set(AJ.rebajasOcultas||[]), id=b.dataset.rebo; if(s.has(id)) s.delete(id); else s.add(id); AJ.rebajasOcultas=[...s]; guardarAjustes(); pintarLigas(); toast('Listo. Toca Publicar tienda.'); });
+function abrirAj(){ pintarGH(); pintarLigas(); const PR=PRECIOS.cargar();
   $('#ajResumen').textContent='Precios de la tienda con dólar $'+PRECIOS.tiendaCfg(PR).tc+' · Anticipo '+PR.anticipo+' % · Envío gratis en compras mayores a $'+Number(PR.gratisMas).toLocaleString('en-US');
   updateBackupWarn(); pintarInicio(); $('#aj').hidden=false; }
 
 /* ---------- inicio de la tienda: banners y colecciones (los escoges tú) ----------
    Los textos y a dónde llevan se guardan en tus ajustes (AJ.inicio); las fotos, con las demás fotos del Catálogo. */
 const LINEA_TIPOS={hombre:['Compresión','Playeras','Tank tops','Shorts','Pants','Hoodies'],mujer:['Leggings','Tops deportivos','Crop tops','Playeras','Shorts','Pants','Hoodies','Conjuntos']};
-const MARCAS_TIENDA=['YoungLA','Gymshark','Breathedivinity','Darc Sport','Civil Régime','DFYNE','Controlled Insanity','AYBL'];
+const MARCAS_TIENDA=['YoungLA','Gymshark','Breathedivinity','Darc Sport','Civil Régime','DFYNE','Controlled Insanity'];
+// encuadre con el que salen estas fotos si no has elegido otro [izquierda-derecha, arriba-abajo] en % (igual que en la tienda)
+const POS_MZ={'Breathedivinity':[50,4],'Darc Sport':[50,0],'DFYNE':[50,6]};
+const posMz=m=>(inicioAJ().mosaicoPos||{})[m]||POS_MZ[m]||[50,50];
 function inicioAJ(){ AJ.inicio=AJ.inicio||{}; if(!Array.isArray(AJ.inicio.banners)) AJ.inicio.banners=[]; while(AJ.inicio.banners.length<3) AJ.inicio.banners.push({titulo:'',ir:'',foto:''}); if(!Array.isArray(AJ.inicio.colOcultas)) AJ.inicio.colOcultas=[]; return AJ.inicio; }
 function coleccionesCat(){ const m=new Map(); productos.forEach(p=>{ const c=(p.coleccion||'').trim(), mk=(p.marca||'').trim(); if(!c||!mk) return; const k=mk+'|'+c; m.set(k,(m.get(k)||0)+1); }); return [...m].sort((a,b)=>a[0].localeCompare(b[0],'es')); }
 function destinos(){
@@ -1233,8 +1355,14 @@ async function pintarInicio(){
   ini.mosaico=ini.mosaico&&typeof ini.mosaico==='object'?ini.mosaico:{};
   for(const id of Object.values(ini.mosaico)) if(id&&!bnURL.has(id)){ const f=await reqP(db.transaction('fotos').objectStore('fotos').get(id)).catch(()=>null); if(f&&f.blob) bnURL.set(id,URL.createObjectURL(f.blob)); }
   $('#inMosaico').innerHTML=MARCAS_TIENDA.concat(['Accesorios']).map(m=>{ const id=ini.mosaico[m], u=id&&bnURL.get(id);
-    return '<div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><div style="width:52px;height:52px;border-radius:8px;background:var(--pill);overflow:hidden;flex:none;display:grid;place-items:center;font-size:10px;color:var(--muted);text-align:center">'+(u?'<img src="'+u+'" alt="" style="width:100%;height:100%;object-fit:cover">':'Auto')+'</div>'+
-      '<b style="flex:1;font-size:14px">'+esc(m)+'</b><label class="btn ghost" style="margin:0">'+(u?'Cambiar':'Poner foto')+'<input type="file" accept="image/*" class="sr" data-mzfoto="'+esc(m)+'"></label>'+(u?'<button type="button" class="btn ghost" data-mzquitar="'+esc(m)+'" style="margin:0">Quitar</button>':'')+'</div>'; }).join('');
+    const pos=posMz(m);
+    return '<div style="display:flex;gap:10px;align-items:center;margin:0 0 10px"><div style="width:'+(u?88:52)+'px;height:'+(u?88:52)+'px;border-radius:8px;background:var(--pill);overflow:hidden;flex:none;display:grid;place-items:center;font-size:10px;color:var(--muted);text-align:center;touch-action:none;cursor:'+(u?'grab':'default')+'"'+(u?' data-mzdrag="'+esc(m)+'" title="Arrastra para encuadrar"':'')+'>'+(u?'<img src="'+u+'" alt="" draggable="false" style="width:100%;height:100%;object-fit:cover;object-position:'+pos[0]+'% '+pos[1]+'%;pointer-events:none">':'Auto')+'</div>'+
+      '<div style="flex:1;min-width:0"><b style="font-size:14px;display:block;margin-bottom:6px">'+esc(m)+'</b>'+
+      (u?'<div class="chips" style="margin-bottom:6px">'+[['Arriba',0],['Centro',50],['Abajo',100]].map(o=>'<button type="button" class="chip'+(pos[1]===o[1]?' on':'')+'" data-mzy="'+esc(m)+'|'+o[1]+'" style="height:30px;padding:0 8px;font-size:12px">'+o[0]+'</button>').join('')+'</div>':'')+
+      '<div class="chips"><label class="btn ghost sm" style="margin:0">'+(u?'Cambiar':'Poner foto')+'<input type="file" accept="image/*" class="sr" data-mzfoto="'+esc(m)+'"></label>'+(u?'<button type="button" class="btn ghost sm" data-mzquitar="'+esc(m)+'" style="margin:0">Quitar</button>':'')+'</div></div></div>'; }).join('');
+  ini.pestanaMarca=ini.pestanaMarca&&typeof ini.pestanaMarca==='object'?ini.pestanaMarca:{}; $('#inMasVendido').checked=!!ini.masVendido;
+  $('#inPestana').innerHTML=MARCAS_TIENDA.map(m=>{ const k=PRECIOS.norm(m), v=ini.pestanaMarca[k]||'';
+    return '<label style="display:flex;gap:10px;align-items:center;margin:0 0 6px"><b style="flex:1;font-size:14px;color:var(--ink)">'+esc(m)+'</b><select data-pestana="'+esc(k)+'" style="width:auto;min-height:38px;padding:4px 8px;margin:0">'+[['','Automática'],['pedido','Sobre pedido'],['preventa','Preventa'],['disponible','Entrega inmediata']].map(o=>'<option value="'+o[0]+'"'+(v===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></label>'; }).join('');
   const cols=coleccionesCat();
   $('#inCols').innerHTML=cols.length?cols.map(([k,n])=>'<label class="check" style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-incol="'+esc(k)+'"'+(ini.colOcultas.includes(k)?'':' checked')+'> '+esc(k.replace('|',' · '))+' <span class="opt">('+n+(n===1?' prenda':' prendas')+')</span></label>').join('')
     :'<p class="note">Todavía no hay prendas con colección. Escríbela en la ficha de la prenda (campo “Colección”) o súbela con la extensión.</p>';
@@ -1276,7 +1404,16 @@ $('#inMosaico').addEventListener('change',async e=>{
     ini.mosaico[m]=id; guardarAjustes(); pintarInicio(); toast('Foto de '+m+' lista. Toca Publicar tienda para verla.');
   }catch(err){ toast('No se pudo usar esa foto'); }
 });
+$('#inMasVendido').addEventListener('change',e=>{ inicioAJ().masVendido=e.target.checked; guardarAjustes(); toast('Listo. Toca Publicar tienda para verlo.'); });
+$('#inPestana').addEventListener('change',e=>{ const s=e.target.closest('[data-pestana]'); if(!s) return; const ini=inicioAJ(); ini.pestanaMarca=ini.pestanaMarca||{}; if(s.value) ini.pestanaMarca[s.dataset.pestana]=s.value; else delete ini.pestanaMarca[s.dataset.pestana]; guardarAjustes(); toast('Listo. Toca Publicar tienda para verlo.'); });
+function ponerPos(m,x,y){ const ini=inicioAJ(); ini.mosaicoPos=ini.mosaicoPos||{}; ini.mosaicoPos[m]=[Math.round(x),Math.round(y)]; guardarAjustes(); }
+// encuadre: botones Arriba / Centro / Abajo o arrastrar la foto
+$('#inMosaico').addEventListener('pointerdown',e=>{ const box=e.target.closest('[data-mzdrag]'); if(!box) return; e.preventDefault(); const m=box.dataset.mzdrag, im=box.querySelector('img'), p0=posMz(m); let x=p0[0], y=p0[1], sx=e.clientX, sy=e.clientY;
+  const mover=ev=>{ x=Math.max(0,Math.min(100,x-(ev.clientX-sx)*.6)); y=Math.max(0,Math.min(100,y-(ev.clientY-sy)*.6)); sx=ev.clientX; sy=ev.clientY; im.style.objectPosition=x+'% '+y+'%'; };
+  const soltar=()=>{ document.removeEventListener('pointermove',mover); document.removeEventListener('pointerup',soltar); document.removeEventListener('pointercancel',soltar); ponerPos(m,x,y); pintarInicio(); toast('Encuadre guardado. Toca Publicar tienda para verlo.'); };
+  document.addEventListener('pointermove',mover); document.addEventListener('pointerup',soltar); document.addEventListener('pointercancel',soltar); });
 $('#inMosaico').addEventListener('click',async e=>{
+  const yb=e.target.closest('[data-mzy]'); if(yb){ const [m,y]=yb.dataset.mzy.split('|'); ponerPos(m,posMz(m)[0],+y); pintarInicio(); toast('Encuadre guardado. Toca Publicar tienda para verlo.'); return; }
   const q=e.target.closest('[data-mzquitar]'); if(!q) return; const ini=inicioAJ(), m=q.dataset.mzquitar;
   if(ini.mosaico&&ini.mosaico[m]){ await delFoto(ini.mosaico[m]).catch(()=>{}); bnURL.delete(ini.mosaico[m]); delete ini.mosaico[m]; guardarAjustes(); pintarInicio(); }
 });
@@ -1288,7 +1425,8 @@ $('#ajClose').addEventListener('click',()=>{ $('#aj').hidden=true; });
 $('#aj').addEventListener('click',e=>{ if(e.target.id==='aj') $('#aj').hidden=true; });
 $('#ajGuardar').addEventListener('click',async()=>{
   // recalcula y guarda el precio de todos los productos con los números del Cotizador
-  for(const p of productos){ const nv=precioVenta(p); if(nv!==p.precio){ p.precio=nv; try{ await put('productos',p); }catch(e){} } }
+  // solo Sobre pedido y Preventa: Entrega inmediata queda fija
+  for(const p of productos){ if(B(p)==='disponible') continue; const nv=precioVenta(p); if(nv!==p.precio){ p.precio=nv; try{ await put('productos',p); }catch(e){} } }
   $('#aj').hidden=true; renderList(); toast('Precios actualizados');
 });
 
@@ -1301,7 +1439,12 @@ const normR=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 function gruposRepetidos(){
   const g=new Map();
   productos.forEach(p=>{ if(!claveR(p.nombre)) return; const k=claveR(p.nombre)+'|'+claveR(p.marca); if(!g.has(k)) g.set(k,[]); g.get(k).push(p); });
-  return [...g.values()].filter(ps=>ps.length>1);
+  const grupos=[...g.values()].filter(ps=>ps.length>1), yaEn=new Set(grupos.flat().map(p=>p.id));
+  // también por liga: misma prenda y color de la marca, aunque el nombre cambie un poco (Entrega inmediata va aparte)
+  const porLiga=new Map();
+  productos.forEach(p=>{ if(yaEn.has(p.id)) return; (p.colores||[]).forEach(c=>{ const h=(/\/products\/([^/?#]+)/.exec(c.link||p.link||'')||[])[1]; if(!h) return; const k=h+'|'+normR(c.nombre)+'|'+(B(p)==='disponible'); if(!porLiga.has(k)) porLiga.set(k,new Set()); porLiga.get(k).add(p); }); });
+  porLiga.forEach(s=>{ const ps=[...s].filter(p=>!yaEn.has(p.id)); if(ps.length>1){ ps.forEach(p=>yaEn.add(p.id)); grupos.push(ps); } });
+  return grupos;
 }
 $('#ajJuntar').addEventListener('click',async()=>{
   const gs=gruposRepetidos();
@@ -1393,6 +1536,8 @@ async function armarTienda(){
   const fotos=await getAll('fotos');
   const lista=[], usadas=[];
   for(const p of pubs){
+    // Entrega inmediata que todavía no tenía su precio fijo: se queda con el de hoy
+    if(B(p)==='disponible'&&!(num(p.precioEI)>0)){ const x=PRECIOS.precioProducto(p,PRECIOS.tiendaCfg()); if(x>0){ p.precioEI=x; await put('productos',p).catch(()=>{}); } }
     // link = página de la marca de ese color (lo usa el robot que revisa tallas); agotado = la marca ya no tiene ninguna talla
     const colores=(p.colores||[]).map(c=>({k:c.k,nombre:c.nombre||'',tallas:Object.assign({},c.tallas||{}),link:c.link||p.link||'',agotado:!!c.agotado,fotos:[]}));
     const fs=fotos.filter(f=>f.productoId===p.id).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
@@ -1401,10 +1546,12 @@ async function armarTienda(){
       const c=colores.find(x=>x.k===f.colorK)||colores[0]; if(!c) continue;
       const path='fotos/'+f.id+'.jpg'; c.fotos.push(path); usadas.push({path,blob:f.blob});
     }
+    // portada elegida a mano en cada color: su foto va primero
+    (p.colores||[]).forEach((c0,i)=>{ if(!c0.portada) return; const a=colores[i].fotos, j=a.indexOf('fotos/'+c0.portada+'.jpg'); if(j>0) a.unshift(a.splice(j,1)[0]); });
     const base=precioDe(p), venta=precioVenta(p);
     lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),coleccion:(p.coleccion||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
-      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,forzar:!!p.forzar,colores});
+      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,fijo:!!p.fijo,forzar:!!p.forzar,usd:B(p)!=='disponible'?num(p.costoUsd):0,precioNormal:B(p)!=='disponible'?precioCalc(p):0,precioFijo:has(p.precioManual),coloresNo:p.coloresNo||[],colores});
   }
   // inicio: tus banners (foto, texto y a dónde llevan) y las colecciones que escondiste
   const ini=inicioAJ(), banners=[];
@@ -1416,7 +1563,11 @@ async function armarTienda(){
     banners.push({titulo:(b.titulo||'').trim(),boton:(b.boton||'').trim(),cierre:b.cierre||'',ir:b.ir||'',img:img||imgPc,imgPc:img?imgPc:'',video:fotoBn(b.video),videoPc:fotoBn(b.videoPc)});
   }
   // la tienda recibe el anticipo, el redondeo y los envíos (nunca costos ni multiplicadores)
-  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),inicio:{banners,colOcultas:ini.colOcultas.slice(),mosaico:Object.fromEntries(Object.entries(ini.mosaico||{}).map(([m,id])=>[m,fotoBn(id)]).filter(x=>x[1]))},productos:lista},fotos:usadas};
+  // rebajas por liga: tus ligas y lo que no quieres que suba (lo que ocultaste ahí y tus prendas de Gymshark que no están en la tienda)
+  const ocultasLiga=new Set(AJ.rebajasOcultas||[]);
+  productos.filter(p=>/gymshark/i.test(p.marca||'')&&(p.enTienda===false||B(p)==='agotado')).forEach(p=>(p.colores||[]).forEach(c=>{ const h=(/\/products\/([^/?#]+)/.exec(c.link||p.link||'')||[])[1]; if(h) ocultasLiga.add(h); }));
+  const extraLiga=Object.assign(Array.isArray(AJ.ligasRebajas)?{ligasRebajas:AJ.ligasRebajas.slice()}:{},{pisoPieza:pisoPieza(),preciosRebaja:Object.assign({},AJ.preciosLiga||{})});
+  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),...extraLiga,rebajasOcultas:[...ocultasLiga],inicio:{banners,colOcultas:ini.colOcultas.slice(),mosaico:Object.fromEntries(Object.entries(ini.mosaico||{}).map(([m,id])=>[m,fotoBn(id)]).filter(x=>x[1])),mosaicoPos:ini.mosaicoPos||{},pestanaMarca:ini.pestanaMarca||{},masVendido:!!ini.masVendido},productos:lista},fotos:usadas};
 }
 function estado(t){ $('#pubStatus').textContent=t; }
 $('#btnPublicar').addEventListener('click',async()=>{
@@ -1533,7 +1684,7 @@ function toast(s){ const el=$('#toast'); el.textContent=s; el.classList.add('on'
   try{ db=await openDB(); }
   catch(e){ const f=$('#fatal'); f.hidden=false; f.textContent='Este navegador no deja guardar datos aquí (puede ser modo privado). Ábrelo en Safari o Chrome normal.'; $('#subInfo').textContent=''; return; }
   if(typeof seedDemo==='function') await seedDemo(false);
-  productos=await getAll('productos').catch(()=>[]);
+  productos=await getAll('productos').catch(()=>[]); cargarDolar();
   await refreshList();
   cargarVivo(); // lo publicado y lo que el bot marcó: para la pestaña Ocultos
   // link con prendas ya marcadas (…/catalogo/#sel=id1,id2): abre Seleccionar con esas; tú decides si las eliminas
