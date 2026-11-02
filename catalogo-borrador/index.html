@@ -410,7 +410,7 @@ label>input,label>textarea,label>select{margin-top:6px}
     <p class="lbl" style="margin-top:12px">Ganancia mínima en rebajas</p>
     <p class="note" style="margin-top:0">El precio en rebaja nunca baja de lo que te cuesta la pieza (precio de la marca en rebaja × dólar del día) + tu costo extra + tu ganancia mínima. Si para llegar ahí queda en precio normal, la prenda sale de Rebajas.</p>
     <div class="grid2"><label>Costo extra por pieza <span class="opt">(envío a México, casillero…)</span><input id="costoPieza" inputmode="decimal" placeholder="0" autocomplete="off"></label>
-      <label>Ganancia mínima por pieza<input id="gananciaMin" inputmode="decimal" placeholder="250" autocomplete="off"></label></div>
+      <label>Ganancia mínima por pieza <span class="opt">(0 = apagado)</span><input id="gananciaMin" inputmode="decimal" placeholder="0" autocomplete="off"></label></div>
     <details class="rep" id="ganBox"><summary id="ganSum">Costo y ganancia de cada rebaja</summary><div id="ganLista"></div></details>
     <p class="lbl">Lo que subió el robot <span class="opt">(oculta lo que no quieras; no lo vuelve a subir)</span></p>
     <div id="rebRobot"></div>
@@ -1248,12 +1248,12 @@ $('#btnDel').addEventListener('click',async()=>{
 /* Rebajas automáticas: tus ligas y lo que subió el robot (de /tienda/sincro.json). Se mandan a la tienda al publicar. */
 let REB_ROBOT=null, SINCRO_VIVO=null;
 // ganancia mínima por pieza (pesos): costo extra + ganancia; el robot la usa para no bajar de ahí
-const pisoPieza=()=>num(AJ.costoPieza)+num(AJ.gananciaMin==null?250:AJ.gananciaMin);
+const pisoPieza=()=>num(AJ.costoPieza)+num(AJ.gananciaMin); // 0 = apagado: las rebajas salen con la proporción de siempre
 function pintarGanancias(){
-  $('#costoPieza').value=AJ.costoPieza==null?'':AJ.costoPieza; $('#gananciaMin').value=AJ.gananciaMin==null?'250':AJ.gananciaMin;
-  const tc=num(PRECIOS.tiendaCfg().tc), extra=num(AJ.costoPieza), min=num(AJ.gananciaMin==null?250:AJ.gananciaMin), filas=[];
-  // rebajas por liga
-  (REB_ROBOT||[]).forEach(x=>(x.colores||[]).forEach(c=>{ if(c.usd>0) filas.push({n:x.nombre+' · '+c.nombre,precio:c.precio,costo:Math.round(c.usd*tc+extra)}); }));
+  $('#costoPieza').value=num(AJ.costoPieza); $('#gananciaMin').value=num(AJ.gananciaMin);
+  const tc=num(PRECIOS.tiendaCfg().tc), extra=num(AJ.costoPieza), min=num(AJ.gananciaMin), filas=[], manoL=AJ.preciosLiga||{};
+  // rebajas por liga (con tu precio a mano si lo pusiste)
+  (REB_ROBOT||[]).forEach(x=>(x.colores||[]).forEach(c=>{ if(c.usd>0) filas.push({n:x.nombre+' · '+c.nombre,precio:num(manoL[x.id])||c.precio,costo:Math.round(c.usd*tc+extra)}); }));
   // tus prendas con colores en rebaja
   const s=(SINCRO_VIVO&&SINCRO_VIVO.prendas)||{};
   VIVO.forEach(p=>{ const e=s[p.id]; if(!e||p.estado==='disponible') return; const base=num(p.precioBase), u=num(p.usd)>0?num(p.usd):(e.b===base?num(e.u):0); if(!u||!base) return;
@@ -1277,12 +1277,16 @@ async function pintarLigas(){
   pintarGanancias();
   const oc=new Set(AJ.rebajasOcultas||[]);
   $('#rebRobot').innerHTML=REB_ROBOT.map(x=>{ const c=(x.colores||[])[0]||{}, pct=c.antes?Math.round((1-c.precio/c.antes)*100):0, o=oc.has(x.id);
-    return '<div class="ppl"'+(o?' style="opacity:.55"':'')+'><div style="display:flex;gap:10px;align-items:center;min-width:0"><img src="'+esc((c.fotos||[])[0]||'')+'" alt="" style="width:40px;height:50px;object-fit:cover;border-radius:6px;flex:none"><div style="min-width:0"><b>'+esc(x.nombre)+'</b><small>'+(x.colores||[]).length+((x.colores||[]).length===1?' color':' colores')+' · -'+pct+'% · '+money(c.precio)+(o?' · Oculta':'')+'</small></div></div><div class="acts"><button type="button" class="btn ghost sm" data-rebo="'+esc(x.id)+'">'+(o?'Mostrar':'Ocultar')+'</button></div></div>'; }).join('')||'<p class="note">Todavía no sube nada (corre cada hora).</p>';
+    const mano=num((AJ.preciosLiga||{})[x.id]);
+    return '<div class="ppl"'+(o?' style="opacity:.55"':'')+'><div style="display:flex;gap:10px;align-items:center;min-width:0"><img src="'+esc((c.fotos||[])[0]||'')+'" alt="" style="width:40px;height:50px;object-fit:cover;border-radius:6px;flex:none"><div style="min-width:0"><b>'+esc(x.nombre)+'</b><small>'+(x.colores||[]).length+((x.colores||[]).length===1?' color':' colores')+' · -'+pct+'% · '+money(c.precio)+' (antes '+money(c.antes)+')'+(mano?' · tuyo '+money(mano):'')+(o?' · Oculta':'')+'</small></div></div>'+
+      '<div class="acts"><input data-recprecio="'+esc(x.id)+'" inputmode="decimal" placeholder="Precio a mano" value="'+(mano||'')+'" aria-label="Precio a mano de '+esc(x.nombre)+'" style="width:110px;min-height:36px;padding:6px 8px"><button type="button" class="btn ghost sm" data-rebo="'+esc(x.id)+'">'+(o?'Mostrar':'Ocultar')+'</button></div></div>'; }).join('')||'<p class="note">Todavía no sube nada (corre cada hora).</p>';
 }
 $('#ligaAdd').addEventListener('click',()=>{ const v=$('#ligaNueva').value.trim(); let u; try{ u=new URL(v); }catch(e){ toast('Pega una liga completa (https://…)'); return; }
   if(!/(^|\.)gymshark\.com$/.test(u.hostname)||!/\/collections\//.test(u.pathname)){ toast('Por ahora solo ligas de colecciones de Gymshark'); return; }
   AJ.ligasRebajas=[...new Set((AJ.ligasRebajas||[]).concat(u.href))]; guardarAjustes(); $('#ligaNueva').value=''; pintarLigas(); toast('Liga guardada. Toca Publicar tienda.'); });
 $('#ligasReb').addEventListener('click',e=>{ const b=e.target.closest('[data-ligaq]'); if(!b) return; AJ.ligasRebajas.splice(+b.dataset.ligaq,1); guardarAjustes(); pintarLigas(); toast('Liga quitada. Toca Publicar tienda.'); });
+// precio a mano de una prenda de rebajas por liga: el robot no lo cambia; vacío = el precio de la marca
+$('#rebRobot').addEventListener('change',e=>{ const i=e.target.closest('[data-recprecio]'); if(!i) return; AJ.preciosLiga=AJ.preciosLiga||{}; const v=num(i.value); if(v>0) AJ.preciosLiga[i.dataset.recprecio]=v; else delete AJ.preciosLiga[i.dataset.recprecio]; guardarAjustes(); pintarLigas(); toast(v>0?'Precio guardado. Toca Publicar tienda.':'Regresa al precio de la marca. Toca Publicar tienda.'); });
 $('#rebRobot').addEventListener('click',e=>{ const b=e.target.closest('[data-rebo]'); if(!b) return; const s=new Set(AJ.rebajasOcultas||[]), id=b.dataset.rebo; if(s.has(id)) s.delete(id); else s.add(id); AJ.rebajasOcultas=[...s]; guardarAjustes(); pintarLigas(); toast('Listo. Toca Publicar tienda.'); });
 function abrirAj(){ pintarGH(); pintarLigas(); const PR=PRECIOS.cargar();
   $('#ajResumen').textContent='Precios de la tienda con dólar $'+PRECIOS.tiendaCfg(PR).tc+' · Anticipo '+PR.anticipo+' % · Envío gratis en compras mayores a $'+Number(PR.gratisMas).toLocaleString('en-US');
@@ -1526,7 +1530,7 @@ async function armarTienda(){
     const base=precioDe(p), venta=precioVenta(p);
     lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),coleccion:(p.coleccion||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
-      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,fijo:!!p.fijo,forzar:!!p.forzar,usd:B(p)!=='disponible'&&!has(p.precioManual)?num(p.costoUsd):0,precioFijo:has(p.precioManual),coloresNo:p.coloresNo||[],colores});
+      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,fijo:!!p.fijo,forzar:!!p.forzar,usd:B(p)!=='disponible'?num(p.costoUsd):0,precioNormal:B(p)!=='disponible'?precioCalc(p):0,precioFijo:has(p.precioManual),coloresNo:p.coloresNo||[],colores});
   }
   // inicio: tus banners (foto, texto y a dónde llevan) y las colecciones que escondiste
   const ini=inicioAJ(), banners=[];
@@ -1541,7 +1545,7 @@ async function armarTienda(){
   // rebajas por liga: tus ligas y lo que no quieres que suba (lo que ocultaste ahí y tus prendas de Gymshark que no están en la tienda)
   const ocultasLiga=new Set(AJ.rebajasOcultas||[]);
   productos.filter(p=>/gymshark/i.test(p.marca||'')&&(p.enTienda===false||B(p)==='agotado')).forEach(p=>(p.colores||[]).forEach(c=>{ const h=(/\/products\/([^/?#]+)/.exec(c.link||p.link||'')||[])[1]; if(h) ocultasLiga.add(h); }));
-  const extraLiga=Object.assign(Array.isArray(AJ.ligasRebajas)?{ligasRebajas:AJ.ligasRebajas.slice()}:{},{pisoPieza:pisoPieza()});
+  const extraLiga=Object.assign(Array.isArray(AJ.ligasRebajas)?{ligasRebajas:AJ.ligasRebajas.slice()}:{},{pisoPieza:pisoPieza(),preciosRebaja:Object.assign({},AJ.preciosLiga||{})});
   return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),...extraLiga,rebajasOcultas:[...ocultasLiga],inicio:{banners,colOcultas:ini.colOcultas.slice(),mosaico:Object.fromEntries(Object.entries(ini.mosaico||{}).map(([m,id])=>[m,fotoBn(id)]).filter(x=>x[1])),mosaicoPos:ini.mosaicoPos||{},pestanaMarca:ini.pestanaMarca||{},masVendido:!!ini.masVendido},productos:lista},fotos:usadas};
 }
 function estado(t){ $('#pubStatus').textContent=t; }
