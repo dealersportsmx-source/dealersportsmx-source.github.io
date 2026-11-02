@@ -402,6 +402,12 @@ label>input,label>textarea,label>select{margin-top:6px}
     <button type="button" class="btn full" id="btnPublicar">Publicar tienda</button>
     <p class="note" id="pubStatus" style="margin-top:8px"></p>
     <p class="note"><a id="pubLink" target="_blank" rel="noopener" style="color:var(--blue)"></a></p>
+    <h2 style="font-size:20px;margin-top:14px">Rebajas automáticas de Gymshark</h2>
+    <p>Pega ligas de la sección de rebajas de Gymshark con tus filtros ya puestos. El robot las lee tal cual cada hora y sube lo que salga: colores con alguna talla de XS a XL, un solo descuento por modelo (el más bajo) y el aviso “Sujeto a confirmación”. Salen solo en Rebajas. Toca <b>Publicar tienda</b> después de cambiarlas.</p>
+    <div id="ligasReb"></div>
+    <div class="chips" style="margin:6px 0 10px"><input id="ligaNueva" inputmode="url" placeholder="https://www.gymshark.com/collections/…" autocomplete="off" style="flex:1;min-width:200px"><button type="button" class="btn ghost sm" id="ligaAdd">Agregar</button></div>
+    <p class="lbl">Lo que subió el robot <span class="opt">(oculta lo que no quieras; no lo vuelve a subir)</span></p>
+    <div id="rebRobot"></div>
     <h2 style="font-size:20px;margin-top:14px">Reporte del robot</h2>
     <div id="repRobot"></div>
     <h2 style="font-size:20px;margin-top:14px">Respaldo</h2>
@@ -1232,7 +1238,25 @@ $('#btnDel').addEventListener('click',async()=>{
 });
 
 /* ---------- ajustes ---------- */
-function abrirAj(){ pintarGH(); const PR=PRECIOS.cargar();
+/* Rebajas automáticas: tus ligas y lo que subió el robot (de /tienda/sincro.json). Se mandan a la tienda al publicar. */
+let REB_ROBOT=null;
+async function pintarLigas(){
+  if(!Array.isArray(AJ.ligasRebajas)){ // la primera vez: las que ya usa el robot
+    try{ const r=await fetch('/tienda/ligas-rebajas.json?v='+Date.now(),{cache:'no-store'}); const l=r.ok?await r.json():null; if(Array.isArray(l)){ AJ.ligasRebajas=l; guardarAjustes(); } }catch(e){}
+    if(!Array.isArray(AJ.ligasRebajas)){ $('#ligasReb').innerHTML='<p class="note">No pude leer tus ligas. Revisa tu internet y vuelve a abrir Ajustes.</p>'; return; } }
+  const corta=l=>{ try{ const u=new URL(l); return u.pathname.replace(/^\/collections\//,'')+(u.search?' · con filtros':''); }catch(e){ return l; } };
+  $('#ligasReb').innerHTML=AJ.ligasRebajas.map((l,i)=>'<div class="ppl"><div style="min-width:0"><b>'+esc(corta(l))+'</b><small style="word-break:break-all">'+esc(l)+'</small></div><div class="acts"><a class="btn ghost sm" href="'+esc(l)+'" target="_blank" rel="noopener">Ver</a><button type="button" class="x" data-ligaq="'+i+'">Quitar</button></div></div>').join('')||'<p class="note">No tienes ligas. El robot no sube rebajas por liga.</p>';
+  if(!REB_ROBOT){ try{ const r=await fetch('/tienda/sincro.json?v='+Date.now(),{cache:'no-store'}); REB_ROBOT=r.ok?((await r.json()).rebajas||[]):[]; }catch(e){ REB_ROBOT=[]; } }
+  const oc=new Set(AJ.rebajasOcultas||[]);
+  $('#rebRobot').innerHTML=REB_ROBOT.map(x=>{ const c=(x.colores||[])[0]||{}, pct=c.antes?Math.round((1-c.precio/c.antes)*100):0, o=oc.has(x.id);
+    return '<div class="ppl"'+(o?' style="opacity:.55"':'')+'><div style="display:flex;gap:10px;align-items:center;min-width:0"><img src="'+esc((c.fotos||[])[0]||'')+'" alt="" style="width:40px;height:50px;object-fit:cover;border-radius:6px;flex:none"><div style="min-width:0"><b>'+esc(x.nombre)+'</b><small>'+(x.colores||[]).length+((x.colores||[]).length===1?' color':' colores')+' · -'+pct+'% · '+money(c.precio)+(o?' · Oculta':'')+'</small></div></div><div class="acts"><button type="button" class="btn ghost sm" data-rebo="'+esc(x.id)+'">'+(o?'Mostrar':'Ocultar')+'</button></div></div>'; }).join('')||'<p class="note">Todavía no sube nada (corre cada hora).</p>';
+}
+$('#ligaAdd').addEventListener('click',()=>{ const v=$('#ligaNueva').value.trim(); let u; try{ u=new URL(v); }catch(e){ toast('Pega una liga completa (https://…)'); return; }
+  if(!/(^|\.)gymshark\.com$/.test(u.hostname)||!/\/collections\//.test(u.pathname)){ toast('Por ahora solo ligas de colecciones de Gymshark'); return; }
+  AJ.ligasRebajas=[...new Set((AJ.ligasRebajas||[]).concat(u.href))]; guardarAjustes(); $('#ligaNueva').value=''; pintarLigas(); toast('Liga guardada. Toca Publicar tienda.'); });
+$('#ligasReb').addEventListener('click',e=>{ const b=e.target.closest('[data-ligaq]'); if(!b) return; AJ.ligasRebajas.splice(+b.dataset.ligaq,1); guardarAjustes(); pintarLigas(); toast('Liga quitada. Toca Publicar tienda.'); });
+$('#rebRobot').addEventListener('click',e=>{ const b=e.target.closest('[data-rebo]'); if(!b) return; const s=new Set(AJ.rebajasOcultas||[]), id=b.dataset.rebo; if(s.has(id)) s.delete(id); else s.add(id); AJ.rebajasOcultas=[...s]; guardarAjustes(); pintarLigas(); toast('Listo. Toca Publicar tienda.'); });
+function abrirAj(){ pintarGH(); pintarLigas(); const PR=PRECIOS.cargar();
   $('#ajResumen').textContent='Precios de la tienda con dólar $'+PRECIOS.tiendaCfg(PR).tc+' · Anticipo '+PR.anticipo+' % · Envío gratis en compras mayores a $'+Number(PR.gratisMas).toLocaleString('en-US');
   updateBackupWarn(); pintarInicio(); $('#aj').hidden=false; }
 
@@ -1485,7 +1509,11 @@ async function armarTienda(){
     banners.push({titulo:(b.titulo||'').trim(),boton:(b.boton||'').trim(),cierre:b.cierre||'',ir:b.ir||'',img:img||imgPc,imgPc:img?imgPc:'',video:fotoBn(b.video),videoPc:fotoBn(b.videoPc)});
   }
   // la tienda recibe el anticipo, el redondeo y los envíos (nunca costos ni multiplicadores)
-  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),inicio:{banners,colOcultas:ini.colOcultas.slice(),mosaico:Object.fromEntries(Object.entries(ini.mosaico||{}).map(([m,id])=>[m,fotoBn(id)]).filter(x=>x[1])),mosaicoPos:ini.mosaicoPos||{},pestanaMarca:ini.pestanaMarca||{}},productos:lista},fotos:usadas};
+  // rebajas por liga: tus ligas y lo que no quieres que suba (lo que ocultaste ahí y tus prendas de Gymshark que no están en la tienda)
+  const ocultasLiga=new Set(AJ.rebajasOcultas||[]);
+  productos.filter(p=>/gymshark/i.test(p.marca||'')&&(p.enTienda===false||B(p)==='agotado')).forEach(p=>(p.colores||[]).forEach(c=>{ const h=(/\/products\/([^/?#]+)/.exec(c.link||p.link||'')||[])[1]; if(h) ocultasLiga.add(h); }));
+  const extraLiga=Array.isArray(AJ.ligasRebajas)?{ligasRebajas:AJ.ligasRebajas.slice()}:{};
+  return {datos:{actualizado:new Date().toISOString(),ajustes:PRECIOS.paraTienda(),...extraLiga,rebajasOcultas:[...ocultasLiga],inicio:{banners,colOcultas:ini.colOcultas.slice(),mosaico:Object.fromEntries(Object.entries(ini.mosaico||{}).map(([m,id])=>[m,fotoBn(id)]).filter(x=>x[1])),mosaicoPos:ini.mosaicoPos||{},pestanaMarca:ini.pestanaMarca||{}},productos:lista},fotos:usadas};
 }
 function estado(t){ $('#pubStatus').textContent=t; }
 $('#btnPublicar').addEventListener('click',async()=>{
