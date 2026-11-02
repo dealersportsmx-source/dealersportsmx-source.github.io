@@ -1458,6 +1458,8 @@ async function armarTienda(){
   const fotos=await getAll('fotos');
   const lista=[], usadas=[];
   for(const p of pubs){
+    // Entrega inmediata que todavía no tenía su precio fijo: se queda con el de hoy
+    if(B(p)==='disponible'&&!(num(p.precioEI)>0)){ const x=PRECIOS.precioProducto(p,PRECIOS.tiendaCfg()); if(x>0){ p.precioEI=x; await put('productos',p).catch(()=>{}); } }
     // link = página de la marca de ese color (lo usa el robot que revisa tallas); agotado = la marca ya no tiene ninguna talla
     const colores=(p.colores||[]).map(c=>({k:c.k,nombre:c.nombre||'',tallas:Object.assign({},c.tallas||{}),link:c.link||p.link||'',agotado:!!c.agotado,fotos:[]}));
     const fs=fotos.filter(f=>f.productoId===p.id).sort((a,b)=>(a.fecha||0)-(b.fecha||0));
@@ -1471,7 +1473,7 @@ async function armarTienda(){
     const base=precioDe(p), venta=precioVenta(p);
     lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),coleccion:(p.coleccion||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
-      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,fijo:!!p.fijo,forzar:!!p.forzar,factor:Math.round(multDe(p)*num(PRECIOS.tiendaCfg().tc)*100)/100,precioFijo:has(p.precioManual),coloresNo:p.coloresNo||[],colores});
+      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,fijo:!!p.fijo,forzar:!!p.forzar,usd:B(p)!=='disponible'&&!has(p.precioManual)?num(p.costoUsd):0,precioFijo:has(p.precioManual),coloresNo:p.coloresNo||[],colores});
   }
   // inicio: tus banners (foto, texto y a dónde llevan) y las colecciones que escondiste
   const ini=inicioAJ(), banners=[];
