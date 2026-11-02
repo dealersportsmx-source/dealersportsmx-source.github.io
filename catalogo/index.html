@@ -408,17 +408,18 @@ label>input,label>textarea,label>select{margin-top:6px}
     <button type="button" class="btn full" id="btnPublicar">Publicar tienda</button>
     <p class="note" id="pubStatus" style="margin-top:8px"></p>
     <p class="note"><a id="pubLink" target="_blank" rel="noopener" style="color:var(--blue)"></a></p>
-    <h2 style="font-size:20px;margin-top:14px">Rebajas automáticas de Gymshark</h2>
-    <p>Pega ligas de la sección de rebajas de Gymshark con tus filtros ya puestos. El robot las lee tal cual cada hora y sube lo que salga: colores con alguna talla de XS a XL, un solo descuento por modelo (el más bajo) y el aviso “Sujeto a confirmación”. Salen solo en Rebajas. Toca <b>Publicar tienda</b> después de cambiarlas.</p>
+    <h2 style="font-size:20px;margin-top:14px">Tus prendas en rebaja</h2>
+    <p>En Rebajas de la tienda solo salen tus prendas: las que tú pones en oferta y los colores que el robot ve en rebaja en la marca (solo esos colores). Para verlas juntas, toca el filtro <b>En rebaja</b> arriba de tu lista; se editan como cualquier prenda, con su Precio a mano.</p>
+    <details class="rep" id="ganBox"><summary id="ganSum">Costo y ganancia de cada rebaja</summary><div id="ganLista"></div></details>
+    <div hidden><!-- rebajas por liga: apagadas (2026-11-02) -->
     <div id="ligasReb"></div>
     <div class="chips" style="margin:6px 0 10px"><input id="ligaNueva" inputmode="url" placeholder="https://www.gymshark.com/collections/…" autocomplete="off" style="flex:1;min-width:200px"><button type="button" class="btn ghost sm" id="ligaAdd">Agregar</button></div>
     <p class="lbl" style="margin-top:12px">Ganancia mínima en rebajas</p>
     <p class="note" style="margin-top:0">El precio en rebaja nunca baja de lo que te cuesta la pieza (precio de la marca en rebaja × dólar del día) + tu costo extra + tu ganancia mínima. Si para llegar ahí queda en precio normal, la prenda sale de Rebajas.</p>
     <div class="grid2"><label>Costo extra por pieza <span class="opt">(envío a México, casillero…)</span><input id="costoPieza" inputmode="decimal" placeholder="0" autocomplete="off"></label>
       <label>Ganancia mínima por pieza <span class="opt">(0 = apagado)</span><input id="gananciaMin" inputmode="decimal" placeholder="0" autocomplete="off"></label></div>
-    <details class="rep" id="ganBox"><summary id="ganSum">Costo y ganancia de cada rebaja</summary><div id="ganLista"></div></details>
-    <p class="lbl">Lo que subió el robot <span class="opt">(oculta lo que no quieras; no lo vuelve a subir)</span></p>
     <div id="rebRobot"></div>
+    </div>
     <h2 style="font-size:20px;margin-top:14px">Reporte del robot</h2>
     <div id="repRobot"></div>
     <h2 style="font-size:20px;margin-top:14px">Respaldo</h2>
@@ -621,7 +622,7 @@ async function cargarVivo(){
   REPORTE=(rep&&rep.corridas)||[]; pintarReporte();
   // la primera vez: la entrega inmediata se queda con el precio que hoy tiene publicado
   if(d) for(const p of productos){ if(B(p)!=='disponible'||num(p.precioEI)>0) continue; const v=VIVO.get(p.id), x=(v&&num(v.precioBase))||PRECIOS.precioProducto(p,PRECIOS.tiendaCfg()); if(x>0){ p.precioEI=x; await put('productos',p).catch(()=>{}); } }
-  renderTabs(); renderList();
+  renderTabs(); renderFilters(); renderList();
 }
 const T_MIN=['XS','S','M','L','XL','2XL'];
 function coloresActivos(cols){ return (cols||[]).filter(c=>{ if(c.agotado) return false; const k=Object.keys(c.tallas||{}); return !k.length||k.some(t=>!/^(?:[3-9]XL|X{3,}L?)$/i.test(String(t).trim())); }); }
@@ -672,7 +673,8 @@ function renderFilters(){
   $('#filtLinea').innerHTML=hayLinea?[['','Todo'],['hombre','Hombre'],['mujer','Mujer']].map(l=>'<button type="button" class="chip'+(filtroLinea===l[0]?' on':'')+'" data-linea="'+l[0]+'" aria-pressed="'+(filtroLinea===l[0])+'">'+l[1]+'</button>').join(''):'';
   // "Revisar tipo": prendas cuyo nombre no dice qué son (la tienda no sabe en qué botón ponerlas)
   const nRev=productos.filter(revisarTipo).length; if(!nRev) filtroRevisar=false;
-  $('#filters').innerHTML=(nRev?'<button type="button" class="chip'+(filtroRevisar?' on':'')+'" data-rev="1" style="border-color:var(--warn);color:'+(filtroRevisar?'':'var(--warn)')+'">Revisar tipo ('+nRev+')</button>':'')+
+  const nReb=productos.filter(enRebajaCat).length; if(!nReb) filtroReb=false;
+  $('#filters').innerHTML=(nReb?'<button type="button" class="chip'+(filtroReb?' on':'')+'" data-reb="1" style="border-color:var(--danger);color:'+(filtroReb?'':'var(--danger)')+'">En rebaja ('+nReb+')</button>':'')+(nRev?'<button type="button" class="chip'+(filtroRevisar?' on':'')+'" data-rev="1" style="border-color:var(--warn);color:'+(filtroRevisar?'':'var(--warn)')+'">Revisar tipo ('+nRev+')</button>':'')+
     (marcas.length>1?[''].concat(marcas).map(m=>'<button type="button" class="chip'+(filtroMarca===m?' on':'')+'" data-marca="'+esc(m)+'">'+(m?esc(m):'Todas')+'</button>').join(''):'');
   $('#marcasList').innerHTML=marcas.map(m=>'<option value="'+esc(m)+'">').join('');
   $('#colsList').innerHTML=[...new Set(productos.map(p=>(p.coleccion||'').trim()).filter(Boolean))].sort().map(c=>'<option value="'+esc(c)+'">').join('');
@@ -692,14 +694,15 @@ function rowHTML(p){
   const mot=motivoOculto(p); if(mot) pills.unshift('<span class="pill low">'+esc(mot)+'</span>');
   const sz=t.size?[...t].map(([k,v])=>k+(v>1?'·'+v:'')).join('  '):(['disponible','agotado'].includes(p.estado)?'Sin piezas':'');
   const precio=precioVenta(p), base=precioDe(p), of=has(p.oferta)&&num(p.oferta)>0&&num(p.oferta)<base;
-  const colores=(p.colores||[]).filter(c=>c.nombre).length;
+  const colores=(p.colores||[]).filter(c=>c.nombre).length, nr=coloresEnRebaja(p);
+  if(nr||of) pills.push('<span class="pill auto">En rebaja'+(nr?' · '+nr+(nr===1?' color':' colores'):'')+'</span>');
   return '<button type="button" class="row'+(selMode?' pick'+(sel.has(p.id)?' on':''):'')+'" data-id="'+esc(p.id)+'"><div class="th">'+(u?'<img src="'+u+'" alt="">':'Sin foto')+'</div>'+
     '<div style="min-width:0"><b>'+esc((p.nombre||'').trim()||'Sin nombre')+'</b><small>'+esc([p.linea?LINEA_TXT[p.linea]:'',p.marca,colores>1?colores+' colores':(p.colores[0]&&p.colores[0].nombre)].filter(Boolean).join(' · '))+(sz?' · '+esc(sz):'')+'</small><div class="pills">'+pills.join('')+'</div></div>'+
     '<div class="pr">'+(precio?money(precio):'—')+(of?'<s>'+money(base)+'</s>':'')+'</div></button>';
 }
 function renderList(){
   const q=($('#q').value||'').toLowerCase().trim();
-  let rows=productos.filter(p=>(filtroRevisar?revisarTipo(p):enSeccion(p,seccion))&&(!filtroMarca||(p.marca||'').trim()===filtroMarca)&&(!filtroLinea||p.linea===filtroLinea||p.linea==='unisex'));
+  let rows=productos.filter(p=>(filtroRevisar?revisarTipo(p):filtroReb?enRebajaCat(p):enSeccion(p,seccion))&&(!filtroMarca||(p.marca||'').trim()===filtroMarca)&&(!filtroLinea||p.linea===filtroLinea||p.linea==='unisex'));
   if(q) rows=rows.filter(p=>[p.nombre,p.marca,p.categoria,p.descripcion,(p.colores||[]).map(c=>c.nombre).join(' ')].join(' ').toLowerCase().includes(q));
   if(seccion==='drops') rows.sort((a,b)=>(dropDate(a)||0)-(dropDate(b)||0));
   else if(seccion==='camino') rows.sort((a,b)=>(a.llegaFecha||'9').localeCompare(b.llegaFecha||'9'));
@@ -714,19 +717,14 @@ function renderList(){
   }
   $('#list').innerHTML=(seccion==='ocultos'?'<p class="empty" style="margin:8px 0;text-align:left">No salen en la tienda. Toca <b>Seleccionar</b> para volver a mostrar o eliminar uno o varios. Eliminar solo lo haces tú; el bot nunca borra.</p>':'')+rows.map(rowHTML).join('')+autoHTML(q);
 }
-/* Rebajas automáticas (las sube el robot desde tus ligas de Gymshark): salen en Sobre pedido y Todos con su etiqueta,
-   y en Ocultos las que ocultaste. "Ocultar" aquí mismo: no vuelven a subir (después de Publicar tienda). */
-function autoHTML(q){
-  if(filtroRevisar||!['preventas','todos','ocultos'].includes(seccion)||!(REB_ROBOT||[]).length) return '';
-  const oc=new Set(AJ.rebajasOcultas||[]), mano=AJ.preciosLiga||{};
-  const xs=REB_ROBOT.filter(x=>(seccion==='ocultos')===oc.has(x.id)&&(!filtroMarca||PRECIOS.norm(filtroMarca)===PRECIOS.norm(x.marca||'Gymshark'))&&(!filtroLinea||x.linea===filtroLinea||x.linea==='unisex')&&
-    (!q||[x.nombre,x.marca,(x.colores||[]).map(c=>c.nombre).join(' ')].join(' ').toLowerCase().includes(q)));
-  if(!xs.length) return '';
-  return '<p class="ra-h">Rebajas automáticas <small>'+xs.length+(xs.length===1?' prenda':' prendas')+' · las sube el robot de tus ligas</small></p>'+xs.map(x=>{ const c=(x.colores||[])[0]||{}, pm=num(mano[x.id]);
-    return '<div class="row ra" data-auto="'+esc(x.id)+'"><div class="th">'+(c.fotos&&c.fotos[0]?'<img src="'+esc(c.fotos[0])+'" alt="" loading="lazy">':'Sin foto')+'</div>'+
-      '<div style="min-width:0"><b>'+esc(x.nombre)+'</b><small>'+esc((x.marca||'Gymshark')+' · '+(x.colores||[]).map(c=>c.nombre).join(', '))+'</small><div class="pills"><span class="pill auto">Rebaja automática</span>'+(pm?'<span class="pill">Precio a mano</span>':'')+'</div></div>'+
-      '<div class="pr">'+money(pm||c.precio)+(c.antes?'<s>'+money(c.antes)+'</s>':'')+'<button type="button" class="btn ghost sm" data-autoo="'+esc(x.id)+'">'+(oc.has(x.id)?'Mostrar':'Ocultar')+'</button></div></div>'; }).join('');
-}
+function autoHTML(){ return ''; } // las rebajas por liga están apagadas (2026-11-02): las rebajas las subes tú
+/* Rebajas de la tienda = tus prendas con oferta o con algún color en rebaja en la marca (lo detecta el robot, por color).
+   Aquí llevan la etiqueta "En rebaja" y el filtro de arriba las junta; se editan como cualquier prenda, con su Precio a mano. */
+function coloresEnRebaja(p){ if(B(p)==='disponible') return 0; const e=((SINCRO_VIVO&&SINCRO_VIVO.prendas)||{})[p.id]; if(!e) return 0;
+  const v=VIVO&&VIVO.get(p.id), agot=new Set(((v&&v.colores)||[]).filter(c=>c.agotado).map(c=>c.k));
+  return (p.colores||[]).filter(c=>!agot.has(c.k)&&num(((e.colores||{})[c.k]||{}).d)>0).length; }
+function enRebajaCat(p){ const base=precioDe(p); return coloresEnRebaja(p)>0||(has(p.oferta)&&num(p.oferta)>0&&num(p.oferta)<base); }
+let filtroReb=false;
 function updateBackupWarn(){
   let last=0; try{ last=+localStorage.getItem(CFG.db+'_ultimoRespaldo')||0; }catch(e){}
   $('#bkWarn').hidden=!(productos.length&&(!last||Date.now()-last>14*864e5));
@@ -738,7 +736,8 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-sec]');
 $('#stats').addEventListener('click',e=>{ const b=e.target.closest('[data-sec]'); if(b) irA(b.dataset.sec); });
 $('#filtLinea').addEventListener('click',e=>{ const b=e.target.closest('[data-linea]'); if(!b) return; filtroLinea=b.dataset.linea; renderFilters(); renderList(); });
 $('#filters').addEventListener('click',e=>{
-  if(e.target.closest('[data-rev]')){ filtroRevisar=!filtroRevisar; renderFilters(); renderList(); return; }
+  if(e.target.closest('[data-rev]')){ filtroRevisar=!filtroRevisar; filtroReb=false; renderFilters(); renderList(); return; }
+  if(e.target.closest('[data-reb]')){ filtroReb=!filtroReb; filtroRevisar=false; renderFilters(); renderList(); return; }
   const b=e.target.closest('[data-marca]'); if(!b) return; filtroMarca=b.dataset.marca; renderFilters(); renderList(); });
 $('#q').addEventListener('input',renderList);
 $('#list').addEventListener('click',e=>{ const ao=e.target.closest('[data-autoo]');
@@ -1273,13 +1272,11 @@ const pisoPieza=()=>num(AJ.costoPieza)+num(AJ.gananciaMin); // 0 = apagado: las 
 function pintarGanancias(){
   $('#costoPieza').value=num(AJ.costoPieza); $('#gananciaMin').value=num(AJ.gananciaMin);
   const tc=num(PRECIOS.tiendaCfg().tc), extra=num(AJ.costoPieza), min=num(AJ.gananciaMin), filas=[], manoL=AJ.preciosLiga||{};
-  // rebajas por liga (con tu precio a mano si lo pusiste)
-  (REB_ROBOT||[]).forEach(x=>(x.colores||[]).forEach(c=>{ if(c.usd>0) filas.push({n:x.nombre+' · '+c.nombre,precio:num(manoL[x.id])||c.precio,costo:Math.round(c.usd*tc+extra)}); }));
-  // tus prendas con colores en rebaja
+  // tus prendas con colores en rebaja (solo tus colores; con tu precio a mano si lo pusiste)
   const s=(SINCRO_VIVO&&SINCRO_VIVO.prendas)||{};
-  VIVO.forEach(p=>{ const e=s[p.id]; if(!e||p.estado==='disponible') return; const base=num(p.precioBase), u=num(p.usd)>0?num(p.usd):(e.b===base?num(e.u):0); if(!u||!base) return;
-    const cols=(p.colores||[]).map(c=>[c.nombre,(e.colores||{})[c.k]]).concat((e.nuevos||[]).map(n=>[n.nombre,n]));
-    cols.forEach(([nom,x])=>{ if(!x||!(x.d>0)||!(x.v>0)) return; const normal=PRECIOS.redondear(base*x.n/u), venta=Math.max(PRECIOS.redondearAbajo(normal*(1-x.d/100)),num(x.m)); if(venta>=normal) return;
+  VIVO.forEach(p=>{ const e=s[p.id]; if(!e||p.estado==='disponible') return; const base=num(p.precioNormal)||num(p.precioBase), u=num(p.usd)>0?num(p.usd):(e.b===num(p.precioBase)?num(e.u):0); if(!u||!base) return;
+    const cols=(p.colores||[]).filter(c=>!c.agotado).map(c=>[c.nombre,(e.colores||{})[c.k]]);
+    cols.forEach(([nom,x])=>{ if(!x||!(x.d>0)||!(x.v>0)) return; const normal=PRECIOS.redondear(base*x.n/u), venta=p.precioFijo?num(p.precio):Math.max(PRECIOS.redondearAbajo(normal*(1-x.d/100)),num(x.m)); if(venta>=normal) return;
       filas.push({n:p.nombre+' · '+nom,precio:venta,costo:Math.round(x.v*tc+extra)}); }); });
   filas.forEach(f=>{ f.gana=f.precio-f.costo; }); filas.sort((a,b)=>a.gana-b.gana);
   const bajas=filas.filter(f=>f.gana<min).length;
@@ -1291,7 +1288,7 @@ function pintarGanancias(){
 async function pintarLigas(){
   if(!Array.isArray(AJ.ligasRebajas)){ // la primera vez: las que ya usa el robot
     try{ const r=await fetch('/tienda/ligas-rebajas.json?v='+Date.now(),{cache:'no-store'}); const l=r.ok?await r.json():null; if(Array.isArray(l)){ AJ.ligasRebajas=l; guardarAjustes(); } }catch(e){}
-    if(!Array.isArray(AJ.ligasRebajas)){ $('#ligasReb').innerHTML='<p class="note">No pude leer tus ligas. Revisa tu internet y vuelve a abrir Ajustes.</p>'; return; } }
+    if(!Array.isArray(AJ.ligasRebajas)) AJ.ligasRebajas=[]; } // ligas apagadas: ya no detiene la lista de ganancias
   const corta=l=>{ try{ const u=new URL(l); return u.pathname.replace(/^\/collections\//,'')+(u.search?' · con filtros':''); }catch(e){ return l; } };
   $('#ligasReb').innerHTML=AJ.ligasRebajas.map((l,i)=>'<div class="ppl"><div style="min-width:0"><b>'+esc(corta(l))+'</b><small style="word-break:break-all">'+esc(l)+'</small></div><div class="acts"><a class="btn ghost sm" href="'+esc(l)+'" target="_blank" rel="noopener">Ver</a><button type="button" class="x" data-ligaq="'+i+'">Quitar</button></div></div>').join('')||'<p class="note">No tienes ligas. El robot no sube rebajas por liga.</p>';
   if(!REB_ROBOT){ try{ const r=await fetch('/tienda/sincro.json?v='+Date.now(),{cache:'no-store'}); SINCRO_VIVO=r.ok?await r.json():{}; REB_ROBOT=SINCRO_VIVO.rebajas||[]; }catch(e){ REB_ROBOT=[]; } }
