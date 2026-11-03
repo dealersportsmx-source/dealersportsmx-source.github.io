@@ -666,8 +666,8 @@ const FF='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue
 const FA='Anton, Impact, "Arial Narrow", sans-serif', FM='Montserrat, '+FF;
 const fA=s=>'400 '+s+'px '+FA, fM=(s,w)=>(w||400)+' '+s+'px '+FM;
 const TEMAS={
-  negro:{bg:'#000000',card:'#0b0b0c',head:'#1c1c1f',panel:'#161618',line:'#2a2a2e',ink:'#ffffff',grey:'#a3a3a8',dim:'#6e6e74',foot:'#55555a',acc:'#FFD400',accInk:'#0b0b0c',green:'#46c86e',blue:'#6FA3FF',okInk:'#0b0b0c'},
-  blanco:{bg:'#e9e7e2',card:'#ffffff',head:'#0b0b0c',panel:'#f2f1ee',line:'#e2e0db',ink:'#0b0b0c',grey:'#55555b',dim:'#8c8c92',foot:'#a0a0a6',acc:'#FFD400',accInk:'#0b0b0c',green:'#1E9A4A',blue:'#2F6FE0',okInk:'#ffffff'}
+  negro:{bg:'#000000',card:'#0b0b0c',head:'#1c1c1f',panel:'#161618',line:'#2a2a2e',ink:'#ffffff',grey:'#a3a3a8',dim:'#6e6e74',foot:'#55555a',acc:'#FFD400',accInk:'#0b0b0c',green:'#46c86e',blue:'#6FA3FF',okInk:'#0b0b0c',red:'#ff5a4f'},
+  blanco:{bg:'#e9e7e2',card:'#ffffff',head:'#0b0b0c',panel:'#f2f1ee',line:'#e2e0db',ink:'#0b0b0c',grey:'#55555b',dim:'#8c8c92',foot:'#a0a0a6',acc:'#FFD400',accInk:'#0b0b0c',green:'#1E9A4A',blue:'#2F6FE0',okInk:'#ffffff',red:'#d33a2c'}
 };
 let K=TEMAS.negro;
 const fontsReady=Promise.race([
@@ -764,10 +764,15 @@ async function drawInvoice(inv){
         rr(d,tx,y+116,tw,32,8); d.fillStyle=K.head; d.fill();
         T(d,tl,tx+tw/2,y+133,fM(14,700),'#ffffff','center','middle'); sp(d,'0px');
       }
-      T(d,price,X1-24,y+92,fA(32),K.ink,'right','middle');
-      // con descuento: abajo del precio, en verde, cuánto queda
-      if(dctoDe(it)) T(d,'−'+Math.round((1-conDcto(it)/num(it.precio||1))*100)+' %: '+money(conDcto(it)),X1-24,y+124,fM(15,700),K.green,'right','middle');
-      else T(d,'MXN',X1-24,y+122,fM(12,700),K.dim,'right','middle');
+      // con descuento: el precio rebajado en rojo y abajo el de antes tachado (sin el %)
+      if(dctoDe(it)){
+        T(d,money(conDcto(it)),X1-24,y+92,fA(32),K.red,'right','middle');
+        T(d,price,X1-24,y+124,fM(15,600),K.dim,'right','middle');
+        d.font=fM(15,600); const aw=d.measureText(price).width; L(d,X1-24-aw,y+124,X1-24,y+124,K.dim,2);
+      } else {
+        T(d,price,X1-24,y+92,fA(32),K.ink,'right','middle');
+        T(d,'MXN',X1-24,y+122,fM(12,700),K.dim,'right','middle');
+      }
       y+=ROW; L(d,X0,y,X1,y,K.line,1);
     });
     y+=36;
