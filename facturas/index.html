@@ -475,7 +475,7 @@ function itemHTML(it,i){
     '</div>'+
     // descuento escondido: solo aparece si lo activas en esta prenda
     '<div class="dct">'+(dctoDe(it)>0||it._verDcto
-      ?'<span class="t-l">Descuento</span>'+[0,5,10].map(p=>'<button type="button" class="dchip'+(dctoDe(it)===p?' on':'')+'" data-dcto="'+p+'" aria-pressed="'+(dctoDe(it)===p)+'">'+(p?p+' %':'Sin')+'</button>').join('')+
+      ?'<span class="t-l">Descuento</span>'+[0,5,10,15,20,25,30].map(p=>'<button type="button" class="dchip'+(dctoDe(it)===p?' on':'')+'" data-dcto="'+p+'" aria-pressed="'+(dctoDe(it)===p)+'">'+(p?p+' %':'Sin')+'</button>').join('')+
         (dctoDe(it)?'<span class="dct-r">Queda en '+money(num(it.precio)*(1-dctoDe(it)/100))+'</span>':'')
       :'<button type="button" class="dlink" data-a="verdcto">+ Aplicar descuento</button>')+'</div>'+
     (src?'<details class="adj"><summary>Ajustar foto</summary>'+
