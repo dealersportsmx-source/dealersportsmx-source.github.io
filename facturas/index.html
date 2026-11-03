@@ -96,7 +96,8 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
 .dct .t-l{font-size:13px;color:var(--muted);margin-right:4px}
 .dchip{min-width:44px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:var(--ink);font-weight:600;font-size:13px;cursor:pointer}
 .dchip.on{background:var(--green);color:#fff;border-color:var(--green)}
-.dct-r{font-size:13px;font-weight:700;color:var(--green);margin-left:4px}
+.dct-r{font-size:13px;font-weight:700;color:var(--green);margin-left:4px;display:inline-flex;align-items:center;gap:2px}
+.dct-in{width:84px;height:34px;padding:0 8px;margin:0;font-size:14px;font-weight:700;color:var(--green)}
 .dlink{background:none;border:0;padding:4px 0;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer}
 .adj{margin-top:10px}
 .adj summary{cursor:pointer;color:var(--muted);font-size:14px;padding:6px 0}
@@ -346,12 +347,18 @@ function normalize(inv){
 }
 // % de descuento de una prenda (0 si no lo activaste)
 function dctoDe(it){ return Math.max(0,Math.min(100,num(it&&it.dcto))); }
+// precio de la prenda ya con su descuento: el que escribiste a mano; si no, el % redondeado hacia abajo a $50 (1,462.50 → 1,450).
+// (facturas viejas, sin "redDcto": el % exacto, como estaban)
+const abajo50=v=>Math.floor(Math.round(v*100)/100/50+1e-9)*50;
+function conDcto(it){ const p=num(it.precio), d=dctoDe(it); if(!d) return p;
+  if(String(it.precioDcto||'').trim()!==''&&num(it.precioDcto)>0) return Math.min(p,num(it.precioDcto));
+  return it.redDcto?abajo50(p*(1-d/100)):Math.round(p*(1-d/100)*100)/100; }
 function totals(inv){
   const items=inv.items||[];
   const sub=items.reduce((a,i)=>a+num(i.precio),0);
   const envio=num(inv.envio);
   // descuento por prenda (5 %, 10 %…) solo en las que lo actives; no toca el envío
-  const desc=Math.round(items.reduce((a,i)=>a+num(i.precio)*dctoDe(i),0))/100;
+  const desc=Math.round(items.reduce((a,i)=>a+num(i.precio)-conDcto(i),0)*100)/100;
   const saldos=(inv.saldos||[]).filter(s=>num(s.monto)>0);
   const prev=saldos.reduce((a,s)=>a+num(s.monto),0), tot=sub-desc+envio+prev;
   const ants=(inv.anticipos||[]).filter(a=>num(a.monto)>0);
@@ -476,7 +483,7 @@ function itemHTML(it,i){
     // descuento escondido: solo aparece si lo activas en esta prenda
     '<div class="dct">'+(dctoDe(it)>0||it._verDcto
       ?'<span class="t-l">Descuento</span>'+[0,5,10,15,20,25,30].map(p=>'<button type="button" class="dchip'+(dctoDe(it)===p?' on':'')+'" data-dcto="'+p+'" aria-pressed="'+(dctoDe(it)===p)+'">'+(p?p+' %':'Sin')+'</button>').join('')+
-        (dctoDe(it)?'<span class="dct-r">Queda en '+money(num(it.precio)*(1-dctoDe(it)/100))+'</span>':'')
+        (dctoDe(it)?'<span class="dct-r">Queda en $<input class="dct-in" data-k="precioDcto" inputmode="decimal" value="'+conDcto(it)+'" aria-label="Precio con descuento (lo puedes cambiar a mano)"></span>':'')
       :'<button type="button" class="dlink" data-a="verdcto">+ Aplicar descuento</button>')+'</div>'+
     (src?'<details class="adj"><summary>Ajustar foto</summary>'+
       '<label>Acercar<input type="range" min="1" max="3" step="0.05" value="'+(f.zoom||1)+'" data-adj="zoom"></label>'+
@@ -542,7 +549,8 @@ itemsEl.addEventListener('input',e=>{
     art.querySelectorAll('.chip').forEach(c=>{c.classList.remove('on');c.setAttribute('aria-pressed','false');});
     e.target.classList.toggle('on',!!v);
   } else if(k){ it[k]=e.target.value;
-    if(k==='precio'){ const r=art.querySelector('.dct-r'); if(r) r.textContent='Queda en '+money(num(it.precio)*(1-dctoDe(it)/100)); } }
+    // cambió el precio: el de descuento se vuelve a calcular con el % (lo que hayas escrito a mano se borra)
+    if(k==='precio'){ it.precioDcto=''; const r=art.querySelector('.dct-in'); if(r) r.value=conDcto(it); } }
   else if(a&&it.foto){ it.foto[a]=parseFloat(e.target.value); const im=art.querySelector('.ph img'); if(im) im.setAttribute('style',thumbStyle(it.foto)); }
   changed();
 });
@@ -551,7 +559,7 @@ itemsEl.addEventListener('click',e=>{
   // descuento de esta prenda: "+ Aplicar descuento" muestra los botones; "Sin" lo quita y los vuelve a esconder
   if(e.target.closest('[data-a="verdcto"]')){ it._verDcto=true; renderItems(); return; }
   const dc=e.target.closest('[data-dcto]');
-  if(dc){ const p=num(dc.dataset.dcto); it.dcto=p?String(p):''; if(!p) it._verDcto=false; renderItems(); changed(); return; }
+  if(dc){ const p=num(dc.dataset.dcto); it.dcto=p?String(p):''; it.precioDcto=''; it.redDcto=true; if(!p) it._verDcto=false; renderItems(); changed(); return; }
   const chip=e.target.closest('[data-talla]');
   if(chip){
     it.talla=chip.dataset.talla;
@@ -758,7 +766,7 @@ async function drawInvoice(inv){
       }
       T(d,price,X1-24,y+92,fA(32),K.ink,'right','middle');
       // con descuento: abajo del precio, en verde, cuánto queda
-      if(dctoDe(it)) T(d,'−'+dctoDe(it)+' %: '+money(num(it.precio)*(1-dctoDe(it)/100)),X1-24,y+124,fM(15,700),K.green,'right','middle');
+      if(dctoDe(it)) T(d,'−'+Math.round((1-conDcto(it)/num(it.precio||1))*100)+' %: '+money(conDcto(it)),X1-24,y+124,fM(15,700),K.green,'right','middle');
       else T(d,'MXN',X1-24,y+122,fM(12,700),K.dim,'right','middle');
       y+=ROW; L(d,X0,y,X1,y,K.line,1);
     });
@@ -1026,7 +1034,7 @@ $('#catTallas').addEventListener('click',async e=>{
 window.recibirPrenda=async d=>{
   for(let i=0;i<50&&backend==='pending';i++) await new Promise(r=>setTimeout(r,100));
   if(d.nueva){ saveNow(true); cur=newInvoice(); dirty=false; lastBlob=null; renderAll(); window.scrollTo(0,0); }
-  const it=Object.assign(blankItem(),{nombre:d.nombre||'',desc:d.desc||'',talla:d.talla||'',precio:d.precio?String(d.precio):'',dcto:num(d.descuento)>0?String(num(d.descuento)):''});
+  const it=Object.assign(blankItem(),{nombre:d.nombre||'',desc:d.desc||'',talla:d.talla||'',precio:d.precio?String(d.precio):'',dcto:num(d.descuento)>0?String(num(d.descuento)):'',redDcto:true});
   const last=cur.items[cur.items.length-1];
   if(last&&!last.nombre&&!num(last.precio)&&!last.foto) cur.items[cur.items.length-1]=it; else cur.items.push(it);
   renderItems(); changed();
