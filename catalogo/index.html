@@ -626,7 +626,32 @@ async function cargarVivo(){
   REPORTE=(rep&&rep.corridas)||[]; pintarReporte();
   // la primera vez: la entrega inmediata se queda con el precio que hoy tiene publicado
   if(d) for(const p of productos){ if(B(p)!=='disponible'||num(p.precioEI)>0) continue; const v=VIVO.get(p.id), x=(v&&num(v.precioBase))||PRECIOS.precioProducto(p,PRECIOS.tiendaCfg()); if(x>0){ p.precioEI=x; await put('productos',p).catch(()=>{}); } }
+  await aplicarArreglos().catch(()=>{});
   renderTabs(); renderFilters(); renderList();
+}
+/* Arreglos que preparo yo (arreglos.json en la tienda), una sola vez por versión:
+   portadas = la foto que la marca usa de portada en ese color (para que no salga la de espalda);
+   quitarColores = colores sin piezas que se colaron a una tarjeta de Entrega inmediata. Nunca toca nada más. */
+async function aplicarArreglos(){
+  const r=await fetch(TIENDA_URL+'arreglos.json?v='+Date.now(),{cache:'no-store'}).catch(()=>null); if(!r||!r.ok) return;
+  const a=await r.json(); if(!a||!a.version||String(AJ.arreglosVer||'')>=String(a.version)) return;
+  const fotos=await getAll('fotos'), fotoDe=new Map(fotos.map(f=>[f.id,f])); let nP=0,nC=0;
+  for(const p of productos){ let cambio=false;
+    const port=(a.portadas||{})[p.id]||{};
+    (p.colores||[]).forEach((c,i)=>{ const fid=port[c.k], f=fid&&fotoDe.get(fid); if(!f||f.colorK!==c.k&&!(i===0&&!f.colorK)||c.portada===fid) return;
+      c.portada=fid; if(i===0) p.portada=fid; cambio=true; nP++; });
+    const quitar=new Set(((a.quitarColores||{})[p.id])||[]);
+    if(quitar.size&&B(p)==='disponible'){
+      const sinPiezas=c=>!Object.values(c.tallas||{}).some(n=>num(n)>0);
+      const fuera=(p.colores||[]).filter(c=>quitar.has(c.k)&&sinPiezas(c));
+      if(fuera.length&&fuera.length<(p.colores||[]).length){
+        for(const c of fuera) for(const f of fotos.filter(f=>f.productoId===p.id&&f.colorK===c.k)){ try{ await delFoto(f.id); }catch(e){} }
+        p.colores=p.colores.filter(c=>!fuera.includes(c)); if(p.portada&&!fotos.some(f=>f.id===p.portada&&f.productoId===p.id&&p.colores.some(c=>c.k===f.colorK))) p.portada=null;
+        cambio=true; nC+=fuera.length; } }
+    const nom=((a.nombreColor||{})[p.id])||{}; (p.colores||[]).forEach(c=>{ if(nom[c.k]&&!String(c.nombre||'').trim()){ c.nombre=nom[c.k]; cambio=true; } });
+    if(cambio){ p.updatedAt=Date.now(); await put('productos',p).catch(()=>{}); } }
+  AJ.arreglosVer=a.version; guardarAjustes();
+  if(nP||nC) toast('Corregí '+[nP?nP+(nP===1?' portada':' portadas'):'',nC?nC+(nC===1?' color de más':' colores de más')+' en Entrega inmediata':''].filter(Boolean).join(' y ')+'. Toca Publicar tienda.');
 }
 const T_MIN=['XS','S','M','L','XL','2XL'];
 function coloresActivos(cols){ return (cols||[]).filter(c=>{ if(c.agotado) return false; const k=Object.keys(c.tallas||{}); return !k.length||k.some(t=>!/^(?:[3-9]XL|X{3,}L?)$/i.test(String(t).trim())); }); }
