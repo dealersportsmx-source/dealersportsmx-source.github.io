@@ -449,6 +449,8 @@ label>input,label>textarea,label>select{margin-top:6px}
 (function(){
 'use strict';
 const CFG={"db": "catalogo_db", "clientesDb": "clientes_db"};
+// la tienda vive en su propio dominio (desde nov 2026); de ahí se leen las tallas y rebajas que dejó el robot
+const TIENDA_URL='https://dealersportsmx.com/';
 const $=(s,el=document)=>el.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -618,7 +620,7 @@ function pintarDolar(){ const mi=num(PRECIOS.tiendaCfg().tc), el=$('#dolarHoy');
 async function cargarDolar(){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD',{cache:'no-store'}); if(r.ok){ const j=await r.json(); DOLAR_HOY=+(j.rates||{}).MXN||0; } }catch(e){} pintarDolar(); }
 async function cargarVivo(){
   const leer=u=>fetch(u+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
-  const [d,n,rep,sx]=await Promise.all([leer('/tienda/datos.json'),leer('/tienda/no-existen.json'),leer('/tienda/reporte.json'),leer('/tienda/sincro.json')]);
+  const [d,n,rep,sx]=await Promise.all([leer(TIENDA_URL+'datos.json'),leer(TIENDA_URL+'no-existen.json'),leer(TIENDA_URL+'reporte.json'),leer(TIENDA_URL+'sincro.json')]);
   if(sx) SINCRO_VIVO=sx;
   VIVO=new Map(((d&&d.productos)||[]).map(p=>[p.id,p])); NO_EXISTE=n&&typeof n==='object'?n:{};
   REPORTE=(rep&&rep.corridas)||[]; pintarReporte();
@@ -1321,7 +1323,7 @@ function pintarRebajas(){
 }
 $('#rebMarcas').addEventListener('change',e=>{ const i=e.target.closest('[data-rebauto]'); if(!i) return; AJ.rebAuto=Object.assign({},AJ.rebAuto); AJ.rebAuto[i.dataset.rebauto.toLowerCase()]=i.checked; guardarAjustes(); pintarRebajas(); renderFilters(); renderList();
   toast((i.checked?'Automática':'Apagada: tú escoges')+'. Toca Publicar tienda.'); });
-async function cargarSincro(){ if(!SINCRO_VIVO){ try{ const r=await fetch('/tienda/sincro.json?v='+Date.now(),{cache:'no-store'}); SINCRO_VIVO=r.ok?await r.json():{}; }catch(e){ SINCRO_VIVO={}; } } pintarRebajas(); }
+async function cargarSincro(){ if(!SINCRO_VIVO){ try{ const r=await fetch(TIENDA_URL+'sincro.json?v='+Date.now(),{cache:'no-store'}); SINCRO_VIVO=r.ok?await r.json():{}; }catch(e){ SINCRO_VIVO={}; } } pintarRebajas(); }
 function abrirAj(){ pintarGH(); cargarSincro(); const PR=PRECIOS.cargar();
   $('#ajResumen').textContent='Precios de la tienda con dólar $'+PRECIOS.tiendaCfg(PR).tc+' · Anticipo '+PR.anticipo+' % · Envío gratis en compras mayores a $'+Number(PR.gratisMas).toLocaleString('en-US');
   updateBackupWarn(); pintarInicio(); $('#aj').hidden=false; }
@@ -1490,7 +1492,7 @@ let GH={user:'dealersportsmx-source',repo:'tienda',token:''};
 try{ Object.assign(GH,JSON.parse(localStorage.getItem(GH_KEY)||'{}')); }catch(e){}
 function pintarGH(){
   $('#ghUser').value=GH.user; $('#ghRepo').value=GH.repo; $('#ghToken').value=GH.token;
-  const url='https://'+GH.user.toLowerCase()+'.github.io/'+GH.repo+'/';
+  const url=GH.repo==='tienda'?TIENDA_URL:'https://'+GH.user.toLowerCase()+'.github.io/'+GH.repo+'/';
   $('#pubLink').href=url; $('#pubLink').textContent='Ver mi tienda: '+url.replace('https://','');
   if(CFG.demo){ $('#btnPublicar').disabled=true; $('#pubStatus').textContent='En la versión de prueba no se publica nada.'; }
 }
@@ -1550,7 +1552,7 @@ async function armarTienda(){
   const lista=[], usadas=[];
   // Sobre pedido: las tallas y agotados los pone el robot (lo que la marca tiene hoy); publicar nunca lo deshace.
   // Se lee lo publicado justo ahora, por si el robot corrió mientras tenías el Catálogo abierto.
-  let vivo=VIVO; try{ const r=await fetch('/tienda/datos.json?v='+Date.now(),{cache:'no-store'}); if(r.ok){ const d=await r.json(); vivo=new Map(((d&&d.productos)||[]).map(x=>[x.id,x])); } }catch(e){}
+  let vivo=VIVO; try{ const r=await fetch(TIENDA_URL+'datos.json?v='+Date.now(),{cache:'no-store'}); if(r.ok){ const d=await r.json(); vivo=new Map(((d&&d.productos)||[]).map(x=>[x.id,x])); } }catch(e){}
   for(const p of pubs){
     // Entrega inmediata que todavía no tenía su precio fijo: se queda con el de hoy
     if(B(p)==='disponible'&&!(num(p.precioEI)>0)){ const x=PRECIOS.precioProducto(p,PRECIOS.tiendaCfg()); if(x>0){ p.precioEI=x; await put('productos',p).catch(()=>{}); } }
