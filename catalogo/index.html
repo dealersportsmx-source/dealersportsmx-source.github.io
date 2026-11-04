@@ -640,6 +640,14 @@ async function aplicarArreglos(){
     const port=(a.portadas||{})[p.id]||{};
     (p.colores||[]).forEach((c,i)=>{ const fid=port[c.k], f=fid&&fotoDe.get(fid); if(!f||f.colorK!==c.k&&!(i===0&&!f.colorK)||c.portada===fid) return;
       c.portada=fid; if(i===0) p.portada=fid; cambio=true; nP++; });
+    // fotos de otro color que se colaron: se cambian por las de la marca (ya subidas a la tienda)
+    const nuevas=(a.fotosColor||{})[p.id]||{};
+    for(const c of p.colores||[]){ const ids=nuevas[c.k]; if(!ids||!ids.length||fotoDe.has(ids[0])) continue;
+      const blobs=[]; for(const id of ids){ const rf=await fetch(TIENDA_URL+'fotos/'+id+'.jpg',{cache:'no-store'}).catch(()=>null); if(rf&&rf.ok) blobs.push({id,blob:await rf.blob()}); }
+      if(blobs.length!==ids.length) continue;
+      for(const f of fotos.filter(f=>f.productoId===p.id&&f.colorK===c.k)){ try{ await delFoto(f.id); }catch(e){} }
+      let t=Date.now(); for(const b of blobs){ const f={id:b.id,productoId:p.id,colorK:c.k,fecha:t++,blob:b.blob}; await put('fotos',f); fotoDe.set(f.id,f); }
+      c.portada=ids[0]; if(p.colores[0]===c) p.portada=ids[0]; cambio=true; nP++; }
     const quitar=new Set(((a.quitarColores||{})[p.id])||[]);
     if(quitar.size&&B(p)==='disponible'){
       const sinPiezas=c=>!Object.values(c.tallas||{}).some(n=>num(n)>0);
