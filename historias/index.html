@@ -170,6 +170,8 @@ label>input,label>select{margin-top:6px}
           <label style="display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;margin:-4px 0 12px"><input type="checkbox" id="tSinPrecio" style="width:20px;height:20px;margin:0"> Ocultar el precio en esta historia</label>
           <label>Frase<input id="tDesc" placeholder="Aparta con $500" autocomplete="off"></label>
           <div class="chips frases" id="frases"></div>
+          <p class="note" style="margin:6px 0 4px">Tallas que tienes <span class="opt">(toca para marcar o quitar; salen en la frase con "Entrega inmediata")</span></p>
+          <div class="chips frases" id="tallasChips"></div>
         </div>
         <label style="margin-top:6px">Link de la marca <span class="opt">(no sale en la historia; cópialo para el sticker de enlace de Instagram)</span><input id="tLink" inputmode="url" placeholder="https://www.youngla.com/products/…" autocomplete="off" autocapitalize="off"></label>
         <button class="btn ghost sm" id="btnCopiarLink" style="margin:-4px 0 12px">🔗 Copiar link</button>
@@ -784,7 +786,26 @@ const FRASES=['Aparta con $250','Aparta con $500','Aparta con $1,000','Encarga c
 const TAMANOS=[['0.65','Muy chico'],['0.75','Chico'],['0.85','Mediano'],['1','Grande'],['1.15','Muy grande']];
 /* Colores para que resalte la frase "Aparta con $500" */
 const COLORES_FRASE=[['','Igual'],['#E0261B','Rojo'],['#FFD400','Amarillo'],['#22C55E','Verde'],['#3B82F6','Azul'],['#FF7A00','Naranja'],['#FF4FA3','Rosa'],['#EFE6D4','Crema']];
-const ETIQ=['PREVENTA','PREVENTA ABIERTA','RESTOCK','NUEVO DROP','NUEVA COLECCIÓN','REBAJA','COLORES DISPONIBLES','PREVIEW'];
+const ETIQ=['PREVENTA','PREVENTA ABIERTA','ENTREGA INMEDIATA','RESTOCK','NUEVO DROP','NUEVA COLECCIÓN','REBAJA','COLORES DISPONIBLES','PREVIEW'];
+/* Tallas a mano: los botones escriben "Tallas S, M, L · Entrega inmediata" en la frase */
+const TALLAS=['XS','S','M','L','XL','2XL','3XL','Única'];
+const esTalla=s=>TALLAS.some(t=>t.toLowerCase()===String(s).trim().toLowerCase());
+function tallasDeFrase(){
+  const partes=$('#tDesc').value.split('·').map(s=>s.trim()).filter(Boolean), out=[];
+  partes.forEach(p=>{ if(/^tallas?\s/i.test(p)) p.replace(/^tallas?\s+/i,'').split(/[\s,\/]+/).forEach(x=>{ if(esTalla(x)) out.push(x); }); else if(esTalla(p)) out.push(p); });
+  return TALLAS.filter(t=>out.some(x=>x.toLowerCase()===t.toLowerCase()));
+}
+function ponerTallas(sel){
+  let partes=$('#tDesc').value.split('·').map(s=>s.trim()).filter(Boolean).filter(p=>!/^tallas?\s/i.test(p)&&!esTalla(p));
+  if(sel.length){
+    // con piezas en mano ya no es "sobre pedido" ni "encarga con $…" (sí se queda "Aparta con $…")
+    partes=partes.filter(p=>!/^sobre pedido$/i.test(p)&&!/^encarga con/i.test(p));
+    if(!partes.some(p=>/^entrega inmediata$/i.test(p))) partes.push('Entrega inmediata');
+    partes.unshift((sel.length===1?'Talla ':'Tallas ')+sel.join(', '));
+  }
+  $('#tDesc').value=partes.join(' · ');
+}
+function pintarTallas(){ const ya=tallasDeFrase(); $('#tallasChips').innerHTML=TALLAS.map(t=>'<button type="button" class="chip'+(ya.includes(t)?' on':'')+'" data-talla="'+esc(t)+'">'+esc(t)+'</button>').join(''); }
 /* Tipos de historia: qué textos lleva cada una */
 const TIPOS=[['portada','Portada'],['producto','Producto'],['suelto','Producto suelto'],['anuncio','Anuncio (flyer)']];
 /* Anuncio (flyer): cada línea con su propia letra. [nombre, letra, grosor] */
@@ -859,6 +880,7 @@ function pintarOpciones(){
   chips($('#lineaFotos'),[['negra','Negra'],['blanca','Blanca']],st.linea||'negra','lfot');
   chipsPaleta();
   $('#frases').innerHTML=FRASES.map(f=>'<button type="button" class="chip" data-frase="'+esc(f)+'">+ '+esc(f)+'</button>').join('');
+  pintarTallas();
   $('#etiquetas').innerHTML=ETIQ.map(f=>'<button type="button" class="chip" data-etq="'+esc(f)+'">'+esc(f)+'</button>').join('')+'<button type="button" class="chip" data-etq="">Sin etiqueta</button>';
   pintarAnuncio();
 }
@@ -898,7 +920,7 @@ function precioTxt(){ if($('#tSinPrecio').checked) return ''; const v=num($('#tM
 // precio de antes (rebaja): solo si es mayor que el precio de hoy
 function antesTxt(){ if($('#tSinPrecio').checked) return ''; const a=num($('#tAntes').value), v=num($('#tMxn').value); return a&&v&&a>v?'$'+Math.round(a).toLocaleString('en-US'):''; }
 let raf=0;
-function previa(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>Historia.dibujar($('#pv'),opciones())); }
+function previa(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ pintarTallas(); Historia.dibujar($('#pv'),opciones()); }); }
 function calcular(){
   const usd=num($('#tUsd').value);
   if(!mxnManual) $('#tMxn').value=usd?pesos(usd):'';
@@ -949,6 +971,7 @@ document.addEventListener('click',e=>{
   const lo=e.target.closest('[data-lop]'); if(lo){ st.logoOp=lo.dataset.lop; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lc=e.target.closest('[data-lcol]'); if(lc){ st.logoColor=lc.dataset.lcol; LS.set('estilo',st); pintarOpciones(); previa(); return; }
   const lf=e.target.closest('[data-lfot]'); if(lf){ st.linea=lf.dataset.lfot; LS.set('estilo',st); pintarOpciones(); previa(); return; }
+  const tl=e.target.closest('[data-talla]'); if(tl){ const t=tl.dataset.talla, ya=tallasDeFrase(); ponerTallas(TALLAS.filter(x=>x===t?!ya.includes(x):ya.includes(x))); pintarTallas(); previa(); return; }
   const fr=e.target.closest('[data-frase]'); if(fr){ const t=$('#tDesc'), nueva=fr.dataset.frase;
     // "Aparta/Encarga con $…" reemplaza al que ya estaba (no se juntan dos montos); las demás frases se agregan con " · "
     let partes=t.value.split('·').map(s=>s.trim()).filter(Boolean);
@@ -958,6 +981,7 @@ document.addEventListener('click',e=>{
   const et=e.target.closest('[data-etq]'); if(et){ $('#tEtiqueta').value=et.dataset.etq; previa(); return; }
 });
 ['tLinea1','tColeccion','tTitulo','tDesc','tEtiqueta','tLink'].forEach(id=>$('#'+id).addEventListener('input',previa));
+$('#tDesc').addEventListener('input',pintarTallas);
 /* Copiar el link de la marca para pegarlo en el sticker de enlace de Instagram */
 $('#btnCopiarLink').addEventListener('click',async()=>{
   const u=$('#tLink').value.trim(); if(!u){ toast('No hay link todavía'); return; }
@@ -1151,7 +1175,8 @@ async function cargarDeCatalogo(id){
   const e=estadoDe(p);
   if(e.b==='disponible'){
     const ts=new Set(); (p.colores||[]).forEach(c=>Object.entries(c.tallas||{}).forEach(([t,n])=>{ if(+n>0) ts.add(t); }));
-    $('#tDesc').value=ts.size?'Tallas '+[...ts].join(' · ')+' · entrega inmediata':'entrega inmediata';
+    const lista=TALLAS.filter(t=>[...ts].some(x=>String(x).toLowerCase()===t.toLowerCase())).concat([...ts].filter(x=>!esTalla(x)));
+    $('#tDesc').value=lista.length?(lista.length===1?'Talla ':'Tallas ')+lista.join(', ')+' · Entrega inmediata':'Entrega inmediata'; pintarTallas();
     $('#tEtiqueta').value=e.txt?e.txt.toUpperCase():'';
   } else if(e.b==='early'){ $('#tEtiqueta').value=((e.txt||'Drop').toUpperCase()+' '+fechaTxt(p.dropFecha)).trim(); }
   else if(e.b==='preventa'){ $('#tEtiqueta').value=(e.txt||'Preventa').toUpperCase(); }
