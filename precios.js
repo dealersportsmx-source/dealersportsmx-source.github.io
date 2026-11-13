@@ -91,8 +91,14 @@ function precioProducto(p,c){
 function anticipo(prendas,c){ c=c||cargar(); const r=modo(c)[1]||1, v=n(prendas)*n(c.anticipo)/100; return Math.floor(v/r+0.5+1e-9)*r; }
 function envio(prendas,destino,c){ c=c||cargar(); if(n(prendas)>n(c.gratisMas)) return 0; return destino==='nacional'?n(c.envioNac):n(c.envioMty); }
 // descuentos por sección (Cotizador › Ajustes): solo los activos, con su %, marca ('' = todas) y fecha de fin ('' = sin fin)
+// porMarca {marca: %}: marcas con su propio %; ese gana sobre el % general de la sección
 function descuentos(c){ const d=(c||cargar()).descuentos||{}, out={};
-  ['pedido','preventa','inmediata'].forEach(k=>{ const x=d[k]; if(x&&x.on&&n(x.pct)>0&&n(x.pct)<100) out[k]={on:true,pct:n(x.pct),marca:String(x.marca||''),fin:String(x.fin||'')}; });
+  ['pedido','preventa','inmediata'].forEach(k=>{ const x=d[k]; if(!x||!x.on) return;
+    const pct=n(x.pct)>0&&n(x.pct)<100?n(x.pct):0, pm={};
+    Object.entries(x.porMarca||{}).forEach(([m,v])=>{ v=n(v); if(String(m).trim()&&v>0&&v<100) pm[String(m).trim()]=v; });
+    if(!pct&&!Object.keys(pm).length) return;
+    out[k]={on:true,pct,marca:pct?String(x.marca||''):'',fin:String(x.fin||'')};
+    if(Object.keys(pm).length) out[k].porMarca=pm; });
   return out; }
 // lo que se manda a la tienda al publicar (sin multiplicadores ni costos); el redondeo es el de los precios de la tienda
 function paraTienda(c){ c=c||cargar(); const t=tiendaCfg(c), m=modo(t);
