@@ -865,20 +865,50 @@ function updateChat(){
   if(p.length>=10){ a.hidden=false; a.href='https://wa.me/'+p+'?text='+encodeURIComponent(waText()); a.textContent='Abrir chat'+(firstName()?' con '+firstName():' del cliente'); }
   else a.hidden=true;
 }
-function fname(){
+function fname(ext){
   const c=(cur.cliente||'cliente').trim().split(/\s+/).slice(0,2).join('_');
-  return ('Factura_'+(cur.pedido||'pedido')+'_'+c).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\-]/g,'')+'.png';
+  return ('Factura_'+(cur.pedido||'pedido')+'_'+c).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\-]/g,'')+'.'+(ext||'png');
+}
+/* Factura larga (m\u00e1s del doble de alta que de ancha): se manda en PDF.
+   WhatsApp achica las im\u00e1genes por su lado m\u00e1s largo y una factura larga llegaba borrosa; los PDF no los comprime. */
+const LARGA=2;
+async function archivoFactura(png){
+  let bmp=null; try{ bmp=await createImageBitmap(png); }catch(e){}
+  if(!bmp||bmp.height/bmp.width<=LARGA) return {blob:png,ext:'png',type:'image/png',pdf:false};
+  try{ return {blob:await aPdf(bmp),ext:'pdf',type:'application/pdf',pdf:true}; }
+  catch(e){ return {blob:png,ext:'png',type:'image/png',pdf:false}; }
+}
+// PDF de una sola hoja del tama\u00f1o de la factura (se ve igual que la imagen y se desliza hacia abajo)
+async function aPdf(bmp){
+  const c=document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height;
+  const x=c.getContext('2d'); x.fillStyle='#000'; x.fillRect(0,0,c.width,c.height); x.drawImage(bmp,0,0);
+  const jpg=new Uint8Array(await (await new Promise(r=>c.toBlob(r,'image/jpeg',.93))).arrayBuffer());
+  const w=c.width, h=c.height, pw=595, ph=Math.round(595*h/w*100)/100;
+  const enc=new TextEncoder(), parts=[], offs=[]; let len=0;
+  const add=p=>{ const b=typeof p==='string'?enc.encode(p):p; parts.push(b); len+=b.length; };
+  const obj=(k,s)=>{ offs[k]=len; add(k+' 0 obj\n'+s+'\nendobj\n'); };
+  add('%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n');
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+pw+' '+ph+'] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+  offs[4]=len; add('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+w+' /Height '+h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n'); add(jpg); add('\nendstream\nendobj\n');
+  const cs='q '+pw+' 0 0 '+ph+' 0 0 cm /Im0 Do Q';
+  obj(5,'<< /Length '+cs.length+' >>\nstream\n'+cs+'\nendstream');
+  const xref=len; let t='xref\n0 6\n0000000000 65535 f \n'; for(let k=1;k<=5;k++) t+=String(offs[k]).padStart(10,'0')+' 00000 n \n';
+  add(t+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n');
+  return new Blob(parts,{type:'application/pdf'});
 }
 function hint(s){ $('#pvHint').textContent=s; }
-async function saveImage(blob){
+async function saveImage(blob,name){
+  name=name||fname();
   if(!downloads){
     try{
       const u=URL.createObjectURL(blob), a=document.createElement('a');
-      a.href=u; a.download=fname(); document.body.appendChild(a); a.click(); a.remove();
+      a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(u),4000); return true;
     }catch(e){ return false; }
   }
-  try{ await downloads.save({filename:fname(),data:blob}); return true; }
+  try{ await downloads.save({filename:name,data:blob}); return true; }
   catch(e){
     const c=e&&e.code;
     if(c==='declined') return 'declined';
@@ -888,20 +918,22 @@ async function saveImage(blob){
 }
 $('#btnShare').addEventListener('click',async()=>{
   saveNow(true);
-  const blob=await currentBlob(); if(!blob){ toast('No se pudo crear la imagen'); return; }
-  const file=new File([blob],fname(),{type:'image/png'});
+  const png=await currentBlob(); if(!png){ toast('No se pudo crear la imagen'); return; }
+  const a=await archivoFactura(png);
+  const file=new File([a.blob],fname(a.ext),{type:a.type});
   try{
-    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:waText()}); hint(''); return; }
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],text:waText()}); hint(a.pdf?'Factura larga: se mandó en PDF para que no pierda calidad.':''); return; }
   }catch(e){ if(e&&e.name==='AbortError') return; }
-  const r=await saveImage(blob);
+  const r=await saveImage(a.blob,fname(a.ext));
   if(r==='declined') return;
-  if(r){ hint('Si WhatsApp no apareció en la lista, la imagen quedó guardada: ábrela desde tus fotos o descargas y envíala.'); return; }
+  if(r){ hint(a.pdf?'Si WhatsApp no apareció en la lista, el PDF quedó guardado en tus descargas: envíalo como documento.':'Si WhatsApp no apareció en la lista, la imagen quedó guardada: ábrela desde tus fotos o descargas y envíala.'); return; }
   hint('Mantén presionada la imagen para guardarla o compartirla por WhatsApp.');
 });
 $('#btnSave').addEventListener('click',async()=>{
-  const blob=await currentBlob(); if(!blob){ toast('No se pudo crear la imagen'); return; }
-  const r=await saveImage(blob);
-  if(r===true) toast('Imagen guardada');
+  const png=await currentBlob(); if(!png){ toast('No se pudo crear la imagen'); return; }
+  const a=await archivoFactura(png);
+  const r=await saveImage(a.blob,fname(a.ext));
+  if(r===true) toast(a.pdf?'PDF guardado (factura larga)':'Imagen guardada');
   else if(r===false) hint('Mantén presionada la imagen para guardarla.');
 });
 
