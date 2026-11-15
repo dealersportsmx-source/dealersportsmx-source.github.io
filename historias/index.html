@@ -1235,7 +1235,8 @@ async function recibirProducto(d){
   origen=null; notaCat();
   calcular();
   const srcs=(d.fotos||[]).slice(0,n()); let ok=0;
-  for(let i=0;i<srcs.length;i++){ try{ fotos[i]=await cargarURL(srcs[i]); ajustes[i]={}; ok++; }catch(e){} }
+  // modoFotos 'llenar' (historias en lote de Gymshark): cada foto llena su cuadro, sin franjas a los lados
+  for(let i=0;i<srcs.length;i++){ try{ fotos[i]=await cargarURL(srcs[i]); ajustes[i]=d.modoFotos?{modo:String(d.modoFotos)}:{}; ok++; }catch(e){} }
   pintarSlots(); previa();
   toast(srcs.length&&ok<srcs.length?'Llegó el producto; algunas fotos no se pudieron traer, ponlas a mano':'Producto cargado ✓');
 }
