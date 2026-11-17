@@ -764,11 +764,11 @@ async function drawInvoice(inv){
         rr(d,tx,y+116,tw,32,8); d.fillStyle=K.head; d.fill();
         T(d,tl,tx+tw/2,y+133,fM(14,700),'#ffffff','center','middle'); sp(d,'0px');
       }
-      // con descuento: el precio rebajado en rojo y abajo el de antes tachado (sin el %)
+      // con descuento: arriba el de antes tachado (sin el %) y abajo el rebajado en rojo, los dos grandes para que se noten
       if(dctoDe(it)){
-        T(d,money(conDcto(it)),X1-24,y+92,fA(32),K.red,'right','middle');
-        T(d,price,X1-24,y+124,fM(15,600),K.dim,'right','middle');
-        d.font=fM(15,600); const aw=d.measureText(price).width; L(d,X1-24-aw,y+124,X1-24,y+124,K.dim,2);
+        T(d,price,X1-24,y+74,fA(28),K.grey,'right','middle');
+        d.font=fA(28); const aw=d.measureText(price).width; L(d,X1-24-aw-2,y+75,X1-22,y+75,K.grey,3);
+        T(d,money(conDcto(it)),X1-24,y+122,fA(38),K.red,'right','middle');
       } else {
         T(d,price,X1-24,y+92,fA(32),K.ink,'right','middle');
         T(d,'MXN',X1-24,y+122,fM(12,700),K.dim,'right','middle');
