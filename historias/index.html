@@ -1234,6 +1234,11 @@ async function recibirProducto(d){
   if(d.url){ $('#tLink').value=d.url; const c=coleccionDeLink(d.url); if(c) $('#tColeccion').value=c; }
   origen=null; notaCat();
   calcular();
+  // "Encarga con" = 30 % del precio rebajado, al $50 más cercano (lo pide la extensión con "Descuento que viene")
+  if(d.anticipoRebaja){ const v=num($('#tMxn').value);
+    if(v){ const monto=Math.floor(v*.3/50+.5)*50, frase='Encarga con $'+monto.toLocaleString('en-US');
+      const partes=$('#tDesc').value.split('·').map(s=>s.trim()).filter(Boolean).filter(p=>!/^(encarga|aparta) con/i.test(p));
+      $('#tDesc').value=[frase].concat(partes).join(' · '); } }
   const srcs=(d.fotos||[]).slice(0,n()); let ok=0;
   // modoFotos 'llenar' (historias en lote de Gymshark): cada foto llena su cuadro, sin franjas a los lados
   for(let i=0;i<srcs.length;i++){ try{ fotos[i]=await cargarURL(srcs[i]); ajustes[i]=d.modoFotos?{modo:String(d.modoFotos)}:{}; ok++; }catch(e){} }
