@@ -817,26 +817,35 @@ $('#selOcultar').addEventListener('click',async()=>{
   toast((mostrar?'Se volverá a mostrar: ':'Se ocultará: ')+(ps.length===1?'1 prenda':ps.length+' prendas')+'. Toca Publicar tienda para verlo.');
 });
 
-/* ---------- Ordenar por marca ----------
-   Arrastra desde ≡: la prenda queda fija arriba. Las demás siguen el orden automático (la más nueva primero). */
+/* ---------- Ordenar por marca, o toda la Entrega inmediata junta ----------
+   Arrastra desde ≡: la prenda se queda donde la sueltas (ella y las de arriba quedan fijas).
+   Las demás siguen el orden automático (la más nueva primero).
+   "Entrega inmediata" junta todas las marcas y guarda su propio orden (ordenEI/fijoEI): así se ve esa sección en la tienda. */
+const ORD_EI='__ei';
 let ordMarca='';
 // "gymshark" y "Gymshark" son la misma marca: se ordenan juntas
 function ordMarcas(){ const m=new Map(); productos.forEach(p=>{ const n=(p.marca||'').trim(), k=PRECIOS.norm(n); if(n&&(!m.has(k)||/^[A-Z]/.test(n))) m.set(k,n); }); return [...m.values()].sort((a,b)=>a.localeCompare(b,'es')); }
-function ordCmp(a,b){ if(!!a.fijo!==!!b.fijo) return a.fijo?-1:1; return a.fijo?(+a.orden||0)-(+b.orden||0):(b.createdAt||0)-(a.createdAt||0); }
+// en qué campos se guarda el orden: el de la marca o el de Entrega inmediata
+const ordK=()=>ordMarca===ORD_EI?{f:'fijoEI',o:'ordenEI'}:{f:'fijo',o:'orden'};
+function ordCmp(a,b){ const {f,o}=ordK(); if(!!a[f]!==!!b[f]) return a[f]?-1:1; return a[f]?(+a[o]||0)-(+b[o]||0):(b.createdAt||0)-(a.createdAt||0); }
 function pintarOrden(){
-  const ms=ordMarcas(); if(!ms.includes(ordMarca)) ordMarca=ms.includes(filtroMarca)?filtroMarca:(ms.find(m=>/youngla/i.test(m))||ms[0]||'');
-  $('#ordMarcas').innerHTML=ms.map(m=>'<button type="button" class="chip'+(m===ordMarca?' on':'')+'" data-om="'+esc(m)+'" style="flex:none">'+esc(m)+'</button>').join('');
-  const rows=productos.filter(p=>PRECIOS.norm(p.marca)===PRECIOS.norm(ordMarca)&&(!motivoOculto(p)||motivoOculto(p)==='Falta publicar')).sort(ordCmp);
-  $('#ordLista').innerHTML=rows.map(p=>{ const u=p.portada&&thumbURL.get(p.portada); return '<div class="ord-r" data-id="'+esc(p.id)+'"><div class="asa" aria-label="Arrastrar">≡</div><div class="th">'+(u?'<img src="'+u+'" alt="" draggable="false">':'Sin foto')+'</div><div style="min-width:0"><b>'+esc(p.nombre)+'</b><small>'+esc(estTxt(p.estado))+'</small>'+(p.fijo?'<button type="button" class="chip" data-suelta style="display:block;margin-top:4px">Fijada · quitar</button>':'')+'</div></div>'; }).join('')||'<p class="empty">Esta marca no tiene prendas visibles.</p>';
+  const ms=ordMarcas(); if(ordMarca!==ORD_EI&&!ms.includes(ordMarca)) ordMarca=ms.includes(filtroMarca)?filtroMarca:(ms.find(m=>/youngla/i.test(m))||ms[0]||'');
+  $('#ordMarcas').innerHTML=[[ORD_EI,'Entrega inmediata']].concat(ms.map(m=>[m,m])).map(([k,t])=>'<button type="button" class="chip'+(k===ordMarca?' on':'')+'" data-om="'+esc(k)+'" style="flex:none">'+esc(t)+'</button>').join('');
+  const ei=ordMarca===ORD_EI, {f}=ordK(), visible=p=>!motivoOculto(p)||motivoOculto(p)==='Falta publicar';
+  const rows=productos.filter(p=>visible(p)&&(ei?B(p)==='disponible':PRECIOS.norm(p.marca)===PRECIOS.norm(ordMarca))).sort(ordCmp);
+  $('#ordLista').innerHTML=rows.map(p=>{ const u=p.portada&&thumbURL.get(p.portada); return '<div class="ord-r" data-id="'+esc(p.id)+'"><div class="asa" aria-label="Arrastrar">≡</div><div class="th">'+(u?'<img src="'+u+'" alt="" draggable="false">':'Sin foto')+'</div><div style="min-width:0"><b>'+esc(p.nombre)+'</b><small>'+esc(ei?(p.marca||''):estTxt(p.estado))+'</small>'+(p[f]?'<button type="button" class="chip" data-suelta style="display:block;margin-top:4px">Fijada · quitar</button>':'')+'</div></div>'; }).join('')||'<p class="empty">'+(ei?'No tienes prendas visibles en Entrega inmediata.':'Esta marca no tiene prendas visibles.')+'</p>';
 }
-async function guardarOrden(){
-  const ids=[...document.querySelectorAll('#ordLista .ord-r')].map(r=>r.dataset.id);
-  for(let i=0;i<ids.length;i++){ const p=productos.find(x=>x.id===ids[i]); if(p&&p.orden!==i+1){ p.orden=i+1; await put('productos',p); } }
+// guarda el orden tal como se ve: la que soltaste y todas las de arriba (y cualquier fijada) quedan fijas
+async function guardarOrden(fila){
+  const {f,o}=ordK(), filas=[...document.querySelectorAll('#ordLista .ord-r')], ps=filas.map(r=>productos.find(x=>x.id===r.dataset.id));
+  let hasta=filas.indexOf(fila); ps.forEach((p,i)=>{ if(p&&p[f]) hasta=Math.max(hasta,i); });
+  for(let i=0;i<ps.length;i++){ const p=ps[i]; if(!p) continue; const fijo=i<=hasta;
+    if(p[o]!==i+1||!!p[f]!==fijo){ p[o]=i+1; p[f]=fijo; await put('productos',p); } }
   toast('Orden guardado. Toca Publicar tienda para verlo.');
 }
 // la que quitas de "Fijada" regresa al orden automático
 $('#ordLista').addEventListener('click',async e=>{ const b=e.target.closest('[data-suelta]'); if(!b) return; const p=productos.find(x=>x.id===b.closest('.ord-r').dataset.id); if(!p) return;
-  p.fijo=false; await put('productos',p); pintarOrden(); toast('Regresó al orden automático. Toca Publicar tienda para verlo.'); });
+  p[ordK().f]=false; await put('productos',p); pintarOrden(); toast('Regresó al orden automático. Toca Publicar tienda para verlo.'); });
 $('#btnOrden').addEventListener('click',()=>{ pintarOrden(); $('#ord').hidden=false; document.body.style.overflow='hidden'; });
 $('#ordCerrar').addEventListener('click',()=>{ $('#ord').hidden=true; document.body.style.overflow=''; });
 $('#ordMarcas').addEventListener('click',e=>{ const b=e.target.closest('[data-om]'); if(b){ ordMarca=b.dataset.om; pintarOrden(); $('#ordLista').scrollTop=0; } });
@@ -849,7 +858,7 @@ $('#ordLista').addEventListener('pointerdown',e=>{
     if(otra){ const q=otra.getBoundingClientRect(); lista.insertBefore(fila,ev.clientY<q.top+q.height/2?otra:otra.nextSibling); } };
   // en document: al mover la fila en la lista, la flecha seguiría perdiendo el arrastre si se escuchara solo en ella
   const soltar=async()=>{ fila.classList.remove('mov'); document.removeEventListener('pointermove',mover); document.removeEventListener('pointerup',soltar); document.removeEventListener('pointercancel',soltar);
-    const p=productos.find(x=>x.id===fila.dataset.id); if(p) p.fijo=true; await guardarOrden(); if(p) await put('productos',p); pintarOrden(); };
+    await guardarOrden(fila); pintarOrden(); };
   document.addEventListener('pointermove',mover); document.addEventListener('pointerup',soltar); document.addEventListener('pointercancel',soltar);
 });
 $('#selMv').addEventListener('click',async()=>{
@@ -1604,7 +1613,7 @@ async function armarTienda(){
     const base=precioDe(p), venta=precioVenta(p);
     lista.push({id:p.id,nombre:(p.nombre||'').trim(),marca:(p.marca||'').trim(),coleccion:(p.coleccion||'').trim(),categoria:p.categoria||'',linea:p.linea||'',descripcion:(p.descripcion||'').trim(),
       estado:B(p),estadoTxt:ESTADO_TXT[p.estado]?'':estTxt(p.estado),dropFecha:B(p)==='early'?(p.dropFecha||''):'',llegaFecha:B(p)==='camino'?(p.llegaFecha||''):'',
-      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,fijo:!!p.fijo,forzar:!!p.forzar,usd:B(p)!=='disponible'?num(p.costoUsd):0,precioNormal:B(p)!=='disponible'?precioCalc(p):0,precioFijo:has(p.precioManual),rebMarca:!!p.rebMarca,coloresNo:p.coloresNo||[],colores});
+      precio:venta,precioBase:base,oferta:venta<base,catManual:!!(p.catManual&&p.categoria),destacado:!!p.destacado,masVendido:!!p.masVendido,creado:p.createdAt||0,orden:+p.orden||0,fijo:!!p.fijo,ordenEI:+p.ordenEI||0,fijoEI:!!p.fijoEI,forzar:!!p.forzar,usd:B(p)!=='disponible'?num(p.costoUsd):0,precioNormal:B(p)!=='disponible'?precioCalc(p):0,precioFijo:has(p.precioManual),rebMarca:!!p.rebMarca,coloresNo:p.coloresNo||[],colores});
   }
   // inicio: tus banners (foto, texto y a dónde llevan) y las colecciones que escondiste
   const ini=inicioAJ(), banners=[];
