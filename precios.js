@@ -21,6 +21,7 @@ const DEF={
 /* Opciones de redondeo: [código, paso, hacia dónde, texto] */
 const REDONDEOS=[
   ['90',10,'noventa','Que termine en 90, hacia abajo ($1,010 → $990 · $1,310 → $1,290)'],
+  ['5090',50,'cincuenta90','Que termine en 50 o en 90 ($1,424 → $1,390 · $1,426 → $1,450 · $1,476 → $1,490)'],
   ['10a',10,'arriba','A la decena, hacia arriba ($1,152 → $1,160)'],
   ['50a',50,'arriba','A $50, hacia arriba ($1,152 → $1,200)'],
   ['50c',50,'cercano','A $50, al más cercano: hacia abajo o hacia arriba, lo que quede más cerca ($1,120 → $1,100 · $1,130 → $1,150)'],
@@ -58,13 +59,17 @@ function foto(c,fecha){ const m=modo(c); return {tc:n(c.tc),marcas:c.marcas.map(
 // ajustes con los que están calculados los precios de la tienda
 function tiendaCfg(c){ c=c||cargar(); return Object.assign({},c,c.tienda); }
 // redondeo: "termina en 90" baja al anterior que termina en 90; "arriba" sube al múltiplo; "cercano" al más cercano (justo a la mitad, hacia arriba)
+// "50 o 90": al $50 más cercano (justo a la mitad, hacia abajo) y si queda en 00 baja a 90 ($1,425 → $1,390 · $1,476 → $1,490)
+const a5090=k=>{ const r=Math.max(50,k); return r%100===0?r-10:r; };
 function redondear(x,c){ c=c||cargar(); const m=modo(c), r=m[1]||1, v=Math.round(n(x)*100)/100; if(!v) return 0;
   if(m[2]==='noventa') return Math.max(90,Math.floor((v+10)/100)*100-10);
+  if(m[2]==='cincuenta90') return a5090(Math.ceil(v/50-0.5-1e-9)*50);
   if(m[2]==='arriba') return Math.ceil(v/r-1e-9)*r;
   return Math.floor(v/r+0.5+1e-9)*r; }
 // siempre hacia abajo (precios con descuento)
 function redondearAbajo(x,c){ c=c||cargar(); const m=modo(c), r=m[1]||1, v=Math.round(n(x)*100)/100; if(!v) return 0;
   if(m[2]==='noventa') return Math.max(90,Math.floor((v+10)/100)*100-10);
+  if(m[2]==='cincuenta90') return a5090(Math.floor(v/50+1e-9)*50);
   return Math.floor(v/r+1e-9)*r; }
 function marca(m,c){
   c=c||cargar(); const k=norm(m); if(!k) return null;
