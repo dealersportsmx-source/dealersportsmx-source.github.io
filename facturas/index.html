@@ -931,10 +931,17 @@ $('#btnShare').addEventListener('click',async()=>{
 });
 $('#btnSave').addEventListener('click',async()=>{
   const png=await currentBlob(); if(!png){ toast('No se pudo crear la imagen'); return; }
-  const a=await archivoFactura(png);
-  const r=await saveImage(a.blob,fname(a.ext));
-  if(r===true) toast(a.pdf?'PDF guardado (factura larga)':'Imagen guardada');
-  else if(r===false) hint('Mantén presionada la imagen para guardarla.');
+  /* Al Guardar siempre bajamos las dos: la imagen (PNG) y el PDF. */
+  const rImg=await saveImage(png,fname('png'));
+  if(rImg==='declined') return;
+  let pdfBlob=null;
+  try{ const bmp=await createImageBitmap(png); pdfBlob=await aPdf(bmp); }catch(e){}
+  let rPdf=false;
+  if(pdfBlob) rPdf=await saveImage(pdfBlob,fname('pdf'));
+  if(rImg===true&&rPdf===true) toast('Imagen y PDF guardados');
+  else if(rImg===true) toast('Imagen guardada (el PDF no se pudo)');
+  else if(rPdf===true) toast('PDF guardado');
+  else hint('Mantén presionada la imagen para guardarla.');
 });
 
 /* ---------- lista ---------- */
