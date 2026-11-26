@@ -1,7 +1,7 @@
 /* Guarda las apps en el aparato para que abran sin internet.
    Cuando hay internet, revisa en segundo plano si hay una versión nueva. */
-const CACHE = 'mis-apps-v79';
-const FILES = ["/", "/index.html", "/manifest.webmanifest", "/precios.js", "/icon-180.png", "/icon-512.png", "/cotizador/", "/cotizador/index.html", "/cotizador/manifest.webmanifest", "/cotizador/icon-180.png", "/cotizador/icon-512.png", "/facturas/prueba.html", "/facturas/", "/facturas/index.html", "/facturas/manifest.webmanifest", "/facturas/icon-180.png", "/facturas/icon-512.png", "/facturas/logo.png","/clientes/prueba.html", "/clientes/", "/clientes/index.html", "/clientes/manifest.webmanifest", "/clientes/icon-180.png", "/clientes/icon-512.png", "/catalogo/prueba.html", "/catalogo/", "/catalogo/index.html", "/catalogo/manifest.webmanifest", "/catalogo/icon-180.png", "/catalogo/icon-512.png", "/historias/", "/historias/index.html", "/historias/manifest.webmanifest", "/historias/icon-180.png", "/historias/icon-512.png", "/historias/marcas/gymshark.png", "/historias/marcas/gymshark-tiburon.png", "/historias/marcas/youngla.png", "/historias/marcas/dfyne.png", "/historias/marcas/controlled-insanity.png", "/historias/marcas/civil-regime.png", "/historias/marcas/darc-sport.png", "/historias/marcas/breathe-divinity.png"];
+const CACHE = 'mis-apps-v80';
+const FILES = ["/", "/index.html", "/manifest.webmanifest", "/precios.js", "/icon-180.png", "/icon-512.png", "/cotizador/", "/cotizador/index.html", "/cotizador/manifest.webmanifest", "/cotizador/icon-180.png", "/cotizador/icon-512.png", "/facturas/prueba.html", "/facturas/", "/facturas/index.html", "/facturas/manifest.webmanifest", "/facturas/icon-180.png", "/facturas/icon-512.png", "/facturas/logo.png","/clientes/prueba.html", "/clientes/", "/clientes/index.html", "/clientes/manifest.webmanifest", "/clientes/icon-180.png", "/clientes/icon-512.png", "/catalogo/prueba.html", "/catalogo/", "/catalogo/index.html", "/catalogo/manifest.webmanifest", "/catalogo/icon-180.png", "/catalogo/icon-512.png", "/historias/", "/historias/index.html", "/historias/manifest.webmanifest", "/historias/icon-180.png", "/historias/icon-512.png", "/historias/marcas/gymshark.png", "/historias/marcas/gymshark-tiburon.png", "/historias/marcas/youngla.png", "/historias/marcas/dfyne.png", "/historias/marcas/controlled-insanity.png", "/historias/marcas/civil-regime.png", "/historias/marcas/darc-sport.png", "/historias/marcas/breathe-divinity.png", "/drops/", "/drops/index.html", "/drops/manifest.webmanifest", "/drops/icon-180.png", "/drops/icon-512.png"];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -19,7 +19,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   const u = new URL(req.url);
   // La tienda pública (/tienda/) no se guarda aquí: siempre se ve la versión más nueva
-  if (req.method !== 'GET' || u.origin !== location.origin || u.pathname.startsWith('/tienda/')) return;
+  if (req.method !== 'GET' || u.origin !== location.origin || u.pathname.startsWith('/tienda/') || u.pathname.startsWith('/drops/') && u.pathname.endsWith('.json')) return; // los lanzamientos de Drops siempre frescos
   e.respondWith(caches.open(CACHE).then(async cache => {
     const cached = await cache.match(req, { ignoreSearch: true });
     const fresh = fetch(req).then(res => {

@@ -1,0 +1,72 @@
+{
+  "actualizado": "2026-11-26 (existencias de ese día)",
+  "nota": "Gymshark x David Laid · salen el jueves 27 de noviembre a las 3:00 p.m. (hora de Monterrey)",
+  "products": [
+    {
+      "handle": "gymshark-x-david-laid-cargo-pants-pants-black-aw26",
+      "title": "Gymshark X David Laid Cargo Pants (Regular Fit)",
+      "tags": ["david laid", "cargo", "27 nov 3pm"],
+      "images": [
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_2.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_1.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_2.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_1.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_3.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_3.jpg"}
+      ],
+      "options": [
+        {"name": "Color", "values": ["Black", "Strong Brown"]},
+        {"name": "Talla", "values": ["XS", "S", "M", "L", "XL", "XXL", "3XL"]}
+      ],
+      "variants": [
+        {"id": 39800050614474, "inventory_quantity": 12, "option1": "Black", "option2": "XS", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_2.jpg"}},
+        {"id": 39800049074378, "inventory_quantity": 54, "option1": "Black", "option2": "S", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_2.jpg"}},
+        {"id": 39800050286794, "inventory_quantity": 108, "option1": "Black", "option2": "M", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_2.jpg"}},
+        {"id": 39800049434826, "inventory_quantity": 70, "option1": "Black", "option2": "L", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_2.jpg"}},
+        {"id": 39800052056266, "inventory_quantity": 23, "option1": "Black", "option2": "XL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_2.jpg"}},
+        {"id": 39800049041610, "inventory_quantity": 10, "option1": "Black", "option2": "XXL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_2.jpg"}},
+        {"id": 39800051597514, "inventory_quantity": 9, "option1": "Black", "option2": "3XL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_GS_Black_A6B8Q_BB2J_2.jpg"}},
+        {"id": 39800052318410, "inventory_quantity": 25, "option1": "Strong Brown", "option2": "XS", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_2.jpg"}},
+        {"id": 39800051433674, "inventory_quantity": 111, "option1": "Strong Brown", "option2": "S", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_2.jpg"}},
+        {"id": 39800052613322, "inventory_quantity": 220, "option1": "Strong Brown", "option2": "M", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_2.jpg"}},
+        {"id": 39800050188490, "inventory_quantity": 143, "option1": "Strong Brown", "option2": "L", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_2.jpg"}},
+        {"id": 39800048910538, "inventory_quantity": 46, "option1": "Strong Brown", "option2": "XL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_2.jpg"}},
+        {"id": 39800050090186, "inventory_quantity": 21, "option1": "Strong Brown", "option2": "XXL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_2.jpg"}},
+        {"id": 39800049238218, "inventory_quantity": 21, "option1": "Strong Brown", "option2": "3XL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Cargo_Pants_Gs_Strong_Brown_A6B8Q_NDRW_2.jpg"}}
+      ]
+    },
+    {
+      "handle": "gymshark-x-david-laid-straight-leg-cargo-pants-pants-black-aw26",
+      "title": "Gymshark X David Laid Straight Leg Cargo Pants (Oversized Fit)",
+      "tags": ["david laid", "cargo", "straight leg", "27 nov 3pm"],
+      "images": [
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_2.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Seasonal_Ecom_PDP_ProductImage_27832556.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_2.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_1.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_1.jpg"},
+        {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_3.jpg"}
+      ],
+      "options": [
+        {"name": "Color", "values": ["Black", "Strong Brown"]},
+        {"name": "Talla", "values": ["XS", "S", "M", "L", "XL", "XXL", "3XL"]}
+      ],
+      "variants": [
+        {"id": 39800050778314, "inventory_quantity": 44, "option1": "Black", "option2": "XS", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_2.jpg"}},
+        {"id": 39800052220106, "inventory_quantity": 192, "option1": "Black", "option2": "S", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_2.jpg"}},
+        {"id": 39800049860810, "inventory_quantity": 381, "option1": "Black", "option2": "M", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_2.jpg"}},
+        {"id": 39800051040458, "inventory_quantity": 246, "option1": "Black", "option2": "L", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_2.jpg"}},
+        {"id": 39800050974922, "inventory_quantity": 79, "option1": "Black", "option2": "XL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_2.jpg"}},
+        {"id": 39800051335370, "inventory_quantity": 36, "option1": "Black", "option2": "XXL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_2.jpg"}},
+        {"id": 39800051892426, "inventory_quantity": 35, "option1": "Black", "option2": "3XL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_GS_Black_A6C2I_BB2J_2.jpg"}},
+        {"id": 39800051728586, "inventory_quantity": 60, "option1": "Strong Brown", "option2": "XS", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_2.jpg"}},
+        {"id": 39800049828042, "inventory_quantity": 264, "option1": "Strong Brown", "option2": "S", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_2.jpg"}},
+        {"id": 39800048779466, "inventory_quantity": 523, "option1": "Strong Brown", "option2": "M", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_2.jpg"}},
+        {"id": 39800050843850, "inventory_quantity": 339, "option1": "Strong Brown", "option2": "L", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_2.jpg"}},
+        {"id": 39800051695818, "inventory_quantity": 111, "option1": "Strong Brown", "option2": "XL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_2.jpg"}},
+        {"id": 39800049336522, "inventory_quantity": 49, "option1": "Strong Brown", "option2": "XXL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_2.jpg"}},
+        {"id": 39800052515018, "inventory_quantity": 49, "option1": "Strong Brown", "option2": "3XL", "available": true, "price": "77.00", "compare_at_price": "110.00", "featured_image": {"src": "https://cdn.shopify.com/s/files/1/0156/6146/files/Gymshark_X_David_Laid_Straight_Leg_Cargo_Pants_Gs_Strong_Brown_A6C2I_NDRW_2.jpg"}}
+      ]
+    }
+  ]
+}
