@@ -122,7 +122,7 @@ input:not([type=checkbox]):not([type=color]):not([type=file]),select,textarea{di
 <h2>4. Generar</h2>
 <div class="card">
   <div class="chips" id="tipos"></div>
-  <div class="row"><button class="btn" id="generar">Generar</button><button class="btn ghost" id="bajar" disabled>Descargar todas</button><span class="sp"></span><span class="note" id="cuantas"></span></div>
+  <div class="row"><button class="btn" id="generar">Generar</button><button class="btn ghost" id="bajar" disabled>Guardar todas en carpeta</button><span class="sp"></span><span class="note" id="cuantas"></span></div>
 </div>
 <div class="prev" id="prev"></div>
 </div>
@@ -391,10 +391,34 @@ $('#generar').onclick=async()=>{
   }catch(e){ $('#prev').innerHTML=`<p class="note">No se pudo generar: ${esc(e.message||e)}</p>`; }
   $('#generar').disabled=false;
 };
+// nombre de la carpeta: título del drop + fecha de hoy
+function nombreCarpeta(){ const d=new Date(), f=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const t=slug([DB.drop.t1,DB.drop.t2].filter(Boolean).join(' ')).slice(0,40); return 'dealer-'+(t||'disenos')+'-'+f; }
+// ZIP sin compresión (las PNG ya vienen comprimidas)
+const CRC=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u){ let c=0xFFFFFFFF; for(let i=0;i<u.length;i++) c=CRC[(c^u[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+async function hacerZip(files,carpeta){ const enc=new TextEncoder(), partes=[], centro=[]; let off=0;
+  for(const f of files){ const data=new Uint8Array(await f.arrayBuffer()), name=enc.encode(carpeta+'/'+f.name), crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30)); h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(8,0,true); h.setUint32(14,crc,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,name.length,true);
+    partes.push(h.buffer,name,data);
+    const cd=new DataView(new ArrayBuffer(46)); cd.setUint32(0,0x02014b50,true); cd.setUint16(4,20,true); cd.setUint16(6,20,true); cd.setUint32(16,crc,true); cd.setUint32(20,data.length,true); cd.setUint32(24,data.length,true); cd.setUint16(28,name.length,true); cd.setUint32(42,off,true);
+    centro.push(cd.buffer,name); off+=30+name.length+data.length; }
+  const tam=centro.reduce((s,p)=>s+(p.byteLength||p.length),0), fin=new DataView(new ArrayBuffer(22)); fin.setUint32(0,0x06054b50,true); fin.setUint16(8,files.length,true); fin.setUint16(10,files.length,true); fin.setUint32(12,tam,true); fin.setUint32(16,off,true);
+  return new Blob([...partes,...centro,fin.buffer],{type:'application/zip'}); }
+const enCelular=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 async function bajar(lista){
   const files=[]; for(const [n,c] of lista){ const b=await new Promise(r=>c.toBlob(r,'image/png')); files.push(new File([b],`dealer-${n}.png`,{type:'image/png'})); }
-  if(navigator.canShare&&navigator.canShare({files})){ try{ await navigator.share({files}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
-  for(const f of files){ const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); await new Promise(r=>setTimeout(r,250)); }
+  const carpeta=nombreCarpeta();
+  // computadora (Chrome / Edge): escoges una carpeta y se crea adentro una carpeta nueva con todas las imágenes
+  if(!enCelular&&window.showDirectoryPicker){ try{ const base=await window.showDirectoryPicker({mode:'readwrite'}); const dir=await base.getDirectoryHandle(carpeta,{create:true});
+      for(const f of files){ const fh=await dir.getFileHandle(f.name,{create:true}), w=await fh.createWritable(); await w.write(f); await w.close(); }
+      toast(`Listo: ${files.length} imágenes en la carpeta "${carpeta}"`); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
+  // celular: menú de compartir (Guardar imágenes / Guardar en Archivos)
+  if(enCelular&&navigator.canShare&&navigator.canShare({files})){ try{ await navigator.share({files}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
+  // si no: baja un ZIP con la carpeta adentro
+  if(files.length===1){ const a=document.createElement('a'); a.href=URL.createObjectURL(files[0]); a.download=files[0].name; a.click(); return; }
+  const z=await hacerZip(files,carpeta), a=document.createElement('a'); a.href=URL.createObjectURL(z); a.download=carpeta+'.zip'; document.body.appendChild(a); a.click(); a.remove();
+  toast('Se bajó un ZIP: ábrelo y adentro está la carpeta con todas las imágenes');
 }
 $('#bajar').onclick=()=>bajar(HECHAS);
 
