@@ -78,8 +78,15 @@ input:not([type=checkbox]):not([type=color]):not([type=file]),select,textarea{di
     <label>Descuento para la portada de promo<input id="promo" placeholder="HASTA -30%"></label>
     <label>Cierra / urgencia (rojo)<input id="urgencia" placeholder="CIERRA DOMINGO"></label>
   </div>
-  <p class="note">Foto de portada: toca una foto de cualquier prenda de abajo y ponle "Portada".</p>
+  <div class="row" style="margin-top:4px">
+    <img id="portadaPrev" alt="" style="height:90px;border-radius:8px;display:none">
+    <button class="btn" id="portadaSubir">Subir foto de portada</button>
+    <label style="margin:0">Encuadre<select id="encuadre"><option value="0.1">Arriba</option><option value="0.4">Centro</option><option value="0.85">Abajo</option></select></label>
+    <button class="x" id="portadaQuitar" hidden>Quitar foto</button>
+  </div>
+  <p class="note">Para un <b>evento o anuncio</b> (sin vender prendas): sube tu foto aquí, llena los textos y en "Generar" deja solo <b>Post · portada</b> y/o <b>Historia · portada</b>. Si no subes foto, se usa la de una prenda (doble toque sobre la foto de la prenda).</p>
 </div>
+<input type="file" id="portadaFile" accept="image/*" hidden>
 
 <h2>2. Prendas</h2>
 <div class="card">
@@ -140,6 +147,16 @@ function anticipo(precio){ if(!P) return Math.round(precio*0.3/50)*50; try{ retu
 
 /* ---------- formulario del drop ---------- */
 ['t1','t2','estado','fecha','colab','resumen','promo','urgencia'].forEach(k=>{ const el=$('#'+k); el.value=DB.drop[k]||''; el.oninput=el.onchange=()=>{ DB.drop[k]=el.value; guardar(); }; });
+
+/* ---------- foto de portada propia (se guarda achicada en el aparato) ---------- */
+function pintarPortada(){ const p=$('#portadaPrev'), u=DB.drop.portadaData||''; p.style.display=u?'block':'none'; if(u) p.src=u; $('#portadaQuitar').hidden=!u; $('#portadaSubir').textContent=u?'Cambiar foto de portada':'Subir foto de portada'; $('#encuadre').value=String(DB.drop.encuadre||'0.1'); }
+$('#portadaSubir').onclick=()=>$('#portadaFile').click();
+$('#portadaQuitar').onclick=()=>{ DB.drop.portadaData=''; guardar(); pintarPortada(); };
+$('#encuadre').onchange=e=>{ DB.drop.encuadre=parseFloat(e.target.value); guardar(); };
+$('#portadaFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  const img=await new Promise((ok,no)=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=URL.createObjectURL(f); });
+  const s=Math.min(1,1600/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  DB.drop.portadaData=c.toDataURL('image/jpeg',0.85); imgCache.delete(DB.drop.portadaData); guardar(); pintarPortada(); toast('Foto de portada lista'); };
 
 /* ---------- prendas ---------- */
 const slug=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -213,7 +230,7 @@ function pintarTipos(){ $('#tipos').innerHTML=TIPOS.map(([k,n])=>`<button class=
 
 /* ---------- dibujo ---------- */
 const imgCache=new Map();
-function cargarImg(u){ if(imgCache.has(u)) return imgCache.get(u); const pr=new Promise((ok,no)=>{ const i=new Image(); if(!/^blob:/.test(u)) i.crossOrigin='anonymous'; i.onload=()=>ok(i); i.onerror=()=>no(new Error('foto')); i.src=/^blob:/.test(u)?u:u+(u.includes('?')?'&':'?')+'width=1200'; }); imgCache.set(u,pr); return pr; }
+function cargarImg(u){ if(!u) return Promise.reject(new Error('sin foto')); if(imgCache.has(u)) return imgCache.get(u); const local=/^(blob|data):/.test(u); const pr=new Promise((ok,no)=>{ const i=new Image(); if(!local) i.crossOrigin='anonymous'; i.onload=()=>ok(i); i.onerror=()=>no(new Error('foto')); i.src=local?u:u+(u.includes('?')?'&':'?')+'width=1200'; }); imgCache.set(u,pr); return pr; }
 const rgba=(hex,a)=>{ const h=hex.replace('#',''); const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; };
 function cover(x,img,dx,dy,dw,dh,fy){ if(!img){ x.fillStyle=rgba(C().linea,1); x.fillRect(dx,dy,dw,dh); return; } const s=Math.max(dw/img.width,dh/img.height),sw=dw/s,sh=dh/s; x.drawImage(img,(img.width-sw)/2,(img.height-sh)*(fy??0.3),sw,sh,dx,dy,dw,dh); }
 function rr(x,X,Y,w,h,r){ x.beginPath(); x.roundRect(X,Y,w,h,r); }
@@ -248,22 +265,22 @@ async function historiaProducto(c,p){ const x=c.getContext('2d'); x.fillStyle=C(
   const lh=260*LOGO.height/LOGO.width, ly=1920-lh-48; x.fillStyle=C().linea; x.fillRect(L,ly-22,1080-2*L,3); logo(x,(1080-260)/2,ly,260); }
 async function historiaPortada(c){ const x=c.getContext('2d'),W=1080; x.fillStyle=C().bg; x.fillRect(0,0,W,1920); const f=await cargarImg(fotoPortada()).catch(()=>null);
   // sin difuminado: barra arriba con logo, foto limpia, bloque sólido abajo
-  cover(x,f,0,190,W,1000,0.08); logo(x,(W-280)/2,(190-280*LOGO.height/LOGO.width)/2,280); x.fillStyle=C().texto; x.fillRect(0,1190,W,4);
+  cover(x,f,0,190,W,1000,encuadre()); logo(x,(W-280)/2,(190-280*LOGO.height/LOGO.width)/2,280); x.fillStyle=C().texto; x.fillRect(0,1190,W,4);
   const L=70; x.fillStyle=C().suave; x.font='700 30px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,1290); sp(x,0);
   const e=(DB.drop.estado||'PREVENTA').toUpperCase(); fitFont(x,e,'#px Anton',210,940); x.lineWidth=4; x.strokeStyle=C().texto; x.strokeText(e,L,1500);
   const t=(DB.drop.t2||DB.drop.t1||'').toUpperCase().replace(/^LOS CARGOS DE\s*/,''); x.fillStyle=C().texto; fitFont(x,t,'#px Anton',150,940); x.fillText(t,L,1650);
   x.fillStyle=C().suave; x.font='600 34px Inter'; x.fillText(DB.drop.resumen||'',L,1716);
-  if(DB.drop.urgencia||DB.drop.fecha) pill(x,(DB.drop.urgencia||DB.drop.fecha).toUpperCase(),L,1770,62,C().acento,'#fff',28); desliza(x,1010,1812,28); }
+  if(DB.drop.urgencia||DB.drop.fecha) pill(x,(DB.drop.urgencia||DB.drop.fecha).toUpperCase(),L,1770,62,C().acento,'#fff',28); if(DB.prendas.length||DB.tipos.includes('hc')) desliza(x,1010,1812,28); }
 async function historiaCierre(c){ await cierre(c,1080,1920); }
 async function postPortada(c){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H); const f=await cargarImg(fotoPortada()).catch(()=>null);
   // sin difuminado: barra arriba (logo + etiqueta), foto limpia, bloque sólido abajo
-  cover(x,f,0,140,W,690,0.12); x.fillStyle=C().texto; x.fillRect(0,830,W,4);
+  cover(x,f,0,140,W,690,encuadre()); x.fillStyle=C().texto; x.fillRect(0,830,W,4);
   logo(x,60,(140-230*LOGO.height/LOGO.width)/2,230); const pw=pill(x,(DB.drop.estado||'PREVENTA').toUpperCase(),1020,40,54,C().texto,C().bg,26,'right');
   if(DB.drop.fecha){ x.font='700 24px Inter'; x.fillStyle=C().suave; x.textAlign='right'; x.fillText(DB.drop.fecha.toUpperCase(),1020-pw-20,76); x.textAlign='left'; }
   const L=60; x.fillStyle=C().suave; x.font='700 28px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,895); sp(x,0);
   const t1=(DB.drop.t1||'').toUpperCase(), t2=(DB.drop.t2||'').toUpperCase(); x.fillStyle=C().texto; fitFont(x,t1,'#px Anton',150,960); x.fillText(t1,L,1040);
   fitFont(x,t2,'#px Anton',96,960); x.lineWidth=3; x.strokeStyle=C().texto; x.strokeText(t2,L,1150); corte(x,L,1188,150,10,C().acento);
-  x.fillStyle=C().suave; x.font='600 30px Inter'; x.fillText(DB.drop.resumen||'',L,1262); contador(x,'1/'+totalCarrusel(),1020,1222); desliza(x,1020,1300,24); }
+  x.fillStyle=C().suave; x.font='600 30px Inter'; x.fillText(DB.drop.resumen||'',L,1262); if(totalCarrusel()>1){ contador(x,'1/'+totalCarrusel(),1020,1222); desliza(x,1020,1300,24); } }
 async function postLamina(c,p,i){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H);
   const fotos=await Promise.all(p.fotos.slice(0,2).map(u=>cargarImg(u).catch(()=>null))); const gap=8,cw=(W-gap)/2,ch=700;
   if(fotos.length<2) cover(x,fotos[0]||null,0,0,W,ch,0.2); else { cover(x,fotos[0],0,0,cw,ch,0.25); cover(x,fotos[1],cw+gap,0,cw,ch,0.25); }
@@ -297,7 +314,8 @@ async function postPromo(c){ const x=c.getContext('2d'),W=1080,H=1350; x.fillSty
   x.fillStyle=C().texto; x.font='170px Anton'; const pr=(DB.drop.promo||'').toUpperCase(); fitFont(x,pr,'#px Anton',170,960); x.fillText(pr,L,1210);
   x.fillStyle=C().suave; x.font='600 30px Inter'; x.fillText(DB.drop.resumen||'',L,1270); desliza(x,1020,1310,24); }
 
-function fotoPortada(){ return DB.drop.portada||((DB.prendas[0]||{}).fotos||[])[0]||''; }
+function encuadre(){ return DB.drop.portadaData?(parseFloat(DB.drop.encuadre)||0.1):0.12; }
+function fotoPortada(){ return DB.drop.portadaData||DB.drop.portada||((DB.prendas[0]||{}).fotos||[])[0]||''; }
 function totalCarrusel(){ return 1+DB.prendas.length+(DB.tipos.includes('pc')?1:0); }
 
 /* ---------- generar ---------- */
@@ -329,7 +347,7 @@ async function bajar(lista){
 }
 $('#bajar').onclick=()=>bajar(HECHAS);
 
-pintarPrendas(); pintarColores(); pintarTipos();
+pintarPrendas(); pintarColores(); pintarTipos(); pintarPortada();
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{})); }
 </script>
 </body>
