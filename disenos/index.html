@@ -69,7 +69,7 @@ input:not([type=checkbox]):not([type=color]):not([type=file]),select,textarea{di
     <label>Segunda línea (contorno)<input id="t2" placeholder="LOS CARGOS DE DAVID LAID"></label>
   </div>
   <div class="g3">
-    <label>Etiqueta<select id="estado"><option>PREVENTA</option><option>ENTREGA INMEDIATA</option><option>REBAJA</option><option>RESTOCK</option><option>NUEVO</option></select></label>
+    <label>Etiqueta <span style="opacity:.7">(escoge o escribe)</span><input id="estado" list="estados" placeholder="PREVENTA" autocapitalize="characters"><datalist id="estados"><option>PREVENTA</option><option>REBAJA</option><option>PREVENTA · REBAJA</option><option>ENTREGA INMEDIATA</option><option>RESTOCK</option><option>NUEVO</option></datalist></label>
     <label>Fecha o aviso<input id="fecha" placeholder="SALEN EL 27 NOV"></label>
     <label>Marca / colab<input id="colab" placeholder="GYMSHARK × DAVID LAID"></label>
   </div>
