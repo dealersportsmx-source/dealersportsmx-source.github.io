@@ -78,15 +78,26 @@ input:not([type=checkbox]):not([type=color]):not([type=file]),select,textarea{di
     <label>Descuento para la portada de promo<input id="promo" placeholder="HASTA -30%"></label>
     <label>Cierra / urgencia (rojo)<input id="urgencia" placeholder="CIERRA DOMINGO"></label>
   </div>
-  <div class="row" style="margin-top:4px">
-    <img id="portadaPrev" alt="" style="height:90px;border-radius:8px;display:none">
-    <button class="btn" id="portadaSubir">Subir foto de portada</button>
-    <label style="margin:0">Encuadre<select id="encuadre"><option value="0.1">Arriba</option><option value="0.4">Centro</option><option value="0.85">Abajo</option></select></label>
-    <button class="x" id="portadaQuitar" hidden>Quitar foto</button>
+  <label>Texto de la cinta roja (post promo) <span style="opacity:.7">(vacío = descuento · urgencia · envío gratis)</span><input id="cinta" placeholder="TODO AL -50% • SOLO 30 NOV • ENVÍO GRATIS +$3,000"></label>
+  <div class="g2">
+    <label>Estilo de la portada del post<select id="estilo"><option value="foto">Foto grande</option><option value="promo">Promo con cinta (3 fotos)</option><option value="collage">Collage de 4 fotos</option></select></label>
+    <label>Encuadre de las fotos<select id="encuadre"><option value="0.1">Arriba</option><option value="0.4">Centro</option><option value="0.85">Abajo</option></select></label>
   </div>
-  <p class="note">Para un <b>evento o anuncio</b> (sin vender prendas): sube tu foto aquí, llena los textos y en "Generar" deja solo <b>Post · portada</b> y/o <b>Historia · portada</b>. Si no subes foto, se usa la de una prenda (doble toque sobre la foto de la prenda).</p>
+  <div class="note"><b>Fotos de portada y promo</b> (toca para escoger, el número es el orden; la 1 es la foto grande). Salen las fotos de tus prendas y las que subas aquí.</div>
+  <div class="fotos" id="selFotos"></div>
+  <div class="row" style="margin-top:6px"><button class="btn sm" id="portadaSubir">+ Subir foto</button><span class="note">Para un <b>evento o anuncio</b> sin prendas: sube aquí tus fotos y en "Generar" deja solo las portadas.</span></div>
 </div>
-<input type="file" id="portadaFile" accept="image/*" hidden>
+<input type="file" id="portadaFile" accept="image/*" multiple hidden>
+
+<h2>Así apartas <span class="note" style="font-weight:500">(la última lámina e historia)</span></h2>
+<div class="card">
+  <div class="g2"><label>Texto chico de arriba<input id="c_kicker" placeholder="ASÍ DE FÁCIL"></label><label>Título<input id="c_titulo" placeholder="ASÍ APARTAS"></label></div>
+  <div class="g2"><label>Paso 1<input id="c_p1" placeholder="ESCOGE"></label><label>Detalle 1<input id="c_d1" placeholder="Tu prenda, color y talla."></label></div>
+  <div class="g2"><label>Paso 2<input id="c_p2" placeholder="APARTA"></label><label>Detalle 2<input id="c_d2" placeholder="Con el 30 % de anticipo."></label></div>
+  <div class="g2"><label>Paso 3<input id="c_p3" placeholder="RECIBE"></label><label>Detalle 3<input id="c_d3" placeholder="Liquidas cuando llega."></label></div>
+  <div class="g2"><label>Caja de abajo<input id="c_caja" placeholder="ENVÍO GRATIS EN COMPRAS DE +$3,000"></label><label>Texto chico de la caja<input id="c_caja2" placeholder="Pídelo en dealersportsmx.com o mándanos DM"></label></div>
+  <p class="note">Lo que dejes vacío usa el texto gris de ejemplo.</p>
+</div>
 
 <h2>2. Prendas</h2>
 <div class="card">
@@ -147,17 +158,29 @@ function aPesos(usd,marca){ if(!P||!(usd>0)) return 0; try{ return P.calcular(us
 function anticipo(precio){ if(!P) return Math.round(precio*0.3/50)*50; try{ return P.anticipo(precio); }catch(e){ return Math.round(precio*0.3/50)*50; } }
 
 /* ---------- formulario del drop ---------- */
-['t1','t2','estado','fecha','colab','resumen','promo','urgencia'].forEach(k=>{ const el=$('#'+k); el.value=DB.drop[k]||''; el.oninput=el.onchange=()=>{ DB.drop[k]=el.value; guardar(); }; });
+['t1','t2','estado','fecha','colab','resumen','promo','urgencia','cinta','estilo'].forEach(k=>{ const el=$('#'+k); el.value=DB.drop[k]||''; el.oninput=el.onchange=()=>{ DB.drop[k]=el.value; guardar(); }; });
 
-/* ---------- foto de portada propia (se guarda achicada en el aparato) ---------- */
-function pintarPortada(){ const p=$('#portadaPrev'), u=DB.drop.portadaData||''; p.style.display=u?'block':'none'; if(u) p.src=u; $('#portadaQuitar').hidden=!u; $('#portadaSubir').textContent=u?'Cambiar foto de portada':'Subir foto de portada'; $('#encuadre').value=String(DB.drop.encuadre||'0.1'); }
+/* ---------- fotos de portada / promo: se escogen de las prendas o se suben (las subidas se guardan achicadas) ---------- */
+if(!Array.isArray(DB.drop.subidas)) DB.drop.subidas=DB.drop.portadaData?[DB.drop.portadaData]:[];
+if(!Array.isArray(DB.drop.sel)) DB.drop.sel=DB.drop.portadaData?[DB.drop.portadaData]:(DB.drop.portada?[DB.drop.portada]:[]);
+if(!DB.cierre) DB.cierre={};
+['kicker','titulo','p1','d1','p2','d2','p3','d3','caja','caja2'].forEach(k=>{ const el=$('#c_'+k); el.value=DB.cierre[k]||''; el.oninput=()=>{ DB.cierre[k]=el.value; guardar(); }; });
+const CIERRE_DEF={kicker:'ASÍ DE FÁCIL',titulo:'ASÍ APARTAS',p1:'ESCOGE',d1:'Tu prenda, color y talla.',p2:'APARTA',d2:'Con el 30 % de anticipo.',p3:'RECIBE',d3:'Liquidas cuando llega.',caja:'ENVÍO GRATIS EN COMPRAS DE +$3,000',caja2:'Pídelo en dealersportsmx.com o mándanos DM'};
+const cz=k=>(DB.cierre[k]||'').trim()||CIERRE_DEF[k];
+function candidatas(){ return [...new Set([...DB.drop.subidas,...DB.prendas.flatMap(p=>p.fotos.length?p.fotos.concat(p.fotosTodas):p.fotosTodas)])]; }
+function pintarPortada(){ const cs=candidatas(); DB.drop.sel=DB.drop.sel.filter(u=>cs.includes(u));
+  $('#selFotos').innerHTML=cs.map(u=>{ const k=DB.drop.sel.indexOf(u), sub=DB.drop.subidas.includes(u); return `<span class="n"><img src="${esc(miniatura(u))}" data-sel="${esc(u)}" class="${k>=0?'sel':''}" loading="lazy" alt="">${k>=0?`<b>${k+1}</b>`:''}${sub?`<b style="left:auto;right:4px;cursor:pointer" data-borrar="${esc(u)}">✕</b>`:''}</span>`; }).join('')||'<span class="note">Todavía no hay fotos: agrega prendas o sube fotos.</span>';
+  document.querySelectorAll('[data-sel]').forEach(i=>i.onclick=()=>{ const u=i.dataset.sel,k=DB.drop.sel.indexOf(u); if(k>=0) DB.drop.sel.splice(k,1); else if(DB.drop.sel.length<4) DB.drop.sel.push(u); else return toast('Máximo 4 fotos'); guardar(); pintarPortada(); });
+  document.querySelectorAll('[data-borrar]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const u=b.dataset.borrar; DB.drop.subidas=DB.drop.subidas.filter(x=>x!==u); DB.drop.sel=DB.drop.sel.filter(x=>x!==u); guardar(); pintarPortada(); });
+  $('#encuadre').value=String(DB.drop.encuadre||'0.1'); $('#estilo').value=DB.drop.estilo||'foto'; }
 $('#portadaSubir').onclick=()=>$('#portadaFile').click();
-$('#portadaQuitar').onclick=()=>{ DB.drop.portadaData=''; guardar(); pintarPortada(); };
 $('#encuadre').onchange=e=>{ DB.drop.encuadre=parseFloat(e.target.value); guardar(); };
-$('#portadaFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
-  const img=await new Promise((ok,no)=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=URL.createObjectURL(f); });
-  const s=Math.min(1,1600/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-  DB.drop.portadaData=c.toDataURL('image/jpeg',0.85); imgCache.delete(DB.drop.portadaData); guardar(); pintarPortada(); toast('Foto de portada lista'); };
+$('#portadaFile').onchange=async e=>{ const fs=[...e.target.files]; e.target.value='';
+  for(const f of fs){ if(DB.drop.subidas.length>=6){ toast('Máximo 6 fotos subidas'); break; }
+    const img=await new Promise((ok,no)=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=URL.createObjectURL(f); });
+    const s=Math.min(1,1400/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    const d=c.toDataURL('image/jpeg',0.82); DB.drop.subidas.push(d); if(DB.drop.sel.length<4) DB.drop.sel.push(d); }
+  guardar(); pintarPortada(); toast('Fotos listas'); };
 
 /* ---------- prendas ---------- */
 const slug=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -203,7 +226,7 @@ function pintarPrendas(){
       <label>Tallas <span style="opacity:.7">(toca para quitar)</span><div class="chips">${p.tallas.map((t,k)=>`<button class="chip ${t.on?'on':'off'}" data-talla="${k}">${esc(t.t)}</button>`).join('')}<button class="chip" data-mas-talla>+</button></div></label>
       <div class="note" style="align-self:center">${p.usd?`Precio marca: $${p.usd} USD${p.usdAntes>p.usd?' (antes $'+p.usdAntes+')':''}`:''}</div></div>
     <div class="note">Fotos: toca para escoger hasta 4 (el número es el orden). Mantén presionada (o doble clic) para usarla de portada.</div>
-    <div class="fotos">${p.fotosTodas.map(u=>{const k=p.fotos.indexOf(u);return `<span class="n"><img src="${esc(miniatura(u))}" data-foto="${esc(u)}" class="${k>=0?'sel':''}" loading="lazy" alt="">${k>=0?`<b>${k+1}</b>`:''}${DB.drop.portada===u?'<b style="left:auto;right:4px">Portada</b>':''}</span>`;}).join('')}
+    <div class="fotos">${p.fotosTodas.map(u=>{const k=p.fotos.indexOf(u);return `<span class="n"><img src="${esc(miniatura(u))}" data-foto="${esc(u)}" class="${k>=0?'sel':''}" loading="lazy" alt="">${k>=0?`<b>${k+1}</b>`:''}${(DB.drop.sel||[])[0]===u?'<b style="left:auto;right:4px">Portada</b>':''}</span>`;}).join('')}
       <button class="btn ghost sm" data-subirfotos style="align-self:center">+ Subir fotos</button></div>
   </div>`).join('')||'<p class="note">Todavía no agregas prendas.</p>';
   document.querySelectorAll('#prendas [data-p]').forEach(card=>{ const p=DB.prendas.find(x=>x.id===card.dataset.p);
@@ -211,13 +234,14 @@ function pintarPrendas(){
     card.querySelectorAll('[data-talla]').forEach(b=>b.onclick=()=>{ const t=p.tallas[+b.dataset.talla]; t.on=!t.on; guardar(); pintarPrendas(); });
     card.querySelector('[data-mas-talla]').onclick=()=>{ const t=prompt('Talla a agregar (ej. 3XL):'); if(t&&t.trim()){ p.tallas.push({t:t.trim().toUpperCase(),on:true}); guardar(); pintarPrendas(); } };
     card.querySelectorAll('[data-foto]').forEach(img=>{ img.onclick=()=>{ const u=img.dataset.foto,k=p.fotos.indexOf(u); if(k>=0) p.fotos.splice(k,1); else if(p.fotos.length<4) p.fotos.push(u); else return toast('Máximo 4 fotos por prenda'); guardar(); pintarPrendas(); };
-      img.ondblclick=img.oncontextmenu=e=>{ e.preventDefault(); DB.drop.portada=img.dataset.foto; guardar(); pintarPrendas(); toast('Foto de portada escogida'); }; });
+      img.ondblclick=img.oncontextmenu=e=>{ e.preventDefault(); const u=img.dataset.foto; DB.drop.sel=[u,...DB.drop.sel.filter(x=>x!==u)].slice(0,4); guardar(); pintarPrendas(); toast('Foto 1 de la portada'); }; });
     card.querySelector('[data-subirfotos]').onclick=()=>{ subirPara=p.id; $('#subir').click(); };
     card.querySelector('[data-quitar]').onclick=()=>{ if(confirm('¿Quitar '+p.nombre+'?')){ DB.prendas=DB.prendas.filter(x=>x!==p); guardar(); pintarPrendas(); } };
     const up=card.querySelector('[data-subir1]'); if(up) up.onclick=()=>{ const i=DB.prendas.indexOf(p); DB.prendas.splice(i,1); DB.prendas.splice(i-1,0,p); guardar(); pintarPrendas(); };
   });
+  pintarPortada();
 }
-function miniatura(u){ return /^blob:/.test(u)?u:u+(u.includes('?')?'&':'?')+'width=300'; }
+function miniatura(u){ return /^(blob|data):/.test(u)?u:u+(u.includes('?')?'&':'?')+'width=300'; }
 
 /* ---------- colores ---------- */
 function pintarColores(){
@@ -273,9 +297,13 @@ async function historiaPortada(c){ const x=c.getContext('2d'),W=1080; x.fillStyl
   x.fillStyle=C().suave; x.font='600 34px Inter'; x.fillText(DB.drop.resumen||'',L,1716);
   if(DB.drop.urgencia||DB.drop.fecha) pill(x,(DB.drop.urgencia||DB.drop.fecha).toUpperCase(),L,1770,62,C().acento,'#fff',28); if(DB.prendas.length||DB.tipos.includes('hc')) desliza(x,1010,1812,28); }
 async function historiaCierre(c){ await cierre(c,1080,1920); }
-async function postPortada(c){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H); const f=await cargarImg(fotoPortada()).catch(()=>null);
+async function postPortada(c){ const est=DB.drop.estilo||'foto'; if(est==='promo') return postPromo(c,true);
+  const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H);
+  if(est==='collage'){ const fs=await Promise.all(selFotos(4).map(u=>cargarImg(u).catch(()=>null))); const g=8,cw=(W-g)/2,ch=(690-g)/2;
+    for(let i=0;i<4;i++) cover(x,fs.length?fs[i%fs.length]:null,(i%2)*(cw+g),140+Math.floor(i/2)*(ch+g),cw,ch,encuadre()); }
+  else { const f=await cargarImg(fotoPortada()).catch(()=>null); cover(x,f,0,140,W,690,encuadre()); }
   // sin difuminado: barra arriba (logo + etiqueta), foto limpia, bloque sólido abajo
-  cover(x,f,0,140,W,690,encuadre()); x.fillStyle=C().texto; x.fillRect(0,830,W,4);
+  x.fillStyle=C().texto; x.fillRect(0,830,W,4);
   logo(x,60,(140-230*LOGO.height/LOGO.width)/2,230); const pw=pill(x,(DB.drop.estado||'PREVENTA').toUpperCase(),1020,40,54,C().etiqueta||C().texto,C().etiquetaTexto||C().bg,26,'right');
   if(DB.drop.fecha){ x.font='700 24px Inter'; x.fillStyle=C().suave; x.textAlign='right'; x.fillText(DB.drop.fecha.toUpperCase(),1020-pw-20,76); x.textAlign='left'; }
   const L=60; x.fillStyle=C().suave; x.font='700 28px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,895); sp(x,0);
@@ -296,28 +324,31 @@ async function postLamina(c,p,i){ const x=c.getContext('2d'),W=1080,H=1350; x.fi
 async function postCierre(c){ await cierre(c,1080,1350); }
 async function cierre(c,W,H){ const x=c.getContext('2d'); x.fillStyle=C().bg; x.fillRect(0,0,W,H); const L=70, alto=H>1500; let y=alto?260:170;
   logo(x,L,alto?110:70,240); if(!alto) contador(x,totalCarrusel()+'/'+totalCarrusel(),W-60,70);
-  x.fillStyle=C().suave; x.font='700 30px Inter'; sp(x,8); x.fillText('ASÍ DE FÁCIL',L,y+40); sp(x,0);
-  x.fillStyle=C().texto; x.font=`${alto?190:160}px Anton`; x.fillText('ASÍ APARTAS',L,y+(alto?230:200)); corte(x,L,y+(alto?262:228),150,10,C().acento);
-  const pasos=[['ESCOGE','Tu prenda, color y talla.'],['APARTA','Con el 30 % de anticipo.'],['RECIBE','Liquidas cuando llega.']]; y+=alto?380:320;
+  x.fillStyle=C().suave; x.font='700 30px Inter'; sp(x,8); x.fillText(cz('kicker').toUpperCase(),L,y+40); sp(x,0);
+  x.fillStyle=C().texto; fitFont(x,cz('titulo').toUpperCase(),'#px Anton',alto?190:160,W-2*L); x.fillText(cz('titulo').toUpperCase(),L,y+(alto?230:200)); corte(x,L,y+(alto?262:228),150,10,C().acento);
+  const pasos=[[cz('p1').toUpperCase(),cz('d1')],[cz('p2').toUpperCase(),cz('d2')],[cz('p3').toUpperCase(),cz('d3')]]; y+=alto?380:320;
   pasos.forEach(([t,d],k)=>{ const bh=alto?190:150; x.fillStyle=rgba(C().texto,.06); rr(x,L,y,W-2*L,bh,22); x.fill(); x.strokeStyle=C().linea; x.lineWidth=2; rr(x,L,y,W-2*L,bh,22); x.stroke();
     x.fillStyle=C().texto; x.font=`${alto?110:90}px Anton`; x.fillText('0'+(k+1),L+34,y+bh*0.7); x.font=`${alto?62:52}px Anton`; x.fillText(t,L+(alto?220:190),y+bh*0.52); x.fillStyle=C().suave; x.font=`500 ${alto?32:28}px Inter`; x.fillText(d,L+(alto?220:190),y+bh*0.8); y+=bh+22; });
-  y+=alto?40:20; x.fillStyle=C().caja; rr(x,L,y,W-2*L,alto?150:120,22); x.fill(); x.fillStyle=C().cajaTexto; x.textAlign='center'; x.font=`800 ${alto?34:30}px Inter`; x.fillText('ENVÍO GRATIS EN COMPRAS DE +$3,000',W/2,y+(alto?70:58)); x.font=`600 ${alto?28:24}px Inter`; x.globalAlpha=.75; x.fillText('Pídelo en dealersportsmx.com o mándanos DM',W/2,y+(alto?115:94)); x.globalAlpha=1; x.textAlign='left';
+  y+=alto?40:20; x.fillStyle=C().caja; rr(x,L,y,W-2*L,alto?150:120,22); x.fill(); x.fillStyle=C().cajaTexto; x.textAlign='center'; x.font=`800 ${alto?34:30}px Inter`; fitFont(x,cz('caja').toUpperCase(),`800 #px Inter`,alto?34:30,W-2*L-40); x.fillText(cz('caja').toUpperCase(),W/2,y+(alto?70:58)); fitFont(x,cz('caja2'),`600 #px Inter`,alto?28:24,W-2*L-40); x.globalAlpha=.75; x.fillText(cz('caja2'),W/2,y+(alto?115:94)); x.globalAlpha=1; x.textAlign='left';
   if(alto){ x.fillStyle=C().suave; x.font='700 28px Inter'; x.textAlign='center'; x.fillText('dealersportsmx.com',W/2,1840); x.textAlign='left'; } }
-async function postPromo(c){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H);
-  const us=DB.prendas.slice(0,3).map(p=>p.fotos[0]||p.fotosTodas[0]).filter(Boolean); const fotos=await Promise.all(us.map(u=>cargarImg(u).catch(()=>null)));
-  const n=Math.max(1,fotos.length), gap=8, cw=(W-gap*(n-1))/n; for(let i=0;i<n;i++) cover(x,fotos[i]||null,i*(cw+gap),330,cw,620,0.3);
+async function postPromo(c,comoPortada){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H);
+  const us=selFotos(3); const fotos=await Promise.all(us.map(u=>cargarImg(u).catch(()=>null)));
+  const n=Math.max(1,fotos.length), gap=8, cw=(W-gap*(n-1))/n; for(let i=0;i<n;i++) cover(x,fotos[i]||null,i*(cw+gap),330,cw,620,encuadre());
   logo(x,60,58,230); pill(x,(DB.drop.estado||'REBAJA').toUpperCase(),1020,52,54,C().acento,'#fff',26,'right');
   const L=60; x.fillStyle=C().suave; x.font='700 28px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,190); sp(x,0);
   const t=(DB.drop.t1||'REBAJAS').toUpperCase(); x.fillStyle=C().texto; fitFont(x,t,'#px Anton',130,960); x.fillText(t,L,310);
   // cinta cruzada
   x.save(); x.translate(W/2,960); x.rotate(-0.06); x.fillStyle=C().acento; x.fillRect(-W,-46,W*2,92); x.fillStyle='#fff'; x.font='900 34px Inter'; sp(x,5); x.textBaseline='middle';
-  const cinta=[DB.drop.promo||'REBAJA',DB.drop.urgencia||'CUPO LIMITADO','ENVÍO GRATIS +$3,000'].map(s=>s.toUpperCase()).join('   •   '); let cx=-W+20; while(cx<W){ x.fillText(cinta+'   •   ',cx,2); cx+=x.measureText(cinta+'   •   ').width; } sp(x,0); x.restore(); x.textBaseline='alphabetic';
-  x.fillStyle=C().texto; x.font='170px Anton'; const pr=(DB.drop.promo||'').toUpperCase(); fitFont(x,pr,'#px Anton',170,960); x.fillText(pr,L,1210);
-  x.fillStyle=C().suave; x.font='600 30px Inter'; x.fillText(DB.drop.resumen||'',L,1270); desliza(x,1020,1310,24); }
+  const cinta=(DB.drop.cinta||'').trim()?DB.drop.cinta.toUpperCase().replace(/\s*[•·|]\s*/g,'   •   '):[DB.drop.promo||'REBAJA',DB.drop.urgencia||'CUPO LIMITADO','ENVÍO GRATIS +$3,000'].map(s=>s.toUpperCase()).join('   •   '); let cx=-W+20; while(cx<W){ x.fillText(cinta+'   •   ',cx,2); cx+=x.measureText(cinta+'   •   ').width; } sp(x,0); x.restore(); x.textBaseline='alphabetic';
+  x.fillStyle=C().texto; x.font='170px Anton'; const pr=(DB.drop.promo||DB.drop.t2||'').toUpperCase(); fitFont(x,pr,'#px Anton',170,960); x.fillText(pr,L,1210);
+  x.fillStyle=C().suave; x.font='600 30px Inter'; x.fillText(DB.drop.resumen||'',L,1270);
+  if(!comoPortada||totalCarrusel()>1){ if(comoPortada) contador(x,'1/'+totalCarrusel(),1020,1232); desliza(x,1020,1310,24); } }
 
-function encuadre(){ return DB.drop.portadaData?(parseFloat(DB.drop.encuadre)||0.1):0.12; }
-function fotoPortada(){ return DB.drop.portadaData||DB.drop.portada||((DB.prendas[0]||{}).fotos||[])[0]||''; }
-function totalCarrusel(){ return 1+DB.prendas.length+(DB.tipos.includes('pc')?1:0); }
+function encuadre(){ return parseFloat(DB.drop.encuadre)||0.1; }
+// fotos escogidas para portada/promo; si no escogiste, las primeras de cada prenda
+function selFotos(n){ const s=(DB.drop.sel||[]).filter(Boolean); if(s.length) return s.slice(0,n); return DB.prendas.map(p=>p.fotos[0]||p.fotosTodas[0]).filter(Boolean).slice(0,n); }
+function fotoPortada(){ return selFotos(1)[0]||''; }
+function totalCarrusel(){ return 1+(DB.tipos.includes('pl')?DB.prendas.length:0)+(DB.tipos.includes('pc')?1:0); }
 
 /* ---------- generar ---------- */
 let HECHAS=[];
