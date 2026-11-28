@@ -127,9 +127,10 @@ const PALETAS={
   'Negro y blanco':{bg:'#0B0B0C',texto:'#F5F5F3',suave:'#8E8E8E',linea:'#3A3A3E',acento:'#E0243F',caja:'#F5F5F3',cajaTexto:'#0B0B0C'},
   'Negro y rojo':{bg:'#0B0B0C',texto:'#F5F5F3',suave:'#8E8E8E',linea:'#3A3A3E',acento:'#E0243F',caja:'#E0243F',cajaTexto:'#FFFFFF'},
   'Gris':{bg:'#2A2A2D',texto:'#FFFFFF',suave:'#A6A6A6',linea:'#4A4A50',acento:'#E0243F',caja:'#FFFFFF',cajaTexto:'#111111'},
-  'Claro':{bg:'#F3F2EF',texto:'#111111',suave:'#6B6B6B',linea:'#CFCFCF',acento:'#E0243F',caja:'#111111',cajaTexto:'#FFFFFF'}
+  'Claro':{bg:'#F3F2EF',texto:'#111111',suave:'#6B6B6B',linea:'#CFCFCF',acento:'#E0243F',caja:'#111111',cajaTexto:'#FFFFFF'},
+  'Negro y amarillo':{bg:'#0B0B0C',texto:'#F4F1EA',suave:'#9A968E',linea:'#FFD400',acento:'#E0243F',caja:'#FFD400',cajaTexto:'#111111',etiqueta:'#FFD400',etiquetaTexto:'#111111'}
 };
-const NOMBRES_COLOR={bg:'Fondo',texto:'Textos',suave:'Textos chicos',linea:'Líneas',acento:'Acento (rojo)',caja:'Caja de apartado',cajaTexto:'Texto de la caja'};
+const NOMBRES_COLOR={bg:'Fondo',texto:'Textos',suave:'Textos chicos',linea:'Líneas',acento:'Acento (rojo)',caja:'Caja de apartado',cajaTexto:'Texto de la caja',etiqueta:'Etiqueta (PREVENTA…)',etiquetaTexto:'Texto de la etiqueta'};
 const TIPOS=[['pp','Post · portada'],['pl','Post · láminas'],['pc','Post · cómo apartar'],['pr','Post · promo'],['hp','Historia · portada'],['hl','Historias · prendas'],['hc','Historia · cómo apartar']];
 const MARCAS={'youngla.com':'YoungLA','darcsport.com':'Darc Sport','dfyne.com':'DFYNE','civilregime.com':'Civil Régime','breathedivinity.com':'Breathedivinity','controlledinsanity.com':'Controlled Insanity','gymshark.com':'Gymshark'};
 
@@ -221,7 +222,7 @@ function miniatura(u){ return /^blob:/.test(u)?u:u+(u.includes('?')?'&':'?')+'wi
 /* ---------- colores ---------- */
 function pintarColores(){
   $('#paletas').innerHTML=Object.entries(PALETAS).map(([n,c])=>`<button data-pal="${esc(n)}" class="${DB.paleta===n?'on':''}"><i style="background:${c.bg}"></i><i style="background:${c.texto}"></i><i style="background:${c.caja}"></i>${esc(n)}</button>`).join('')+`<button class="${DB.paleta==='Mía'?'on':''}" data-pal="Mía">✎ Mía</button>`;
-  $('#colores').innerHTML=Object.keys(NOMBRES_COLOR).map(k=>`<label><input type="color" data-c="${k}" value="${DB.colores[k]}">${NOMBRES_COLOR[k]}</label>`).join('');
+  $('#colores').innerHTML=Object.keys(NOMBRES_COLOR).map(k=>`<label><input type="color" data-c="${k}" value="${DB.colores[k]||(k==='etiqueta'?DB.colores.texto:k==='etiquetaTexto'?DB.colores.bg:'#000000')}">${NOMBRES_COLOR[k]}</label>`).join('');
   document.querySelectorAll('[data-pal]').forEach(b=>b.onclick=()=>{ const n=b.dataset.pal; if(PALETAS[n]){ DB.colores=Object.assign({},PALETAS[n]); } DB.paleta=n; guardar(); pintarColores(); });
   document.querySelectorAll('[data-c]').forEach(i=>i.oninput=()=>{ DB.colores[i.dataset.c]=i.value; DB.paleta='Mía'; guardar(); document.querySelectorAll('[data-pal]').forEach(b=>b.classList.toggle('on',b.dataset.pal==='Mía')); });
 }
@@ -254,7 +255,7 @@ function tallasRedondas(x,p,L,y){ x.fillStyle=C().suave; x.font='700 26px Inter'
 async function historiaProducto(c,p){ const x=c.getContext('2d'); x.fillStyle=C().bg; x.fillRect(0,0,1080,1920);
   const fotos=await Promise.all(p.fotos.slice(0,4).map(u=>cargarImg(u).catch(()=>null))); const gap=8,cw=(1080-gap)/2,ch=500;
   if(fotos.length===1) cover(x,fotos[0],0,0,1080,1008,0.2); else for(let i=0;i<4;i++) cover(x,fotos[i%fotos.length]||null,(i%2)*(cw+gap),Math.floor(i/2)*(ch+gap),cw,ch,0.3);
-  const pw=pill(x,DB.drop.estado||'PREVENTA',48,52,60,C().texto,C().bg,28); if(DB.drop.fecha) pill(x,DB.drop.fecha.toUpperCase(),48+pw+12,52,60,rgba(C().bg,.8),C().texto,26);
+  const pw=pill(x,DB.drop.estado||'PREVENTA',48,52,60,C().etiqueta||C().texto,C().etiquetaTexto||C().bg,28); if(DB.drop.fecha) pill(x,DB.drop.fecha.toUpperCase(),48+pw+12,52,60,rgba(C().bg,.8),C().texto,26);
   const L=64; let y=1072; x.fillStyle=C().suave; x.font='700 30px Inter'; sp(x,8); x.fillText((p.colab||'').toUpperCase(),L,y); sp(x,0);
   y+=140; x.fillStyle=C().texto; fitFont(x,p.nombre,'#px Anton',140,950); x.fillText(p.nombre,L,y); y+=60; x.fillStyle=C().suave; x.font='500 36px Inter'; x.fillText(p.detalle||'',L,y);
   y+=86; tallasRedondas(x,p,L,y); y+=96; const top=y-30;
@@ -275,7 +276,7 @@ async function historiaCierre(c){ await cierre(c,1080,1920); }
 async function postPortada(c){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H); const f=await cargarImg(fotoPortada()).catch(()=>null);
   // sin difuminado: barra arriba (logo + etiqueta), foto limpia, bloque sólido abajo
   cover(x,f,0,140,W,690,encuadre()); x.fillStyle=C().texto; x.fillRect(0,830,W,4);
-  logo(x,60,(140-230*LOGO.height/LOGO.width)/2,230); const pw=pill(x,(DB.drop.estado||'PREVENTA').toUpperCase(),1020,40,54,C().texto,C().bg,26,'right');
+  logo(x,60,(140-230*LOGO.height/LOGO.width)/2,230); const pw=pill(x,(DB.drop.estado||'PREVENTA').toUpperCase(),1020,40,54,C().etiqueta||C().texto,C().etiquetaTexto||C().bg,26,'right');
   if(DB.drop.fecha){ x.font='700 24px Inter'; x.fillStyle=C().suave; x.textAlign='right'; x.fillText(DB.drop.fecha.toUpperCase(),1020-pw-20,76); x.textAlign='left'; }
   const L=60; x.fillStyle=C().suave; x.font='700 28px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,895); sp(x,0);
   const t1=(DB.drop.t1||'').toUpperCase(), t2=(DB.drop.t2||'').toUpperCase(); x.fillStyle=C().texto; fitFont(x,t1,'#px Anton',150,960); x.fillText(t1,L,1040);
