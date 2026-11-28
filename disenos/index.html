@@ -95,6 +95,8 @@ input:not([type=checkbox]):not([type=color]):not([type=file]),select,textarea{di
   <div class="g2"><label>Paso 1<input id="c_p1" placeholder="ESCOGE"></label><label>Detalle 1<input id="c_d1" placeholder="Tu prenda, color y talla."></label></div>
   <div class="g2"><label>Paso 2<input id="c_p2" placeholder="APARTA"></label><label>Detalle 2<input id="c_d2" placeholder="Con el 30 % de anticipo."></label></div>
   <div class="g2"><label>Paso 3<input id="c_p3" placeholder="RECIBE"></label><label>Detalle 3<input id="c_d3" placeholder="Liquidas cuando llega."></label></div>
+  <div class="g2"><label>Paso 4 <span style="opacity:.7">(opcional)</span><input id="c_p4" placeholder="Vacío = no sale"></label><label>Detalle 4<input id="c_d4"></label></div>
+  <div class="g2"><label>Paso 5 <span style="opacity:.7">(opcional)</span><input id="c_p5" placeholder="Vacío = no sale"></label><label>Detalle 5<input id="c_d5"></label></div>
   <div class="g2"><label>Caja de abajo<input id="c_caja" placeholder="ENVÍO GRATIS EN COMPRAS DE +$3,000"></label><label>Texto chico de la caja<input id="c_caja2" placeholder="Pídelo en dealersportsmx.com o mándanos DM"></label></div>
   <p class="note">Lo que dejes vacío usa el texto gris de ejemplo.</p>
 </div>
@@ -166,8 +168,8 @@ function anticipo(precio){ if(!P) return Math.round(precio*0.3/50)*50; try{ retu
 if(!Array.isArray(DB.drop.subidas)) DB.drop.subidas=DB.drop.portadaData?[DB.drop.portadaData]:[];
 if(!Array.isArray(DB.drop.sel)) DB.drop.sel=DB.drop.portadaData?[DB.drop.portadaData]:(DB.drop.portada?[DB.drop.portada]:[]);
 if(!DB.cierre) DB.cierre={};
-['kicker','titulo','p1','d1','p2','d2','p3','d3','caja','caja2'].forEach(k=>{ const el=$('#c_'+k); el.value=DB.cierre[k]||''; el.oninput=()=>{ DB.cierre[k]=el.value; guardar(); }; });
-const CIERRE_DEF={kicker:'ASÍ DE FÁCIL',titulo:'ASÍ APARTAS',p1:'ESCOGE',d1:'Tu prenda, color y talla.',p2:'APARTA',d2:'Con el 30 % de anticipo.',p3:'RECIBE',d3:'Liquidas cuando llega.',caja:'ENVÍO GRATIS EN COMPRAS DE +$3,000',caja2:'Pídelo en dealersportsmx.com o mándanos DM'};
+['kicker','titulo','p1','d1','p2','d2','p3','d3','p4','d4','p5','d5','caja','caja2'].forEach(k=>{ const el=$('#c_'+k); el.value=DB.cierre[k]||''; el.oninput=()=>{ DB.cierre[k]=el.value; guardar(); }; });
+const CIERRE_DEF={kicker:'ASÍ DE FÁCIL',titulo:'ASÍ APARTAS',p1:'ESCOGE',d1:'Tu prenda, color y talla.',p2:'APARTA',d2:'Con el 30 % de anticipo.',p3:'RECIBE',d3:'Liquidas cuando llega.',p4:'',d4:'',p5:'',d5:'',caja:'ENVÍO GRATIS EN COMPRAS DE +$3,000',caja2:'Pídelo en dealersportsmx.com o mándanos DM'};
 const cz=k=>(DB.cierre[k]||'').trim()||CIERRE_DEF[k];
 function candidatas(){ return [...new Set([...DB.drop.subidas,...DB.prendas.flatMap(p=>p.fotos.length?p.fotos.concat(p.fotosTodas):p.fotosTodas)])]; }
 function pintarPortada(){ const cs=candidatas(); DB.drop.sel=DB.drop.sel.filter(u=>cs.includes(u));
@@ -328,14 +330,25 @@ async function postLamina(c,p,i){ const x=c.getContext('2d'),W=1080,H=1350; x.fi
   if(p.anticipo) cajaApartado(x,700,ay-66,320,240,p);
   x.fillStyle=C().suave; x.font='600 26px Inter'; x.fillText('Pídelo en dealersportsmx.com',L,1312); logo(x,1020-170,1270,170); }
 async function postCierre(c){ await cierre(c,1080,1350); }
+function wrapText(x,t,max){ const ws=String(t).split(/\s+/).filter(Boolean), out=[]; let cur=''; ws.forEach(w=>{ const p=cur?cur+' '+w:w; if(x.measureText(p).width<=max||!cur) cur=p; else { out.push(cur); cur=w; } }); if(cur) out.push(cur); return out; }
 async function cierre(c,W,H){ const x=c.getContext('2d'); x.fillStyle=C().bg; x.fillRect(0,0,W,H); const L=70, alto=H>1500; let y=alto?260:170;
   logo(x,L,alto?110:70,240); if(!alto) contador(x,totalCarrusel()+'/'+totalCarrusel(),W-60,70);
-  x.fillStyle=C().suave; x.font='700 30px Inter'; sp(x,8); x.fillText(cz('kicker').toUpperCase(),L,y+40); sp(x,0);
-  x.fillStyle=C().texto; fitFont(x,cz('titulo').toUpperCase(),'#px Anton',alto?190:160,W-2*L); x.fillText(cz('titulo').toUpperCase(),L,y+(alto?230:200)); corte(x,L,y+(alto?262:228),150,10,C().acento);
-  const pasos=[[cz('p1').toUpperCase(),cz('d1')],[cz('p2').toUpperCase(),cz('d2')],[cz('p3').toUpperCase(),cz('d3')]]; y+=alto?380:320;
-  pasos.forEach(([t,d],k)=>{ const bh=alto?190:150; x.fillStyle=rgba(C().texto,.06); rr(x,L,y,W-2*L,bh,22); x.fill(); x.strokeStyle=C().linea; x.lineWidth=2; rr(x,L,y,W-2*L,bh,22); x.stroke();
-    x.fillStyle=C().texto; x.font=`${alto?110:90}px Anton`; x.fillText('0'+(k+1),L+34,y+bh*0.7); x.font=`${alto?62:52}px Anton`; x.fillText(t,L+(alto?220:190),y+bh*0.52); x.fillStyle=C().suave; x.font=`500 ${alto?32:28}px Inter`; x.fillText(d,L+(alto?220:190),y+bh*0.8); y+=bh+22; });
-  y+=alto?40:20; x.fillStyle=C().caja; rr(x,L,y,W-2*L,alto?150:120,22); x.fill(); x.fillStyle=C().cajaTexto; x.textAlign='center'; x.font=`800 ${alto?34:30}px Inter`; fitFont(x,cz('caja').toUpperCase(),`800 #px Inter`,alto?34:30,W-2*L-40); x.fillText(cz('caja').toUpperCase(),W/2,y+(alto?70:58)); fitFont(x,cz('caja2'),`600 #px Inter`,alto?28:24,W-2*L-40); x.globalAlpha=.75; x.fillText(cz('caja2'),W/2,y+(alto?115:94)); x.globalAlpha=1; x.textAlign='left';
+  { const k=cz('kicker').toUpperCase(); let s=30; for(;;){ x.font=`700 ${s}px Inter`; if(x.measureText(k).width+k.length*(s*0.26)<=W-2*L||s<=16) break; s-=2; } x.fillStyle=C().suave; sp(x,Math.round(s*0.26)); x.fillText(k,L,y+40); sp(x,0); }
+  x.fillStyle=C().texto; const tS=fitFont(x,cz('titulo').toUpperCase(),'#px Anton',alto?190:150,W-2*L); x.fillText(cz('titulo').toUpperCase(),L,y+70+tS*0.88); corte(x,L,y+70+tS*0.88+30,150,10,C().acento);
+  // pasos: de 1 a 5 (los vacíos no salen); las cajas se hacen más bajitas mientras más pasos haya y el detalle se acomoda en 2 renglones
+  const pasos=[1,2,3,4,5].map(k=>[cz('p'+k).toUpperCase(),cz('d'+k)]).filter(([t,d])=>t||d);
+  const boxH=alto?150:120, boxY=H-(alto?250:80)-boxH, top=y+(alto?330:290), gap=alto?20:14, n=Math.max(1,pasos.length);
+  const bh=Math.min(alto?270:190,(boxY-(alto?50:34)-top-gap*(n-1))/n);
+  x.font=`${Math.round(bh*0.5)}px Anton`; const numW=x.measureText('00').width, tx=L+30+numW+36, maxW=W-L-tx-30;
+  y=top; pasos.forEach(([t,d],k)=>{ x.fillStyle=rgba(C().texto,.06); rr(x,L,y,W-2*L,bh,22); x.fill(); x.strokeStyle=C().linea; x.lineWidth=2; rr(x,L,y,W-2*L,bh,22); x.stroke();
+    const ns=Math.round(bh*0.5); x.fillStyle=C().texto; x.font=`${ns}px Anton`; x.fillText(String(k+1).padStart(2,'0'),L+30,y+bh/2+ns*0.36);
+    const ts=t?Math.round(Math.min(bh*0.3,alto?62:52)):0; let ds=Math.round(Math.max(20,Math.min(bh*0.17,alto?32:28))), lines=[];
+    if(d){ for(;;){ x.font=`500 ${ds}px Inter`; lines=wrapText(x,d,maxW); if(lines.length<=2||ds<=18) break; ds-=2; } lines=lines.slice(0,2); }
+    const blockH=(ts?ts*0.82:0)+(ts&&lines.length?ds*0.7:0)+lines.length*ds*1.25; let ty=y+(bh-blockH)/2;
+    if(ts){ x.fillStyle=C().texto; fitFont(x,t,'#px Anton',ts,maxW); ty+=ts*0.82; x.fillText(t,tx,ty); ty+=ds*0.7; }
+    x.fillStyle=C().suave; x.font=`500 ${ds}px Inter`; lines.forEach(l=>{ ty+=ds*1.1; x.fillText(l,tx,ty); ty+=ds*0.15; });
+    y+=bh+gap; });
+  y=Math.min(boxY,y+(alto?30:16)); x.fillStyle=C().caja; rr(x,L,y,W-2*L,boxH,22); x.fill(); x.fillStyle=C().cajaTexto; x.textAlign='center'; x.font=`800 ${alto?34:30}px Inter`; fitFont(x,cz('caja').toUpperCase(),`800 #px Inter`,alto?34:30,W-2*L-40); x.fillText(cz('caja').toUpperCase(),W/2,y+(alto?70:58)); fitFont(x,cz('caja2'),`600 #px Inter`,alto?28:24,W-2*L-40); x.globalAlpha=.75; x.fillText(cz('caja2'),W/2,y+(alto?115:94)); x.globalAlpha=1; x.textAlign='left';
   if(alto){ x.fillStyle=C().suave; x.font='700 28px Inter'; x.textAlign='center'; x.fillText('dealersportsmx.com',W/2,1840); x.textAlign='left'; } }
 async function postPromo(c,comoPortada){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H);
   const us=selFotos(3); const fotos=await Promise.all(us.map(u=>cargarImg(u).catch(()=>null)));
