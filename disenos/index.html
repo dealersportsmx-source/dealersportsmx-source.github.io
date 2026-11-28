@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#18171A">
+<title>Diseños</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Diseños">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEECE7;--surface:#FFFFFF;--field:#F6F4F0;--line:#D9D5CD;--ink:#18171A;--muted:#6A6660;--inv-bg:#18171A;--inv-ink:#F4F1EB;--red:#C4402F;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0D0D0F;--surface:#161619;--field:#1D1D21;--line:#2B2B30;--ink:#ECE9E3;--muted:#8D8A85;--inv-bg:#ECE9E3;--inv-ink:#121214;--red:#FF6B57;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0D0D0F;--surface:#161619;--field:#1D1D21;--line:#2B2B30;--ink:#ECE9E3;--muted:#8D8A85;--inv-bg:#ECE9E3;--inv-ink:#121214;--red:#FF6B57;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:16px;line-height:1.45;padding:env(safe-area-inset-top,0px) 0 calc(40px + env(safe-area-inset-bottom,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+h1{margin:22px 0 4px;font-size:clamp(34px,10vw,52px);line-height:.95;font-weight:800;letter-spacing:-.02em}
+h2{font-size:20px;margin:26px 0 10px}
+.sub{margin:0 0 14px;color:var(--muted);font-size:14px}
+.back{color:var(--muted);text-decoration:none;font-weight:600;font-size:15px;display:inline-block;margin-top:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}
+input:not([type=checkbox]):not([type=color]):not([type=file]),select,textarea{display:block;width:100%;min-height:44px;padding:10px 12px;margin-top:5px;border-radius:10px;border:1px solid var(--line);background:var(--field);font-size:16px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 10px}
+@media (max-width:560px){.g3{grid-template-columns:1fr 1fr}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--inv-bg);background:var(--inv-bg);color:var(--inv-ink);font-weight:600;font-size:15px;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}.btn.sm{min-height:36px;padding:0 12px;font-size:14px}.btn[disabled]{opacity:.45}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.x{all:unset;cursor:pointer;color:var(--red);font-weight:600;font-size:14px;padding:6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:14px;font-weight:600}
+.chip.on{background:var(--inv-bg);color:var(--inv-ink);border-color:var(--inv-bg)}.chip.off{opacity:.45;text-decoration:line-through}
+.fotos{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.fotos img{height:110px;border-radius:8px;cursor:pointer;border:3px solid transparent;flex:none;background:var(--field)}
+.fotos img.sel{border-color:var(--ink)}
+.fotos .n{position:relative}.fotos .n b{position:absolute;top:4px;left:4px;background:var(--inv-bg);color:var(--inv-ink);border-radius:999px;font-size:12px;padding:0 7px}
+.pal{display:flex;gap:8px;flex-wrap:wrap}
+.pal button{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;gap:6px;align-items:center;font-size:14px;font-weight:600;background:var(--surface)}
+.pal button.on{outline:2px solid var(--ink)}
+.pal i{width:18px;height:18px;border-radius:50%;display:inline-block;border:1px solid rgba(128,128,128,.4)}
+.colores{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.colores label{display:flex;align-items:center;gap:8px;margin:0;color:var(--ink);font-size:14px}
+.colores input{width:44px;height:36px;border:none;background:none;padding:0}
+.prev{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.prev figure{margin:0}.prev canvas{width:100%;height:auto;display:block;border-radius:10px;background:#222}
+.prev figcaption{font-size:12px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between;align-items:center}
+.note{font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--inv-bg);color:var(--inv-ink);padding:12px 18px;border-radius:12px;font-size:14px;z-index:20;max-width:90vw;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="../">‹ Mis apps</a>
+<h1>Diseños</h1>
+<p class="sub">Portadas, carruseles e historias con tu marca. Llena el drop, agrega prendas y toca <b>Generar</b>.</p>
+
+<h2>1. El drop</h2>
+<div class="card">
+  <div class="g2">
+    <label>Título grande<input id="t1" placeholder="REGRESAN"></label>
+    <label>Segunda línea (contorno)<input id="t2" placeholder="LOS CARGOS DE DAVID LAID"></label>
+  </div>
+  <div class="g3">
+    <label>Etiqueta<select id="estado"><option>PREVENTA</option><option>ENTREGA INMEDIATA</option><option>REBAJA</option><option>RESTOCK</option><option>NUEVO</option></select></label>
+    <label>Fecha o aviso<input id="fecha" placeholder="SALEN EL 27 NOV"></label>
+    <label>Marca / colab<input id="colab" placeholder="GYMSHARK × DAVID LAID"></label>
+  </div>
+  <label>Resumen (abajo de la portada)<input id="resumen" placeholder="Cargo y Straight Leg · Black y Strong Brown"></label>
+  <div class="g2">
+    <label>Descuento para la portada de promo<input id="promo" placeholder="HASTA -30%"></label>
+    <label>Cierra / urgencia (rojo)<input id="urgencia" placeholder="CIERRA DOMINGO"></label>
+  </div>
+  <p class="note">Foto de portada: toca una foto de cualquier prenda de abajo y ponle "Portada".</p>
+</div>
+
+<h2>2. Prendas</h2>
+<div class="card">
+  <label>Pega el link de la prenda (YoungLA, Darc Sport, DFYNE, Breathedivinity, Controlled Insanity…)
+    <input id="link" placeholder="https://www.youngla.com/products/..." inputmode="url" autocapitalize="off"></label>
+  <div class="row"><button class="btn" id="agregar">Agregar prenda</button><button class="btn ghost" id="gym">Gymshark (lanzamientos cargados)</button><button class="btn ghost" id="manual">Agregar a mano</button></div>
+  <p class="note">Gymshark no deja leer su tienda: usa sus lanzamientos cargados o "Agregar a mano" con tus fotos.</p>
+</div>
+<div id="prendas"></div>
+
+<h2>3. Colores</h2>
+<div class="card">
+  <div class="pal" id="paletas"></div>
+  <div class="colores" id="colores"></div>
+  <p class="note">El rojo (acento) se usa solo para descuentos y urgencia. Se guardan en este aparato.</p>
+</div>
+
+<h2>4. Generar</h2>
+<div class="card">
+  <div class="chips" id="tipos"></div>
+  <div class="row"><button class="btn" id="generar">Generar</button><button class="btn ghost" id="bajar" disabled>Descargar todas</button><span class="sp"></span><span class="note" id="cuantas"></span></div>
+</div>
+<div class="prev" id="prev"></div>
+</div>
+<input type="file" id="subir" accept="image/*" multiple hidden>
+<div id="toast" class="toast" hidden></div>
+<script src="/precios.js"></script>
+<script>
+'use strict';
+/* Diseños DEALER SPORTS MX: plantillas fijas (portada, lámina, cierre, promo; post 4:5 e historia 9:16).
+   Los colores se escogen en "Colores" (paletas o a mano). Todo se guarda en este aparato. */
+const KEY='disenos_db';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mx=n=>'$'+Math.round(n||0).toLocaleString('en-US');
+const toast=t=>{const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,2600);};
+const PALETAS={
+  'Negro y blanco':{bg:'#0B0B0C',texto:'#F5F5F3',suave:'#8E8E8E',linea:'#3A3A3E',acento:'#E0243F',caja:'#F5F5F3',cajaTexto:'#0B0B0C'},
+  'Negro y rojo':{bg:'#0B0B0C',texto:'#F5F5F3',suave:'#8E8E8E',linea:'#3A3A3E',acento:'#E0243F',caja:'#E0243F',cajaTexto:'#FFFFFF'},
+  'Gris':{bg:'#2A2A2D',texto:'#FFFFFF',suave:'#A6A6A6',linea:'#4A4A50',acento:'#E0243F',caja:'#FFFFFF',cajaTexto:'#111111'},
+  'Claro':{bg:'#F3F2EF',texto:'#111111',suave:'#6B6B6B',linea:'#CFCFCF',acento:'#E0243F',caja:'#111111',cajaTexto:'#FFFFFF'}
+};
+const NOMBRES_COLOR={bg:'Fondo',texto:'Textos',suave:'Textos chicos',linea:'Líneas',acento:'Acento (rojo)',caja:'Caja de apartado',cajaTexto:'Texto de la caja'};
+const TIPOS=[['pp','Post · portada'],['pl','Post · láminas'],['pc','Post · cómo apartar'],['pr','Post · promo'],['hp','Historia · portada'],['hl','Historias · prendas'],['hc','Historia · cómo apartar']];
+const MARCAS={'youngla.com':'YoungLA','darcsport.com':'Darc Sport','dfyne.com':'DFYNE','civilregime.com':'Civil Régime','breathedivinity.com':'Breathedivinity','controlledinsanity.com':'Controlled Insanity','gymshark.com':'Gymshark'};
+
+let DB=(()=>{let d={};try{d=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}
+  d.drop=Object.assign({t1:'',t2:'',estado:'PREVENTA',fecha:'',colab:'',resumen:'',promo:'',urgencia:''},d.drop||{});
+  if(!Array.isArray(d.prendas)) d.prendas=[]; if(!d.colores) d.colores=Object.assign({},PALETAS['Negro y blanco']); if(!d.paleta) d.paleta='Negro y blanco';
+  if(!Array.isArray(d.tipos)) d.tipos=['pp','pl','pc','hp','hl','hc']; return d;})();
+const SUBIDAS=new Map(); // fotos subidas (solo mientras la app está abierta)
+function guardar(){ try{ localStorage.setItem(KEY,JSON.stringify(DB)); }catch(e){ toast('No se pudo guardar en este aparato'); } }
+
+/* ---------- precios ---------- */
+const P=window.PRECIOS;
+function aPesos(usd,marca){ if(!P||!(usd>0)) return 0; try{ return P.calcular(usd,marca).precio||0; }catch(e){ return 0; } }
+function anticipo(precio){ if(!P) return Math.round(precio*0.3/50)*50; try{ return P.anticipo(precio); }catch(e){ return Math.round(precio*0.3/50)*50; } }
+
+/* ---------- formulario del drop ---------- */
+['t1','t2','estado','fecha','colab','resumen','promo','urgencia'].forEach(k=>{ const el=$('#'+k); el.value=DB.drop[k]||''; el.oninput=el.onchange=()=>{ DB.drop[k]=el.value; guardar(); }; });
+
+/* ---------- prendas ---------- */
+const slug=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const limpiaNombre=t=>String(t||'').replace(/^\s*[A-Z]?\d{2,5}\s*[-–]\s*/,'').replace(/\s*\(.*?\)\s*/g,' ').trim().toUpperCase();
+async function deLink(url){
+  let u; try{ u=new URL(url.trim()); }catch(e){ throw new Error('Ese link no se ve bien'); }
+  const h=(/\/products\/([^/?#]+)/.exec(u.pathname)||[])[1]; if(!h) throw new Error('El link debe ser de una prenda (…/products/…)');
+  const host=u.hostname.replace(/^www\./,''); if(/gymshark/.test(host)) throw new Error('Gymshark no deja leer su tienda: usa el botón de Gymshark o agrégala a mano');
+  const r=await fetch(`${u.origin}/products/${h}.js`); if(!r.ok) throw new Error('La tienda no dejó leer esa prenda ('+r.status+')');
+  const j=await r.json(), marca=MARCAS[host]||j.vendor||'';
+  const opts=(j.options||[]).map(o=>typeof o==='string'?o:o.name), ci=opts.findIndex(n=>/colou?r/i.test(n)), si=opts.findIndex(n=>/size|talla/i.test(n));
+  const vSel=(j.variants||[]).find(v=>String(v.id)===u.searchParams.get('variant'))||(j.variants||[]).find(v=>v.available)||(j.variants||[])[0]||{};
+  const color=ci>=0?vSel['option'+(ci+1)]:'';
+  const imgs=(j.images||[]).map(s=>String(s).replace(/^\/\//,'https://').split('?')[0]);
+  const sc=slug(color), deColor=sc?imgs.filter(s=>('-'+slug(s.split('/').pop().replace(/\.\w+$/,''))+'-').includes('-'+sc+'-')):[];
+  const vs=(j.variants||[]).filter(v=>ci<0||v['option'+(ci+1)]===color);
+  const tallas=si>=0?[...new Set(vs.map(v=>v['option'+(si+1)]))].map(t=>({t:corta(t),on:vs.some(v=>v['option'+(si+1)]===t&&v.available)})):[];
+  const usd=(vSel.price||0)/100, usdAntes=Math.max(0,(vSel.compare_at_price||0)/100);
+  return nuevaPrenda({marca,colab:marca.toUpperCase(),nombre:limpiaNombre(j.title),detalle:color,fotosTodas:imgs,fotos:(deColor.length?deColor:imgs).slice(0,4),tallas,usd,usdAntes});
+}
+function corta(t){ t=String(t||'').trim(); const m={'extra small':'XS','xsmall':'XS','small':'S','medium':'M','large':'L','xlarge':'XL','extra large':'XL','xxlarge':'XXL','2xlarge':'XXL','xxxlarge':'3XL','3xlarge':'3XL'}; return m[t.toLowerCase().replace(/[-\s]/g,'').replace('extra','extra ')]||m[t.toLowerCase()]||t.toUpperCase(); }
+function nuevaPrenda(o){ const precio=aPesos(o.usd,o.marca), antes=o.usdAntes>o.usd?aPesos(o.usdAntes,o.marca):0;
+  return Object.assign({id:Math.random().toString(36).slice(2,9),marca:'',colab:'',nombre:'',detalle:'',fotosTodas:[],fotos:[],tallas:[],usd:0,usdAntes:0},o,{precio,antes,anticipo:precio?anticipo(precio):0}); }
+$('#agregar').onclick=async()=>{ const l=$('#link').value; if(!l.trim()) return toast('Pega el link de la prenda');
+  $('#agregar').disabled=true; try{ const p=await deLink(l); DB.prendas.push(p); guardar(); $('#link').value=''; pintarPrendas(); toast('Agregada: '+p.nombre); }catch(e){ toast(e.message||String(e)); } $('#agregar').disabled=false; };
+$('#gym').onclick=async()=>{ try{ const j=await (await fetch('/drops/gymshark.json?v='+Date.now())).json(); const ps=j.products||[];
+  const op=ps.map((p,i)=>`${i+1}. ${p.title}`).join('\n'); const r=prompt('¿Cuál agrego? Escribe el número:\n'+op,'1'); const p=ps[(parseInt(r)||0)-1]; if(!p) return;
+  const colores=[...new Set(p.variants.map(v=>v.option1))]; const c=prompt('¿Qué color? '+colores.join(' / '),colores[0]); const color=colores.find(x=>x.toLowerCase()===String(c||'').toLowerCase())||colores[0];
+  const vs=p.variants.filter(v=>v.option1===color), v=vs[0]; const fotos=[...new Set(vs.map(x=>x.featured_image&&x.featured_image.src).filter(Boolean).concat(p.images.map(i=>i.src).filter(s=>slug(s).includes(slug(color).replace(/-/g,'_'))||slug(s).includes(slug(color)))))];
+  DB.prendas.push(nuevaPrenda({marca:'Gymshark',colab:'GYMSHARK',nombre:p.title.replace(/^Gymshark\s*X?\s*/i,'').replace(/\(.*?\)/,'').trim().toUpperCase(),detalle:color+((/\((.*?)\)/.exec(p.title)||[])[1]?' · '+(/\((.*?)\)/.exec(p.title)||[])[1]:''),
+    fotosTodas:p.images.map(i=>i.src),fotos:(fotos.length?fotos:p.images.map(i=>i.src)).slice(0,4),tallas:vs.map(x=>({t:x.option2,on:true})),usd:+v.price,usdAntes:+v.compare_at_price||0}));
+  guardar(); pintarPrendas(); }catch(e){ toast('No pude leer los lanzamientos de Gymshark'); } };
+$('#manual').onclick=()=>{ DB.prendas.push(nuevaPrenda({nombre:'NOMBRE DE LA PRENDA',detalle:'Color',tallas:['XS','S','M','L','XL','XXL'].map(t=>({t,on:true}))})); guardar(); pintarPrendas(); };
+let subirPara=null;
+$('#subir').onchange=e=>{ const p=DB.prendas.find(x=>x.id===subirPara); if(!p) return; [...e.target.files].forEach(f=>{ const u=URL.createObjectURL(f); SUBIDAS.set(u,f); p.fotosTodas.push(u); if(p.fotos.length<4) p.fotos.push(u); }); e.target.value=''; pintarPrendas(); toast('Fotos agregadas (las subidas no se guardan al cerrar la app)'); };
+
+function pintarPrendas(){
+  $('#prendas').innerHTML=DB.prendas.map((p,i)=>`<div class="card" data-p="${p.id}">
+    <div class="row"><b class="sp">${i+1}. ${esc(p.nombre)}</b>${i>0?`<button class="btn ghost sm" data-subir1>↑</button>`:''}<button class="x" data-quitar>Quitar</button></div>
+    <div class="g2"><label>Nombre<input data-f="nombre" value="${esc(p.nombre)}"></label><label>Color · corte<input data-f="detalle" value="${esc(p.detalle)}"></label></div>
+    <div class="g3"><label>Marca (arriba del nombre)<input data-f="colab" value="${esc(p.colab)}"></label><label>Precio ahora<input data-f="precio" inputmode="numeric" value="${p.precio||''}"></label><label>Precio antes <span style="opacity:.7">(vacío = sin descuento)</span><input data-f="antes" inputmode="numeric" value="${p.antes||''}"></label></div>
+    <div class="g3"><label>Aparta con<input data-f="anticipo" inputmode="numeric" value="${p.anticipo||''}"></label>
+      <label>Tallas <span style="opacity:.7">(toca para quitar)</span><div class="chips">${p.tallas.map((t,k)=>`<button class="chip ${t.on?'on':'off'}" data-talla="${k}">${esc(t.t)}</button>`).join('')}<button class="chip" data-mas-talla>+</button></div></label>
+      <div class="note" style="align-self:center">${p.usd?`Precio marca: $${p.usd} USD${p.usdAntes>p.usd?' (antes $'+p.usdAntes+')':''}`:''}</div></div>
+    <div class="note">Fotos: toca para escoger hasta 4 (el número es el orden). Mantén presionada (o doble clic) para usarla de portada.</div>
+    <div class="fotos">${p.fotosTodas.map(u=>{const k=p.fotos.indexOf(u);return `<span class="n"><img src="${esc(miniatura(u))}" data-foto="${esc(u)}" class="${k>=0?'sel':''}" loading="lazy" alt="">${k>=0?`<b>${k+1}</b>`:''}${DB.drop.portada===u?'<b style="left:auto;right:4px">Portada</b>':''}</span>`;}).join('')}
+      <button class="btn ghost sm" data-subirfotos style="align-self:center">+ Subir fotos</button></div>
+  </div>`).join('')||'<p class="note">Todavía no agregas prendas.</p>';
+  document.querySelectorAll('#prendas [data-p]').forEach(card=>{ const p=DB.prendas.find(x=>x.id===card.dataset.p);
+    card.querySelectorAll('[data-f]').forEach(inp=>inp.oninput=()=>{ const f=inp.dataset.f; p[f]=['precio','antes','anticipo'].includes(f)?(parseFloat(inp.value.replace(/[^0-9.]/g,''))||0):inp.value; if(f==='precio'&&p.precio){ p.anticipo=anticipo(p.precio); const a=card.querySelector('[data-f=anticipo]'); if(a) a.value=p.anticipo; } guardar(); });
+    card.querySelectorAll('[data-talla]').forEach(b=>b.onclick=()=>{ const t=p.tallas[+b.dataset.talla]; t.on=!t.on; guardar(); pintarPrendas(); });
+    card.querySelector('[data-mas-talla]').onclick=()=>{ const t=prompt('Talla a agregar (ej. 3XL):'); if(t&&t.trim()){ p.tallas.push({t:t.trim().toUpperCase(),on:true}); guardar(); pintarPrendas(); } };
+    card.querySelectorAll('[data-foto]').forEach(img=>{ img.onclick=()=>{ const u=img.dataset.foto,k=p.fotos.indexOf(u); if(k>=0) p.fotos.splice(k,1); else if(p.fotos.length<4) p.fotos.push(u); else return toast('Máximo 4 fotos por prenda'); guardar(); pintarPrendas(); };
+      img.ondblclick=img.oncontextmenu=e=>{ e.preventDefault(); DB.drop.portada=img.dataset.foto; guardar(); pintarPrendas(); toast('Foto de portada escogida'); }; });
+    card.querySelector('[data-subirfotos]').onclick=()=>{ subirPara=p.id; $('#subir').click(); };
+    card.querySelector('[data-quitar]').onclick=()=>{ if(confirm('¿Quitar '+p.nombre+'?')){ DB.prendas=DB.prendas.filter(x=>x!==p); guardar(); pintarPrendas(); } };
+    const up=card.querySelector('[data-subir1]'); if(up) up.onclick=()=>{ const i=DB.prendas.indexOf(p); DB.prendas.splice(i,1); DB.prendas.splice(i-1,0,p); guardar(); pintarPrendas(); };
+  });
+}
+function miniatura(u){ return /^blob:/.test(u)?u:u+(u.includes('?')?'&':'?')+'width=300'; }
+
+/* ---------- colores ---------- */
+function pintarColores(){
+  $('#paletas').innerHTML=Object.entries(PALETAS).map(([n,c])=>`<button data-pal="${esc(n)}" class="${DB.paleta===n?'on':''}"><i style="background:${c.bg}"></i><i style="background:${c.texto}"></i><i style="background:${c.caja}"></i>${esc(n)}</button>`).join('')+`<button class="${DB.paleta==='Mía'?'on':''}" data-pal="Mía">✎ Mía</button>`;
+  $('#colores').innerHTML=Object.keys(NOMBRES_COLOR).map(k=>`<label><input type="color" data-c="${k}" value="${DB.colores[k]}">${NOMBRES_COLOR[k]}</label>`).join('');
+  document.querySelectorAll('[data-pal]').forEach(b=>b.onclick=()=>{ const n=b.dataset.pal; if(PALETAS[n]){ DB.colores=Object.assign({},PALETAS[n]); } DB.paleta=n; guardar(); pintarColores(); });
+  document.querySelectorAll('[data-c]').forEach(i=>i.oninput=()=>{ DB.colores[i.dataset.c]=i.value; DB.paleta='Mía'; guardar(); document.querySelectorAll('[data-pal]').forEach(b=>b.classList.toggle('on',b.dataset.pal==='Mía')); });
+}
+function pintarTipos(){ $('#tipos').innerHTML=TIPOS.map(([k,n])=>`<button class="chip ${DB.tipos.includes(k)?'on':''}" data-tipo="${k}">${esc(n)}</button>`).join('');
+  document.querySelectorAll('[data-tipo]').forEach(b=>b.onclick=()=>{ const k=b.dataset.tipo; DB.tipos=DB.tipos.includes(k)?DB.tipos.filter(x=>x!==k):DB.tipos.concat(k); guardar(); pintarTipos(); }); }
+
+/* ---------- dibujo ---------- */
+const imgCache=new Map();
+function cargarImg(u){ if(imgCache.has(u)) return imgCache.get(u); const pr=new Promise((ok,no)=>{ const i=new Image(); if(!/^blob:/.test(u)) i.crossOrigin='anonymous'; i.onload=()=>ok(i); i.onerror=()=>no(new Error('foto')); i.src=/^blob:/.test(u)?u:u+(u.includes('?')?'&':'?')+'width=1200'; }); imgCache.set(u,pr); return pr; }
+const rgba=(hex,a)=>{ const h=hex.replace('#',''); const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; };
+function cover(x,img,dx,dy,dw,dh,fy){ if(!img){ x.fillStyle=rgba(C().linea,1); x.fillRect(dx,dy,dw,dh); return; } const s=Math.max(dw/img.width,dh/img.height),sw=dw/s,sh=dh/s; x.drawImage(img,(img.width-sw)/2,(img.height-sh)*(fy??0.3),sw,sh,dx,dy,dw,dh); }
+function rr(x,X,Y,w,h,r){ x.beginPath(); x.roundRect(X,Y,w,h,r); }
+function sp(x,px){ x.letterSpacing=px+'px'; }
+function corte(x,X,Y,w,h,fill,stroke){ x.beginPath(); x.moveTo(X,Y); x.lineTo(X+w,Y); x.lineTo(X+w-h*0.45,Y+h); x.lineTo(X,Y+h); x.closePath(); if(fill){x.fillStyle=fill;x.fill();} if(stroke){x.strokeStyle=stroke;x.lineWidth=3;x.stroke();} }
+function grad(x,y0,y1,a0,a1,w){ const g=x.createLinearGradient(0,y0,0,y1); g.addColorStop(0,rgba(C().bg,a0)); g.addColorStop(1,rgba(C().bg,a1)); x.fillStyle=g; x.fillRect(0,y0,w,y1-y0); }
+function fitFont(x,t,tpl,size,max){ let s=size; do{ x.font=tpl.replace('#',s); s-=4; }while(x.measureText(t).width>max&&s>30); return s+4; }
+function pill(x,t,X,Y,h,bg,fg,size,align){ x.font=`900 ${size}px Inter`; sp(x,4); const w=x.measureText(t).width+h*0.9; const X0=align==='right'?X-w:X; x.fillStyle=bg; rr(x,X0,Y,w,h,h/2); x.fill(); x.fillStyle=fg; x.textBaseline='middle'; x.fillText(t,X0+h*0.45,Y+h/2+1); x.textBaseline='alphabetic'; sp(x,0); return w; }
+function contador(x,t,X,Y){ x.font='700 26px Inter'; sp(x,4); const w=x.measureText(t).width+40; x.strokeStyle=rgba(C().texto,.5); x.lineWidth=2; rr(x,X-w,Y,w,50,25); x.stroke(); x.fillStyle=C().texto; x.fillText(t,X-w+20,Y+34); sp(x,0); }
+function desliza(x,X,Y,size){ x.font=`700 ${size}px Inter`; x.fillStyle=C().texto; x.textAlign='right'; sp(x,5); x.fillText('DESLIZA →',X,Y); sp(x,0); x.textAlign='left'; }
+let LOGO=null; function logoTinto(col){ const c=document.createElement('canvas'); c.width=LOGO.width; c.height=LOGO.height; const o=c.getContext('2d'); o.drawImage(LOGO,0,0); o.globalCompositeOperation='source-in'; o.fillStyle=col; o.fillRect(0,0,c.width,c.height); return c; }
+function logo(x,X,Y,w,col){ const l=logoTinto(col||C().texto); x.drawImage(l,X,Y,w,w*LOGO.height/LOGO.width); return w*LOGO.height/LOGO.width; }
+const C=()=>DB.colores;
+const pct=p=>p.antes>p.precio?'-'+Math.round((1-p.precio/p.antes)*100)+'%':'';
+function cajaApartado(x,bx,by,bw,bh,p){ x.fillStyle=C().caja; rr(x,bx,by,bw,bh,22); x.fill(); x.fillStyle=C().cajaTexto; x.textAlign='center'; const s=Math.max(.8,bh/300);
+  x.font=`800 ${Math.round(24*s)}px Inter`; sp(x,6); x.fillText('APARTA CON',bx+bw/2+3,by+bh*0.2); sp(x,0);
+  x.font=`${Math.round(bh*0.40)}px Anton`; x.fillText(mx(p.anticipo),bx+bw/2,by+bh*0.66); x.font=`600 ${Math.round(25*s)}px Inter`; x.globalAlpha=.75; x.fillText('y liquidas al llegar',bx+bw/2,by+bh*0.88); x.globalAlpha=1; x.textAlign='left'; }
+function tallasRedondas(x,p,L,y){ x.fillStyle=C().suave; x.font='700 26px Inter'; sp(x,7); x.fillText('TALLAS',L,y); const tl=x.measureText('TALLAS').width; sp(x,0); let cx=L+tl+26; x.font='800 26px Inter';
+  p.tallas.filter(t=>t.on).forEach(t=>{ const w=Math.max(66,x.measureText(t.t).width+38); if(cx+w>1040) return; x.strokeStyle=rgba(C().texto,.5); x.lineWidth=2.5; rr(x,cx,y-40,w,56,28); x.stroke(); x.fillStyle=C().texto; x.textAlign='center'; x.fillText(t.t,cx+w/2,y-3); x.textAlign='left'; cx+=w+12; }); }
+
+async function historiaProducto(c,p){ const x=c.getContext('2d'); x.fillStyle=C().bg; x.fillRect(0,0,1080,1920);
+  const fotos=await Promise.all(p.fotos.slice(0,4).map(u=>cargarImg(u).catch(()=>null))); const gap=8,cw=(1080-gap)/2,ch=500;
+  if(fotos.length===1) cover(x,fotos[0],0,0,1080,1008,0.2); else for(let i=0;i<4;i++) cover(x,fotos[i%fotos.length]||null,(i%2)*(cw+gap),Math.floor(i/2)*(ch+gap),cw,ch,0.3);
+  const pw=pill(x,DB.drop.estado||'PREVENTA',48,52,60,C().texto,C().bg,28); if(DB.drop.fecha) pill(x,DB.drop.fecha.toUpperCase(),48+pw+12,52,60,rgba(C().bg,.8),C().texto,26);
+  const L=64; let y=1072; x.fillStyle=C().suave; x.font='700 30px Inter'; sp(x,8); x.fillText((p.colab||'').toUpperCase(),L,y); sp(x,0);
+  y+=140; x.fillStyle=C().texto; fitFont(x,p.nombre,'#px Anton',140,950); x.fillText(p.nombre,L,y); y+=60; x.fillStyle=C().suave; x.font='500 36px Inter'; x.fillText(p.detalle||'',L,y);
+  y+=86; tallasRedondas(x,p,L,y); y+=96; const top=y-30;
+  if(p.antes>p.precio){ x.fillStyle=C().suave; x.font='700 26px Inter'; sp(x,7); x.fillText('ANTES',L,y); sp(x,0); y+=62; x.font='58px Anton'; x.fillStyle=rgba(C().texto,.45); const aw=x.measureText(mx(p.antes)).width; x.fillText(mx(p.antes),L,y);
+    x.strokeStyle=C().acento; x.lineWidth=5; x.beginPath(); x.moveTo(L-4,y-20); x.lineTo(L+aw+4,y-20); x.stroke(); x.font='44px Anton'; const t=pct(p), tw=x.measureText(t).width+32; corte(x,L+aw+20,y-54,tw+20,62,C().acento); x.fillStyle='#fff'; x.fillText(t,L+aw+36,y-6); y+=62; }
+  x.fillStyle=C().suave; x.font='700 26px Inter'; sp(x,7); x.fillText(p.antes>p.precio?'AHORA':'PRECIO',L,y); sp(x,0); y+=140; x.fillStyle=C().texto; x.font='140px Anton'; x.fillText(mx(p.precio),L,y);
+  if(p.anticipo) cajaApartado(x,1080-L-380,top,380,y+8-top,p);
+  const lh=260*LOGO.height/LOGO.width, ly=1920-lh-48; x.fillStyle=C().linea; x.fillRect(L,ly-22,1080-2*L,3); logo(x,(1080-260)/2,ly,260); }
+async function historiaPortada(c){ const x=c.getContext('2d'),W=1080; x.fillStyle=C().bg; x.fillRect(0,0,W,1920); const f=await cargarImg(fotoPortada()).catch(()=>null);
+  // sin difuminado: barra arriba con logo, foto limpia, bloque sólido abajo
+  cover(x,f,0,190,W,1000,0.08); logo(x,(W-280)/2,(190-280*LOGO.height/LOGO.width)/2,280); x.fillStyle=C().texto; x.fillRect(0,1190,W,4);
+  const L=70; x.fillStyle=C().suave; x.font='700 30px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,1290); sp(x,0);
+  const e=(DB.drop.estado||'PREVENTA').toUpperCase(); fitFont(x,e,'#px Anton',210,940); x.lineWidth=4; x.strokeStyle=C().texto; x.strokeText(e,L,1500);
+  const t=(DB.drop.t2||DB.drop.t1||'').toUpperCase().replace(/^LOS CARGOS DE\s*/,''); x.fillStyle=C().texto; fitFont(x,t,'#px Anton',150,940); x.fillText(t,L,1650);
+  x.fillStyle=C().suave; x.font='600 34px Inter'; x.fillText(DB.drop.resumen||'',L,1716);
+  if(DB.drop.urgencia||DB.drop.fecha) pill(x,(DB.drop.urgencia||DB.drop.fecha).toUpperCase(),L,1770,62,C().acento,'#fff',28); desliza(x,1010,1812,28); }
+async function historiaCierre(c){ await cierre(c,1080,1920); }
+async function postPortada(c){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H); const f=await cargarImg(fotoPortada()).catch(()=>null);
+  // sin difuminado: barra arriba (logo + etiqueta), foto limpia, bloque sólido abajo
+  cover(x,f,0,140,W,690,0.12); x.fillStyle=C().texto; x.fillRect(0,830,W,4);
+  logo(x,60,(140-230*LOGO.height/LOGO.width)/2,230); const pw=pill(x,(DB.drop.estado||'PREVENTA').toUpperCase(),1020,40,54,C().texto,C().bg,26,'right');
+  if(DB.drop.fecha){ x.font='700 24px Inter'; x.fillStyle=C().suave; x.textAlign='right'; x.fillText(DB.drop.fecha.toUpperCase(),1020-pw-20,76); x.textAlign='left'; }
+  const L=60; x.fillStyle=C().suave; x.font='700 28px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,895); sp(x,0);
+  const t1=(DB.drop.t1||'').toUpperCase(), t2=(DB.drop.t2||'').toUpperCase(); x.fillStyle=C().texto; fitFont(x,t1,'#px Anton',150,960); x.fillText(t1,L,1040);
+  fitFont(x,t2,'#px Anton',96,960); x.lineWidth=3; x.strokeStyle=C().texto; x.strokeText(t2,L,1150); corte(x,L,1188,150,10,C().acento);
+  x.fillStyle=C().suave; x.font='600 30px Inter'; x.fillText(DB.drop.resumen||'',L,1262); contador(x,'1/'+totalCarrusel(),1020,1222); desliza(x,1020,1300,24); }
+async function postLamina(c,p,i){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H);
+  const fotos=await Promise.all(p.fotos.slice(0,2).map(u=>cargarImg(u).catch(()=>null))); const gap=8,cw=(W-gap)/2,ch=700;
+  if(fotos.length<2) cover(x,fotos[0]||null,0,0,W,ch,0.2); else { cover(x,fotos[0],0,0,cw,ch,0.25); cover(x,fotos[1],cw+gap,0,cw,ch,0.25); }
+  contador(x,(i+2)+'/'+totalCarrusel(),1020,40);
+  const L=60; let y=760; x.fillStyle=C().suave; x.font='700 26px Inter'; sp(x,7); x.fillText((p.colab||'').toUpperCase(),L,y); sp(x,0);
+  y+=118; x.fillStyle=C().texto; fitFont(x,p.nombre,'#px Anton',120,960); x.fillText(p.nombre,L,y); y+=52; x.fillStyle=C().suave; x.font='500 32px Inter'; x.fillText(p.detalle||'',L,y);
+  y+=70; let cx=L; x.font='800 24px Inter'; p.tallas.filter(t=>t.on).forEach(t=>{ const w=Math.max(60,x.measureText(t.t).width+32); if(cx+w>1040) return; corte(x,cx,y-38,w+12,52,null,rgba(C().texto,.45)); x.fillStyle=C().texto; x.textAlign='center'; x.fillText(t.t,cx+w/2,y-3); x.textAlign='left'; cx+=w+22; });
+  y+=58; const ay=y; x.font='120px Anton'; x.fillStyle=C().texto; x.fillText(mx(p.precio),L,y+110); const aw=x.measureText(mx(p.precio)).width;
+  if(p.antes>p.precio){ x.font='600 30px Inter'; x.fillStyle=rgba(C().texto,.5); const at='Antes '+mx(p.antes),atw=x.measureText(at).width; x.fillText(at,L+aw+30,y+50); x.strokeStyle=C().acento; x.lineWidth=4; x.beginPath(); x.moveTo(L+aw+30,y+40); x.lineTo(L+aw+30+atw,y+40); x.stroke(); x.fillStyle=C().acento; x.font='800 30px Inter'; x.fillText(pct(p),L+aw+30,y+100); }
+  if(p.anticipo) cajaApartado(x,700,ay-66,320,240,p);
+  x.fillStyle=C().suave; x.font='600 26px Inter'; x.fillText('Pídelo en dealersportsmx.com',L,1312); logo(x,1020-170,1270,170); }
+async function postCierre(c){ await cierre(c,1080,1350); }
+async function cierre(c,W,H){ const x=c.getContext('2d'); x.fillStyle=C().bg; x.fillRect(0,0,W,H); const L=70, alto=H>1500; let y=alto?260:170;
+  logo(x,L,alto?110:70,240); if(!alto) contador(x,totalCarrusel()+'/'+totalCarrusel(),W-60,70);
+  x.fillStyle=C().suave; x.font='700 30px Inter'; sp(x,8); x.fillText('ASÍ DE FÁCIL',L,y+40); sp(x,0);
+  x.fillStyle=C().texto; x.font=`${alto?190:160}px Anton`; x.fillText('ASÍ APARTAS',L,y+(alto?230:200)); corte(x,L,y+(alto?262:228),150,10,C().acento);
+  const pasos=[['ESCOGE','Tu prenda, color y talla.'],['APARTA','Con el 30 % de anticipo.'],['RECIBE','Liquidas cuando llega.']]; y+=alto?380:320;
+  pasos.forEach(([t,d],k)=>{ const bh=alto?190:150; x.fillStyle=rgba(C().texto,.06); rr(x,L,y,W-2*L,bh,22); x.fill(); x.strokeStyle=C().linea; x.lineWidth=2; rr(x,L,y,W-2*L,bh,22); x.stroke();
+    x.fillStyle=C().texto; x.font=`${alto?110:90}px Anton`; x.fillText('0'+(k+1),L+34,y+bh*0.7); x.font=`${alto?62:52}px Anton`; x.fillText(t,L+(alto?220:190),y+bh*0.52); x.fillStyle=C().suave; x.font=`500 ${alto?32:28}px Inter`; x.fillText(d,L+(alto?220:190),y+bh*0.8); y+=bh+22; });
+  y+=alto?40:20; x.fillStyle=C().caja; rr(x,L,y,W-2*L,alto?150:120,22); x.fill(); x.fillStyle=C().cajaTexto; x.textAlign='center'; x.font=`800 ${alto?34:30}px Inter`; x.fillText('ENVÍO GRATIS EN COMPRAS DE +$3,000',W/2,y+(alto?70:58)); x.font=`600 ${alto?28:24}px Inter`; x.globalAlpha=.75; x.fillText('Pídelo en dealersportsmx.com o mándanos DM',W/2,y+(alto?115:94)); x.globalAlpha=1; x.textAlign='left';
+  if(alto){ x.fillStyle=C().suave; x.font='700 28px Inter'; x.textAlign='center'; x.fillText('dealersportsmx.com',W/2,1840); x.textAlign='left'; } }
+async function postPromo(c){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H);
+  const us=DB.prendas.slice(0,3).map(p=>p.fotos[0]||p.fotosTodas[0]).filter(Boolean); const fotos=await Promise.all(us.map(u=>cargarImg(u).catch(()=>null)));
+  const n=Math.max(1,fotos.length), gap=8, cw=(W-gap*(n-1))/n; for(let i=0;i<n;i++) cover(x,fotos[i]||null,i*(cw+gap),330,cw,620,0.3);
+  logo(x,60,58,230); pill(x,(DB.drop.estado||'REBAJA').toUpperCase(),1020,52,54,C().acento,'#fff',26,'right');
+  const L=60; x.fillStyle=C().suave; x.font='700 28px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,190); sp(x,0);
+  const t=(DB.drop.t1||'REBAJAS').toUpperCase(); x.fillStyle=C().texto; fitFont(x,t,'#px Anton',130,960); x.fillText(t,L,310);
+  // cinta cruzada
+  x.save(); x.translate(W/2,960); x.rotate(-0.06); x.fillStyle=C().acento; x.fillRect(-W,-46,W*2,92); x.fillStyle='#fff'; x.font='900 34px Inter'; sp(x,5); x.textBaseline='middle';
+  const cinta=[DB.drop.promo||'REBAJA',DB.drop.urgencia||'CUPO LIMITADO','ENVÍO GRATIS +$3,000'].map(s=>s.toUpperCase()).join('   •   '); let cx=-W+20; while(cx<W){ x.fillText(cinta+'   •   ',cx,2); cx+=x.measureText(cinta+'   •   ').width; } sp(x,0); x.restore(); x.textBaseline='alphabetic';
+  x.fillStyle=C().texto; x.font='170px Anton'; const pr=(DB.drop.promo||'').toUpperCase(); fitFont(x,pr,'#px Anton',170,960); x.fillText(pr,L,1210);
+  x.fillStyle=C().suave; x.font='600 30px Inter'; x.fillText(DB.drop.resumen||'',L,1270); desliza(x,1020,1310,24); }
+
+function fotoPortada(){ return DB.drop.portada||((DB.prendas[0]||{}).fotos||[])[0]||''; }
+function totalCarrusel(){ return 1+DB.prendas.length+(DB.tipos.includes('pc')?1:0); }
+
+/* ---------- generar ---------- */
+let HECHAS=[];
+$('#generar').onclick=async()=>{
+  if(!DB.prendas.length&&!['pp','hp','pc','hc'].some(k=>DB.tipos.includes(k))) return toast('Agrega al menos una prenda');
+  $('#generar').disabled=true; $('#prev').innerHTML='<p class="note">Generando…</p>';
+  try{ for(const f of ['100px Anton','900 30px Inter','800 30px Inter','700 30px Inter','600 30px Inter','500 30px Inter']) await document.fonts.load(f);
+    if(!LOGO) LOGO=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src='logo.png';});
+    const tareas=[]; const T=k=>DB.tipos.includes(k);
+    if(T('pp')) tareas.push(['post-1-portada',1080,1350,c=>postPortada(c)]);
+    if(T('pl')) DB.prendas.forEach((p,i)=>tareas.push([`post-${i+2}-${slug(p.nombre)}`,1080,1350,c=>postLamina(c,p,i)]));
+    if(T('pc')) tareas.push([`post-${totalCarrusel()}-como-apartar`,1080,1350,c=>postCierre(c)]);
+    if(T('pr')) tareas.push(['post-promo',1080,1350,c=>postPromo(c)]);
+    if(T('hp')) tareas.push(['historia-1-portada',1080,1920,c=>historiaPortada(c)]);
+    if(T('hl')) DB.prendas.forEach((p,i)=>tareas.push([`historia-${i+2}-${slug(p.nombre)}`,1080,1920,c=>historiaProducto(c,p)]));
+    if(T('hc')) tareas.push(['historia-ultima-como-apartar',1080,1920,c=>historiaCierre(c)]);
+    $('#prev').innerHTML=''; HECHAS=[];
+    for(const [nombre,w,h,fn] of tareas){ const c=document.createElement('canvas'); c.width=w; c.height=h; await fn(c);
+      const fig=document.createElement('figure'); fig.appendChild(c); const cap=document.createElement('figcaption'); cap.innerHTML=`<span>${esc(nombre)}</span>`; const b=document.createElement('button'); b.className='btn ghost sm'; b.textContent='Bajar'; b.onclick=()=>bajar([[nombre,c]]); cap.appendChild(b); fig.appendChild(cap); $('#prev').appendChild(fig); HECHAS.push([nombre,c]); }
+    $('#bajar').disabled=!HECHAS.length; $('#cuantas').textContent=HECHAS.length+' imágenes';
+  }catch(e){ $('#prev').innerHTML=`<p class="note">No se pudo generar: ${esc(e.message||e)}</p>`; }
+  $('#generar').disabled=false;
+};
+async function bajar(lista){
+  const files=[]; for(const [n,c] of lista){ const b=await new Promise(r=>c.toBlob(r,'image/png')); files.push(new File([b],`dealer-${n}.png`,{type:'image/png'})); }
+  if(navigator.canShare&&navigator.canShare({files})){ try{ await navigator.share({files}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
+  for(const f of files){ const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); await new Promise(r=>setTimeout(r,250)); }
+}
+$('#bajar').onclick=()=>bajar(HECHAS);
+
+pintarPrendas(); pintarColores(); pintarTipos();
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{})); }
+</script>
+</body>
+</html>
