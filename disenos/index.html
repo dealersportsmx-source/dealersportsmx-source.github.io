@@ -111,6 +111,8 @@ input:not([type=checkbox]):not([type=color]):not([type=file]),select,textarea{di
 <h2>3. Colores</h2>
 <div class="card">
   <div class="pal" id="paletas"></div>
+  <div class="note" style="margin-top:12px"><b>Color de la etiqueta</b> (PREVENTA, REBAJA…), aparte de la paleta:</div>
+  <div class="pal" id="etiq"></div>
   <div class="colores" id="colores"></div>
   <p class="note">El rojo (acento) se usa solo para descuentos y urgencia. Se guardan en este aparato.</p>
 </div>
@@ -247,6 +249,10 @@ function miniatura(u){ return /^(blob|data):/.test(u)?u:u+(u.includes('?')?'&':'
 function pintarColores(){
   $('#paletas').innerHTML=Object.entries(PALETAS).map(([n,c])=>`<button data-pal="${esc(n)}" class="${DB.paleta===n?'on':''}"><i style="background:${c.bg}"></i><i style="background:${c.texto}"></i><i style="background:${c.caja}"></i>${esc(n)}</button>`).join('')+`<button class="${DB.paleta==='Mía'?'on':''}" data-pal="Mía">✎ Mía</button>`;
   $('#colores').innerHTML=Object.keys(NOMBRES_COLOR).map(k=>`<label><input type="color" data-c="${k}" value="${DB.colores[k]||(k==='etiqueta'?DB.colores.texto:k==='etiquetaTexto'?DB.colores.bg:k==='cinta'?DB.colores.acento:k==='cintaTexto'?'#ffffff':'#000000')}">${NOMBRES_COLOR[k]}</label>`).join('');
+  const ETQ=[['Blanca','#F5F5F3','#0B0B0C'],['Amarilla','#FFD400','#111111'],['Roja','#E0243F','#FFFFFF'],['Negra','#0B0B0C','#F5F5F3'],['Gris','#8E8E8E','#FFFFFF']];
+  const eAct=(DB.colores.etiqueta||DB.colores.texto||'').toUpperCase();
+  $('#etiq').innerHTML=ETQ.map(([n,b,t])=>`<button data-etq="${b}|${t}" class="${eAct===b.toUpperCase()?'on':''}"><i style="background:${b}"></i>${n}</button>`).join('');
+  document.querySelectorAll('[data-etq]').forEach(b=>b.onclick=()=>{ const [bg,tx]=b.dataset.etq.split('|'); DB.colores=Object.assign({},DB.colores,{etiqueta:bg,etiquetaTexto:tx}); guardar(); pintarColores(); toast('Etiqueta '+b.textContent.trim().toLowerCase()); });
   document.querySelectorAll('[data-pal]').forEach(b=>b.onclick=()=>{ const n=b.dataset.pal; if(PALETAS[n]){ DB.colores=Object.assign({},PALETAS[n]); } DB.paleta=n; guardar(); pintarColores(); });
   document.querySelectorAll('[data-c]').forEach(i=>i.oninput=()=>{ DB.colores[i.dataset.c]=i.value; DB.paleta='Mía'; guardar(); document.querySelectorAll('[data-pal]').forEach(b=>b.classList.toggle('on',b.dataset.pal==='Mía')); });
 }
