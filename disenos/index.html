@@ -139,9 +139,9 @@ const PALETAS={
   'Negro y rojo':{bg:'#0B0B0C',texto:'#F5F5F3',suave:'#8E8E8E',linea:'#3A3A3E',acento:'#E0243F',caja:'#E0243F',cajaTexto:'#FFFFFF'},
   'Gris':{bg:'#2A2A2D',texto:'#FFFFFF',suave:'#A6A6A6',linea:'#4A4A50',acento:'#E0243F',caja:'#FFFFFF',cajaTexto:'#111111'},
   'Claro':{bg:'#F3F2EF',texto:'#111111',suave:'#6B6B6B',linea:'#CFCFCF',acento:'#E0243F',caja:'#111111',cajaTexto:'#FFFFFF'},
-  'Negro y amarillo':{bg:'#0B0B0C',texto:'#F4F1EA',suave:'#9A968E',linea:'#FFD400',acento:'#E0243F',caja:'#FFD400',cajaTexto:'#111111',etiqueta:'#FFD400',etiquetaTexto:'#111111'}
+  'Negro y amarillo':{bg:'#0B0B0C',texto:'#F4F1EA',suave:'#9A968E',linea:'#FFD400',acento:'#E0243F',caja:'#FFD400',cajaTexto:'#111111',etiqueta:'#FFD400',etiquetaTexto:'#111111',cinta:'#FFD400',cintaTexto:'#111111'}
 };
-const NOMBRES_COLOR={bg:'Fondo',texto:'Textos',suave:'Textos chicos',linea:'Líneas',acento:'Acento (rojo)',caja:'Caja de apartado',cajaTexto:'Texto de la caja',etiqueta:'Etiqueta (PREVENTA…)',etiquetaTexto:'Texto de la etiqueta'};
+const NOMBRES_COLOR={bg:'Fondo',texto:'Textos',suave:'Textos chicos',linea:'Líneas',acento:'Acento (rojo)',caja:'Caja de apartado',cajaTexto:'Texto de la caja',etiqueta:'Etiqueta (PREVENTA…)',etiquetaTexto:'Texto de la etiqueta',cinta:'Cinta de la promo',cintaTexto:'Texto de la cinta'};
 const TIPOS=[['pp','Post · portada'],['pl','Post · láminas'],['pc','Post · cómo apartar'],['pr','Post · promo'],['hp','Historia · portada'],['hl','Historias · prendas'],['hc','Historia · cómo apartar']];
 const MARCAS={'youngla.com':'YoungLA','darcsport.com':'Darc Sport','dfyne.com':'DFYNE','civilregime.com':'Civil Régime','breathedivinity.com':'Breathedivinity','controlledinsanity.com':'Controlled Insanity','gymshark.com':'Gymshark'};
 
@@ -246,7 +246,7 @@ function miniatura(u){ return /^(blob|data):/.test(u)?u:u+(u.includes('?')?'&':'
 /* ---------- colores ---------- */
 function pintarColores(){
   $('#paletas').innerHTML=Object.entries(PALETAS).map(([n,c])=>`<button data-pal="${esc(n)}" class="${DB.paleta===n?'on':''}"><i style="background:${c.bg}"></i><i style="background:${c.texto}"></i><i style="background:${c.caja}"></i>${esc(n)}</button>`).join('')+`<button class="${DB.paleta==='Mía'?'on':''}" data-pal="Mía">✎ Mía</button>`;
-  $('#colores').innerHTML=Object.keys(NOMBRES_COLOR).map(k=>`<label><input type="color" data-c="${k}" value="${DB.colores[k]||(k==='etiqueta'?DB.colores.texto:k==='etiquetaTexto'?DB.colores.bg:'#000000')}">${NOMBRES_COLOR[k]}</label>`).join('');
+  $('#colores').innerHTML=Object.keys(NOMBRES_COLOR).map(k=>`<label><input type="color" data-c="${k}" value="${DB.colores[k]||(k==='etiqueta'?DB.colores.texto:k==='etiquetaTexto'?DB.colores.bg:k==='cinta'?DB.colores.acento:k==='cintaTexto'?'#ffffff':'#000000')}">${NOMBRES_COLOR[k]}</label>`).join('');
   document.querySelectorAll('[data-pal]').forEach(b=>b.onclick=()=>{ const n=b.dataset.pal; if(PALETAS[n]){ DB.colores=Object.assign({},PALETAS[n]); } DB.paleta=n; guardar(); pintarColores(); });
   document.querySelectorAll('[data-c]').forEach(i=>i.oninput=()=>{ DB.colores[i.dataset.c]=i.value; DB.paleta='Mía'; guardar(); document.querySelectorAll('[data-pal]').forEach(b=>b.classList.toggle('on',b.dataset.pal==='Mía')); });
 }
@@ -334,11 +334,11 @@ async function cierre(c,W,H){ const x=c.getContext('2d'); x.fillStyle=C().bg; x.
 async function postPromo(c,comoPortada){ const x=c.getContext('2d'),W=1080,H=1350; x.fillStyle=C().bg; x.fillRect(0,0,W,H);
   const us=selFotos(3); const fotos=await Promise.all(us.map(u=>cargarImg(u).catch(()=>null)));
   const n=Math.max(1,fotos.length), gap=8, cw=(W-gap*(n-1))/n; for(let i=0;i<n;i++) cover(x,fotos[i]||null,i*(cw+gap),330,cw,620,encuadre());
-  logo(x,60,58,230); pill(x,(DB.drop.estado||'REBAJA').toUpperCase(),1020,52,54,C().acento,'#fff',26,'right');
+  logo(x,60,58,230); pill(x,(DB.drop.estado||'REBAJA').toUpperCase(),1020,52,54,C().etiqueta||C().acento,C().etiquetaTexto||'#fff',26,'right');
   const L=60; x.fillStyle=C().suave; x.font='700 28px Inter'; sp(x,8); x.fillText((DB.drop.colab||'').toUpperCase(),L,190); sp(x,0);
   const t=(DB.drop.t1||'REBAJAS').toUpperCase(); x.fillStyle=C().texto; fitFont(x,t,'#px Anton',130,960); x.fillText(t,L,310);
   // cinta cruzada
-  x.save(); x.translate(W/2,960); x.rotate(-0.06); x.fillStyle=C().acento; x.fillRect(-W,-46,W*2,92); x.fillStyle='#fff'; x.font='900 34px Inter'; sp(x,5); x.textBaseline='middle';
+  x.save(); x.translate(W/2,960); x.rotate(-0.06); x.fillStyle=C().cinta||C().acento; x.fillRect(-W,-46,W*2,92); x.fillStyle=C().cintaTexto||'#fff'; x.font='900 34px Inter'; sp(x,5); x.textBaseline='middle';
   const cinta=(DB.drop.cinta||'').trim()?DB.drop.cinta.toUpperCase().replace(/\s*[•·|]\s*/g,'   •   '):[DB.drop.promo||'REBAJA',DB.drop.urgencia||'CUPO LIMITADO','ENVÍO GRATIS +$3,000'].map(s=>s.toUpperCase()).join('   •   '); let cx=-W+20; while(cx<W){ x.fillText(cinta+'   •   ',cx,2); cx+=x.measureText(cinta+'   •   ').width; } sp(x,0); x.restore(); x.textBaseline='alphabetic';
   x.fillStyle=C().texto; x.font='170px Anton'; const pr=(DB.drop.promo||DB.drop.t2||'').toUpperCase(); fitFont(x,pr,'#px Anton',170,960); x.fillText(pr,L,1210);
   x.fillStyle=C().suave; x.font='600 30px Inter'; x.fillText(DB.drop.resumen||'',L,1270);
